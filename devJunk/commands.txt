@@ -1,0 +1,83 @@
+Hotchips
+{
+    "deviceName":"hotchip1", 
+    "inUse" : True,
+    settings:{
+        "command":"SET", 
+        "temp": 0
+    },
+    "client":None
+    "topic":None    
+}
+
+Hotcoils
+{
+    "deviceName":"hotcoil1", 
+    "inUse" : True,
+    settings:{
+        "command":"SET", 
+        "temp": 0
+    },
+    "client":None
+    "topic":None 
+}
+
+ReactIR
+{
+    "deviceName":"reactIR702L1", 
+    "inUse" : True,
+    "client":None,
+    "topic":None 
+}
+
+SF10
+{
+    "deviceName":"sf10Vapourtec1", 
+    "inUse" : true,
+    settings:{
+        "command":"SET", 
+        "mode": "FLOW",
+        "valve": "A",
+        "flowrate":1
+    },
+    "client":None
+    "topic":None
+}
+
+Flowsyn
+{
+    "deviceName":"flowsynmaxi2", 
+    "inUse" : true,
+    settings:{
+        "subDevice": "PumpBFlowRate",
+        "command":"SET",
+        "value": 0
+    },
+    "client":None
+    "topic":None
+}
+
+topic_SF10 = "subflow/sf10vapourtec1/cmnd"  # Change this to the topic you want to publish to
+topic_SF10_tele = "subflow/sf10vapourtec1/tele"  # Change this to the topic you want to publish to
+topic_flowsynmax2 = "subflow/flowsynmax2/cmnd"  # Change this to the topic you want to publish to
+topic_flowsynmax2_tele = "subflow/flowsynmax2/tele"  # Change this to the topic you want to publish to
+topic_hotchip1 = "subflow/hotchip1/cmnd"  # Change this to the topic you want to publish to
+topic_hotchip2 = "subflow/hotchip2/cmnd"  # Change this to the topic you want to publish to
+topic_hotcoil1 = "subflow/hotcoil1/cmnd"  # Change this to the topic you want to publish to
+topic_hotchip1_tele = "subflow/hotchip1/tele"  # Change this to the topic you want to publish to
+topic_hotchip2_tele = "subflow/hotchip2/tele"  # Change this to the topic you want to publish to
+topic_hotcoil1_tele = "subflow/hotcoil1/tele"  # Change this to the topic you want to publish to
+topic_reactIR1_tele = "subflow/reactIR702L1/tele"
+topics=[
+    topic_SF10,
+    topic_SF10_tele,
+    topic_flowsynmax2,
+    topic_flowsynmax2_tele,
+    topic_hotchip1,
+    topic_hotchip2,
+    topic_hotcoil1,
+    topic_hotchip1_tele,
+    topic_hotchip2_tele,
+    topic_hotcoil1_tele,
+    topic_reactIR1_tele
+]

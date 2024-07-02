@@ -1,0 +1,294 @@
+### 1. **Start a Single Scan**
+   - **XML Command:**
+     ```xml
+     <Message>
+       <Start protocol="1D PROTON">
+         <Option name="Scan" value="QuickScan" />
+       </Start>
+     </Message>
+     ```
+   - **Description:** Initiates a single scan with specified options.
+
+### 2. **Available Protocol Options**
+   - **XML Command:**
+     ```xml
+     <Message>
+       <Available ProtocolOptions Request/>
+     </Message>
+     ```
+   - **Description:** Requests available options for a specific protocol (e.g., "1D PRESAT").
+
+### 3. **Change User Interface in Spinsolve**
+   - **XML Command:**
+     ```xml
+     <Message>
+       <Selection protocol="1D PROTON">
+         <Option name="Scan" value="QuickScan" />
+       </Selection>
+     </Message>
+     ```
+   - **Description:** Changes the user interface in Spinsolve by selecting a protocol and specified options.
+
+### 4. **Simple Python Program for QuickShim Request**
+   - **Python Code:**
+     ```python
+     # Python program to run QuickShim Request
+     ```
+   - **Description:** Establishes a connection to a server and sends a QuickShim Request using Python.
+
+### 5. **Available Protocols Request and Response**
+   - **XML Command (Request):**
+     ```xml
+     <Message>
+       <Available Protocols Request/>
+     </Message>
+     ```
+   - **XML Command (Response):**
+     ```xml
+     <Message>
+       <Available Protocols Response>
+         <!-- List of available protocols -->
+       </Available Protocols Response>
+     </Message>
+     ```
+   - **Description:** Requests and receives a list of all licensed protocols.
+
+### 6. **Data Folder Configuration**
+   - **XML Commands:**
+     ```xml
+     <!-- UserFolder Mode -->
+     <Message>
+       <Set>
+         <DataFolder>
+           <UserFolder>c:/ReactionMonitor/1H</UserFolder>
+         </DataFolder>
+       </Set>
+     </Message>
+     
+     <!-- TimeStampTree Mode -->
+     <Message>
+       <Set>
+         <DataFolder>
+           <TimeStampTree>c:/ReactionMonitor/1H</TimeStampTree>
+         </DataFolder>
+       </Set>
+     </Message>
+     ```
+   - **Description:** Configures the data folder in different modes.
+
+### 7. **Status Notification**
+   - **XML Command:**
+     ```xml
+     <Message>
+       <StatusNotification timestamp="01:38:43">
+         <State protocol="1D PROTON" status="Running" dataFolder="C:\Projects\Data\2014\08\26\102243"/>
+       </StatusNotification>
+     </Message>
+     ```
+   - **Description:** Notifies the current status of a running protocol.
+
+### 8. **MNOVA Processing**
+   - **XML Command:**
+     ```xml
+     <Message>
+       <Start protocol='1D PROTON'>
+         <Option name='Scan' value='QuickScan' />
+         <Processing>
+           <Press Name='MNOVA' />
+         </Processing>
+       </Start>
+     </Message>
+     ```
+   - **Description:** Initiates a QuickScan and automatically processes data in MNOVA.
+
+### 9. **Estimate Duration Request and Response**
+   - **XML Command (Request):**
+     ```xml
+     <Message>
+       <Estimate DurationRequest protocol="1D PROTON">
+         <Option name="Scan1" value="Wrong" />
+       </Estimate DurationRequest>
+     </Message>
+     ```
+   - **XML Command (Response):**
+     ```xml
+     <Message>
+       <Estimate DurationResponse protocol="1D PROTON" durationInSeconds="0" error="Could not find protocol '1D'">
+     </Message>
+     ```
+   - **Description:** Requests and receives the estimated duration of a protocol.
+
+### 10. **Hardware Information Request and Response**
+   - **XML Command (Request):**
+     ```xml
+     <Message>
+       <HardwareRequest/>
+     </Message>
+     ```
+   - **XML Command (Response):**
+     ```xml
+     <Message>
+       <HardwareResponse>
+         <!-- Hardware information -->
+       </HardwareResponse>
+     </Message>
+     ```
+   - **Description:** Requests and receives information about the connected hardware.
+
+### 11. **QuickShim Request and Response**
+   - **XML Command (Request):**
+     ```xml
+     <Message>
+       <QuickShimRequest/>
+     </Message>
+     ```
+   - **XML Command (Response):**
+     ```xml
+     <Message>
+       <QuickShimResponse>
+         <!-- QuickShim results -->
+       </QuickShimResponse>
+     </Message>
+     ```
+   - **Description:** Requests and receives the results of a QuickShim operation.
+
+### 12. **Protocol Options Request and Response**
+   - **XML Command (Request):**
+     ```xml
+     <Message>
+       <ProtocolOptions Request protocol='1D EXTENDED+'/>
+     </Message>
+     ```
+   - **XML Command (Response):**
+     ```xml
+     <Message>
+       <ProtocolOptions Response protocol="1D EXTENDED+">
+         <!-- Protocol options for 1D EXTENDED+ -->
+       </ProtocolOptions Response>
+     </Message>
+     ```
+   - **Description:** Requests and receives current protocol options.
+
+### 13. **CheckShim Request and Response**
+   - **XML Command (Request):**
+     ```xml
+     <Message>
+       <CheckShimRequest/>
+     </Message>
+     ```
+   - **XML Command (Response):**
+     ```xml
+     <Message>
+       <CheckShimResponse>
+         <!-- CheckShim results -->
+       </CheckShimResponse>
+     </Message>
+     ```
+   - **Description:** Requests and receives the results of a CheckShim operation.
+
+### 14. **Available Protocol Options Request and Response**
+   - **XML Command (Request):**
+     ```xml
+     <Message>
+       <Available Protocol Options Request/>
+     </Message>
+     ```
+   - **XML Command (Response):**
+     ```xml
+     <Message>
+       <Available Protocol Options Response>
+         <!-- Available protocol options -->
+       </Available Protocol Options Response>
+     </Message>
+     ```
+   - **Description:** Requests and receives all possible protocol options.
+
+### 15. **Selection Subscription & Notification**
+   - **XML Commands:**
+     ```xml
+     <!-- Subscribe -->
+     <Message>
+       <SelectionSubscription subscribe="true" />
+     </Message>
+     
+     <!-- Change Option -->
+     <Message>
+       <Selection protocol="1D EXTENDED+">
+         <Option name="RepetitionTime" value="30" />
+       </Selection>
+     </Message>
+     ```
+   - **Description:** Subscribes to option changes and receives notifications.
+
+### 16. **UserData Operations**
+   - **XML Commands:**
+     ```xml
+     <!-- Set UserData -->
+     <Message>
+       <Set>
+         <UserData>
+           <Data key="Location" value="Tray2:10" />
+         </UserData>
+       </Set>
+     </Message>
+     
+     <!-- Remove UserData -->
+     <Message>
+       <Set>
+
+
+         <UserData Remove="true"/>
+       </Set>
+     </Message>
+     ```
+   - **Description:** Sets and removes user-specific data associated with a scan.
+
+### 17. **Execute Command - Run Script**
+   - **XML Command:**
+     ```xml
+     <Message>
+       <ExecuteCommand>
+         <Command>RunScript</Command>
+         <Parameters>
+           <Parameter name="Script" value="CollectAndProcessData.py" />
+         </Parameters>
+       </ExecuteCommand>
+     </Message>
+     ```
+   - **Description:** Executes a script for data collection and processing.
+
+### 18. **Start & Status - Execute Protocol**
+   - **XML Commands:**
+     ```xml
+     <!-- Start Protocol -->
+     <Message>
+       <Start protocol="1D PROTON">
+         <Option name="Scan" value="QuickScan" />
+       </Start>
+     </Message>
+     
+     <!-- Status Notification -->
+     <Message>
+       <StatusNotification timestamp="01:38:43">
+         <State protocol="1D PROTON" status="Ready" dataFolder="C:\Projects\Data\2014\08\26\102243"/>
+       </StatusNotification>
+     </Message>
+     ```
+   - **Description:** Initiates and receives status notifications for executing a protocol.
+
+### 19. **PowerShim Request and Response**
+   - **XML Command (Request):**
+     ```xml
+     <Message>
+       <PowerShimRequest/>
+     </Message>
+     ```
+   - **XML Command (Response):**
+     ```xml
+     <Message>
+       <PowerShimResponse>
+         <!-- PowerShim results -->
+       </PowerShimResponse>
+     </Message>
+     ```
+   - **Description:** Requests and receives the results of a PowerShim operation.

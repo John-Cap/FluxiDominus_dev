@@ -1,0 +1,2 @@
+Configuration_1=[{'deviceName': 'flowsynmaxi2', 'inUse': True, 'settings': {'subDevice': 'PumpBFlowRate', 'command': 'SET', 'value': 1.0}, 'topic': 'subflow/flowsynmaxi2/cmnd', 'client': 'client'}, {'deviceName': 'sf10Vapourtec1', 'inUse': True, 'settings': {'command': 'SET', 'mode': 'FLOW', 'flowrate': 0.0}, 'topic': 'subflow/sf10vapourtec1/cmnd', 'client': 'client'}];
+Configuration_2=[{'deviceName': 'flowsynmaxi2', 'inUse': True, 'settings': {'subDevice': 'PumpBFlowRate', 'command': 'SET', 'value': 2.0}, 'topic': 'subflow/flowsynmaxi2/cmnd', 'client': 'client'}];
