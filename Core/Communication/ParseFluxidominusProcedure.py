@@ -39,6 +39,7 @@ class FdpDecoder:
                 if key in self.decoderClasses:
                     return self.decoderClasses[key](value)
         return obj
+    
 class ScriptParser:
     def __init__(self, script, client, confNum=0):
         self.client = client
