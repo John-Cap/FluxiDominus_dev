@@ -13,29 +13,36 @@ from Core.Diagnostics.Logging import Diag_log
 #Procedures and items
 
 class Procedure:
-    def __init__(self,device="",sequence=[]) -> None:
-        self.sequence=sequence #array of items
-        self.device=device
-        self.currItemIndex=0 #index of current instruction
-        self.completed=False
+    def __init__(self, device="", sequence=[]) -> None:
+        self.sequence = sequence
+        self.device = device
+        self.currItemIndex = 0
+        self.completed = False
+        self.currConfig = None
 
-    def setSequence(self,sequence):
-        self.sequence=sequence
-
+    def setSequence(self, sequence):
+        self.sequence = sequence
+        self.currConfig = self.sequence[self.currItemIndex]
+        return self.currConfig
+        
     def next(self):
-        self.currItemIndex+=1
-
+        self.currItemIndex += 1
+        if len(self.sequence) == self.currItemIndex:
+            self.currConfig = None
+        else:
+            self.currConfig = self.sequence[self.currItemIndex]
+                
     def currConfiguration(self):
         if len(self.sequence) == self.currItemIndex:
             return None
         return self.sequence[self.currItemIndex]
 
-    def currItemComplete(self,**kwargs):
-        _thisItem=self.sequence[self.currItemIndex]
-        _return=(_thisItem.isComplete(self.device,**kwargs))
+    def currItemComplete(self, **kwargs):
+        _thisItem = self.sequence[self.currItemIndex]
+        _return = (_thisItem.isComplete(self.device, **kwargs))
         if _return:
             if (self.currItemIndex + 1) != len(self.sequence):
-                self.currItemIndex=self.currItemIndex + 1
+                self.currItemIndex += 1
             else:
                 self.currItemIndex = -2
                 self.completed = True
@@ -164,44 +171,26 @@ class Command:
         pass
 
 class Configuration:
-    def __init__(self,commands,setMessage="Configuration set") -> None:
-        self.devices=[]
-        self.commands=commands
-        self.setMessage=setMessage
+    def __init__(self, commands, setMessage="Configuration set") -> None:
+        self.devices = []
+        self.commands = commands
+        self.setMessage = setMessage
 
-    def sendAndSet(self):
-        if (len(self.commands))==0:
+    def sendMQTT(self, waitForDelivery=False):
+        if (len(self.commands)) == 0:
+            print("No commands left!")
             return
-        if isinstance(self.commands[0],Delay):
-            if (self.commands[0]).elapsed():
-                del self.commands[0]
-                return
-            else:
-                return
-        elif isinstance(self.commands[0],WaitUntil):
-            if (self.commands[0]).check():
-                del self.commands[0]
-                return
-            else:
-                return
-        else:
-            _io=IO()
-            _io.write(json.dumps(self.commands[0]))
-            sys.stdout.flush()
-            del self.commands[0]
-
-    def sendMQTT(self,waitForDelivery=False):
-        if (len(self.commands))==0:
-            return
-        _currentCommand=(self.commands[0])
+        _currentCommand = (self.commands[0])
         if "Delay" in _currentCommand:
             if _currentCommand["Delay"].elapsed():
                 del self.commands[0]
+                print("Delay elapsed!")
                 return
             else:
                 return
         elif "WaitUntil" in _currentCommand:
-            if _currentCommand.check():
+            if _currentCommand["WaitUntil"].check():
+                print("WaitUntil returned True!")
                 del self.commands[0]
                 return
             else:
@@ -217,8 +206,9 @@ class Configuration:
             if waitForDelivery:
                 _result.wait_for_publish(5)
                 #print(_result.is_published())
+            print("Published: " + str(self.commands[0]))
             del self.commands[0]
-            #return _result
+            return
 
 class TimeChecker:
     def __init__(self,allotted_seconds=0):
@@ -235,12 +225,14 @@ class Delay:
     def __init__(self,sleepTime=1,initTimestamp=None):
         self.sleepTime=sleepTime
         self.initTimestamp=initTimestamp
+        self.saidItOnce=False
     def elapsed(self):
+        if not self.saidItOnce:
+            self.saidItOnce=True
+            print("Delay started!")
         if self.initTimestamp is None:
             self.initTimestamp=time.time()
-        current_time = time.time()
-        elapsed_time = current_time - self.initTimestamp
-        return elapsed_time > self.sleepTime
+        return (time.time() - self.initTimestamp) > self.sleepTime
 
 class IRCategorizer:
     def __init__(self, compound_1_data, compound_2_data, thresholdR=0.9,thresholdB=0.5):
@@ -331,15 +323,31 @@ class SlugCollected(Condition):
         self.slug=slug
     def check(self):
         return self.slug.collected
-
+    
 class WaitUntil:
-    def __init__(self,condition,timeout=60,initTimestamp=datetime.now().time(),completionMessage="WaitUntil complete"):
-        self.condition=condition
-        self.timeout=timeout
-        self.initTimestamp=initTimestamp
-        self.completionMessage=completionMessage
+    def __init__(self, conditionFunc, conditionParam, timeout=60, initTimestamp=None, completionMessage="WaitUntil complete"):
+        self.conditionFunc = conditionFunc
+        self.conditionParam = conditionParam
+        self.timeout = timeout
+        self.initTimestamp = None
+        self.completionMessage = completionMessage
+        self.saidItOnce=False
+
     def check(self):
-        return self.condition.check()
+        if not self.saidItOnce:
+            self.saidItOnce=True
+            print("WaitUntil started!")
+        if self.initTimestamp is None:
+            self.initTimestamp = time.time()
+        current_time = time.time()
+        if current_time - self.initTimestamp > self.timeout:
+            print("WaitUntil timed out!")
+            return True
+        #print(self.conditionFunc(self.conditionParam()))
+        _b=self.conditionFunc(self.conditionParam())
+        if _b:
+            print("WaitUntil function "+str(self.conditionFunc)+" is True!")
+        return _b
 
 class TempReached:
     def __init__(self,condition,timeout=60,initTimestamp=datetime.now().time(),completionMessage="WaitUntil complete"):

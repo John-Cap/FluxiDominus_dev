@@ -59,8 +59,8 @@ Flowsyn
 
 topic_SF10 = "subflow/sf10vapourtec1/cmnd"  # Change this to the topic you want to publish to
 topic_SF10_tele = "subflow/sf10vapourtec1/tele"  # Change this to the topic you want to publish to
-topic_flowsynmax2 = "subflow/flowsynmax2/cmnd"  # Change this to the topic you want to publish to
-topic_flowsynmax2_tele = "subflow/flowsynmax2/tele"  # Change this to the topic you want to publish to
+topic_flowsynmaxi2 = "subflow/flowsynmaxi2/cmnd"  # Change this to the topic you want to publish to
+topic_flowsynmaxi2_tele = "subflow/flowsynmaxi2/tele"  # Change this to the topic you want to publish to
 topic_hotchip1 = "subflow/hotchip1/cmnd"  # Change this to the topic you want to publish to
 topic_hotchip2 = "subflow/hotchip2/cmnd"  # Change this to the topic you want to publish to
 topic_hotcoil1 = "subflow/hotcoil1/cmnd"  # Change this to the topic you want to publish to
@@ -71,8 +71,8 @@ topic_reactIR1_tele = "subflow/reactIR702L1/tele"
 topics=[
     topic_SF10,
     topic_SF10_tele,
-    topic_flowsynmax2,
-    topic_flowsynmax2_tele,
+    topic_flowsynmaxi2,
+    topic_flowsynmaxi2_tele,
     topic_hotchip1,
     topic_hotchip2,
     topic_hotcoil1,

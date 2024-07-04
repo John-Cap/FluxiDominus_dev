@@ -5,22 +5,22 @@ from Core.Fluids.FlowPath import FlowPathAdjustment
 import paho.mqtt.client as mqtt
 
 class FdpDecoder:
-    def __init__(self, currKwargs=None,confNum=0):
+    def __init__(self, currKwargs=None, confNum=0):
         self.currKwargs = currKwargs if currKwargs else {}
         self.decoderClasses = {
             "Delay": self._decodeDelay,
             "WaitUntil": self._decodeWaitUntil,
             "FlowPathAdjustment": self._decodeFlowPathAdjustment,
         }
-        self.confNum=confNum
+        self.confNum = confNum
 
     def _decodeDelay(self, data):
-        print("_decodeDelay data: " + str (data))
         return Delay(initTimestamp=data["initTimestamp"], sleepTime=data["sleepTime"])
 
     def _decodeWaitUntil(self, data):
         return WaitUntil(
-            condition=data["condition"],
+            conditionFunc=self.currKwargs["conditionFunc"],
+            conditionParam=self.currKwargs["conditionParam"],
             timeout=data["timeout"],
             initTimestamp=data["initTimestamp"],
             completionMessage=data["completionMessage"]
@@ -39,6 +39,7 @@ class FdpDecoder:
                 if key in self.decoderClasses:
                     return self.decoderClasses[key](value)
         return obj
+
 class ScriptParser:
     def __init__(self, script, client, confNum=0):
         self.client = client
@@ -50,9 +51,9 @@ class ScriptParser:
             "FlowPathAdjustment": FlowPathAdjustment,
             "client": client,
         }
-        self.confNum=confNum
+        self.confNum = confNum
         
-    def convertJsonToPython(string):
+    def convertJsonToPython(self, string):
         replacements = {
             "true": "True",
             "false": "False",
@@ -76,7 +77,7 @@ class ScriptParser:
                 blockName, blockContent = line.split('=', 1)
                 blockName = blockName.strip()
                 if blockContent.startswith('[') and blockContent.endswith(']'):
-                    blockContent = blockContent[1:-1].strip()  # Remove the outer brackets and trim whitespace
+                    blockContent = blockContent[1:-1].strip()
                     try:
                         parsedBlock = ast.literal_eval(f'[{blockContent}]')
                         blocks[blockName] = parsedBlock
@@ -88,7 +89,7 @@ class ScriptParser:
             elif currentBlock and line.startswith('{') and line.endswith('}'):
                 try:
                     parsedContent = ast.literal_eval(line)
-                    blocks[currentBlock].append(parsedContent)  # Append additional JSON objects to current block
+                    blocks[currentBlock].append(parsedContent)
                 except Exception as e:
                     print(f"Error parsing additional block content: {e}")
         
@@ -107,16 +108,17 @@ class ScriptParser:
                 entry[key] = fdpDecoder.decode({key: entry[key]})
             if key == "client":
                 entry[key] = self.client
-        print(entry)
         return entry
     
     def createProcedure(self, fdpDecoder):
         configurations = []
         for blockName, blockContent in self.blocks.items():
             nodeScripts = self.convertToNodeScripts(blockName, blockContent, fdpDecoder)
-            configurations.append(Configuration(nodeScripts,setMessage=("Config " + str(self.confNum) + " is complete!")))
-            self.confNum+=1
-        return Procedure(sequence=configurations)
+            configurations.append(Configuration(nodeScripts, setMessage=("Config " + str(self.confNum) + " is complete!")))
+            self.confNum += 1
+        _proc = Procedure()
+        _proc.setSequence(configurations)
+        return _proc
 
 if __name__ == "__main__":
     script = '''
@@ -129,7 +131,7 @@ if __name__ == "__main__":
                 "command": "SET",
                 "value": 1.0
             },
-            "topic":"subflow/flowsynmax2/cmnd",
+            "topic":"subflow/flowsynmaxi2/cmnd",
             "client":"client"
         },
         {"Delay":{"initTimestamp":None,"sleepTime":10}},
@@ -158,7 +160,7 @@ if __name__ == "__main__":
                 "command": "SET",
                 "value": 0.0
             },
-            "topic":"subflow/flowsynmax2/cmnd",
+            "topic":"subflow/flowsynmaxi2/cmnd",
             "client":"client"
         }
     ];

@@ -297,7 +297,7 @@ class FlowChemAutomation:
                         "command": setting["command"],
                         "value": value
                     },
-                    "topic": f"subflow/flowsynmax2/cmnd",
+                    "topic": f"subflow/flowsynmaxi2/cmnd",
                     "client": "client"
                 }
 

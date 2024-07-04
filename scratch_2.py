@@ -1,9 +1,10 @@
 import ast
 import re
+from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Configuration, Delay, Procedure, WaitUntil
 from Core.Fluids.FlowPath import FlowPathAdjustment
 import paho.mqtt.client as mqtt
-
+'''
 class FdpDecoder:
     def __init__(self, currKwargs=None):
         self.currKwargs = currKwargs if currKwargs else {}
@@ -114,6 +115,9 @@ class ScriptParser:
             nodeScripts = self.convertToNodeScripts(blockName, blockContent, fdpDecoder)
             configurations.append(Configuration(nodeScripts))
         return Procedure(sequence=configurations)
+'''
+
+
 
 if __name__ == "__main__":
     script = '''
@@ -126,7 +130,7 @@ if __name__ == "__main__":
                 "command": "SET",
                 "value": 1.0
             },
-            "topic":"subflow/flowsynmax2/cmnd",
+            "topic":"subflow/flowsynmaxi2/cmnd",
             "client":"client"
         },
         {"Delay":{"initTimestamp":None,"sleepTime":10}},
@@ -155,7 +159,7 @@ if __name__ == "__main__":
                 "command": "SET",
                 "value": 0.0
             },
-            "topic":"subflow/flowsynmax2/cmnd",
+            "topic":"subflow/flowsynmaxi2/cmnd",
             "client":"client"
         }
     ];
