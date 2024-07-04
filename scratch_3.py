@@ -256,7 +256,7 @@ commandBlock_1=[
             "command": "SET",
             "value": 1.0
         },
-        "topic": "subflow/flowsynmax2/cmnd",
+        "topic": "subflow/flowsynmaxi2/cmnd",
         "client": "client"
     },
     {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 15, "initTimestamp": None, "completionMessage": "No message!"}},
@@ -268,7 +268,7 @@ commandBlock_1=[
             "command": "SET",
             "value": 1.0
         },
-        "topic": "subflow/flowsynmax2/cmnd",
+        "topic": "subflow/flowsynmaxi2/cmnd",
         "client": "client"
     },    
     {"Delay": {"sleepTime": 2, "initTimestamp": None}}
@@ -282,7 +282,7 @@ commandBlock_2=[
             "command": "SET",
             "value": 1.0
         },
-        "topic": "subflow/flowsynmax2/cmnd",
+        "topic": "subflow/flowsynmaxi2/cmnd",
         "client": "client"
     },
     {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 15, "initTimestamp": None, "completionMessage": "No message!"}},
@@ -294,7 +294,7 @@ commandBlock_2=[
             "command": "SET",
             "value": 69
         },
-        "topic": "subflow/flowsynmax2/cmnd",
+        "topic": "subflow/flowsynmaxi2/cmnd",
         "client": "client"
     }
 ];

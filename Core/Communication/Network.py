@@ -24,8 +24,8 @@ class MQTTReader:
 
         self.topic_SF10="subflow/sf10vapourtec1/cmnd"  # Change this to the topic you want to publish to
         self.topic_SF10_tele="subflow/sf10vapourtec1/tele"  # Change this to the topic you want to publish to
-        self.topic_flowsynmax2="subflow/flowsynmax2/cmnd"  # Change this to the topic you want to publish to
-        self.topic_flowsynmax2_tele="subflow/flowsynmax2/tele"  # Change this to the topic you want to publish to
+        self.topic_flowsynmaxi2="subflow/flowsynmaxi2/cmnd"  # Change this to the topic you want to publish to
+        self.topic_flowsynmaxi2_tele="subflow/flowsynmaxi2/tele"  # Change this to the topic you want to publish to
         self.topic_hotchip1="subflow/hotchip1/cmnd"  # Change this to the topic you want to publish to
         self.topic_hotchip2="subflow/hotchip2/cmnd"  # Change this to the topic you want to publish to
         self.topic_hotcoil1="subflow/hotcoil1/cmnd"  # Change this to the topic you want to publish to
@@ -40,8 +40,8 @@ class MQTTReader:
             self.topicTestCommandsPYtoNR,
             self.topic_SF10,
             #topic_SF10_tele,
-            self.topic_flowsynmax2,
-            #topic_flowsynmax2_tele,
+            self.topic_flowsynmaxi2,
+            #topic_flowsynmaxi2_tele,
             self.topic_hotchip1,
             self.topic_hotchip2,
             self.topic_hotcoil1,

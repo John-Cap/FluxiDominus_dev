@@ -285,7 +285,7 @@ clearToWaste=[
             "command": "SET",
             "value": 0
         },
-        "topic":"subflow/flowsynmax2/cmnd",
+        "topic":"subflow/flowsynmaxi2/cmnd",
         "client":"client"
     },
     {
@@ -296,10 +296,10 @@ clearToWaste=[
             "command":"SET",
             "value": False
         },
-        "topic":"subflow/flowsynmax2/cmnd",
+        "topic":"subflow/flowsynmaxi2/cmnd",
         "client":"client"
     },
-    {"deviceName":"flowsynmaxi2", "inUse":True, "settings":{"command":"SET", "subDevice":"FlowCWValve", "value": False},"topic":"subflow/flowsynmax2/cmnd","client":"client"},
+    {"deviceName":"flowsynmaxi2", "inUse":True, "settings":{"command":"SET", "subDevice":"FlowCWValve", "value": False},"topic":"subflow/flowsynmaxi2/cmnd","client":"client"},
     {"Delay":{"initTimestamp":None,"sleepTime":1}},
     {
         "deviceName":"sf10Vapourtec1",

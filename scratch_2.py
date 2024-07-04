@@ -116,6 +116,9 @@ class ScriptParser:
             configurations.append(Configuration(nodeScripts))
         return Procedure(sequence=configurations)
 '''
+
+
+
 if __name__ == "__main__":
     script = '''
     commandBlock_1=[
@@ -127,7 +130,7 @@ if __name__ == "__main__":
                 "command": "SET",
                 "value": 1.0
             },
-            "topic":"subflow/flowsynmax2/cmnd",
+            "topic":"subflow/flowsynmaxi2/cmnd",
             "client":"client"
         },
         {"Delay":{"initTimestamp":None,"sleepTime":10}},
@@ -156,7 +159,7 @@ if __name__ == "__main__":
                 "command": "SET",
                 "value": 0.0
             },
-            "topic":"subflow/flowsynmax2/cmnd",
+            "topic":"subflow/flowsynmaxi2/cmnd",
             "client":"client"
         }
     ];

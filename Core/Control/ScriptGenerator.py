@@ -1,7 +1,7 @@
 import json
 import os
 
-from Core.Control.Commands import Delay
+from Core.Control.Commands import Delay, WaitUntil
 from Core.Utils.Utils import Utils
 
 class CustomCommands:
@@ -67,6 +67,7 @@ class FlowChemAutomation:
         self.generatedBlocks = {}
         self.customCommandsInst = CustomCommands()
         self.customCommandsInst.registerCommand(Delay)
+        self.customCommandsInst.registerCommand(WaitUntil)
         
     def convertJsonToPython(self,string):
         replacements = {
