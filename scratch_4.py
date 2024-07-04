@@ -1,49 +1,46 @@
-
 import json
 import sys
 import time
+import ast
+import re
+import paho.mqtt.client as mqtt
 
 from Core.Communication.IO import IO
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
-import ast
-import re
-#from Core.Control.Commands import Configuration, Delay, Procedure, WaitUntil
 from Core.Fluids.FlowPath import FlowPathAdjustment
-import paho.mqtt.client as mqtt
 
 class Procedure:
-    def __init__(self,device="",sequence=[]) -> None:
-        self.sequence=sequence #array of items
-        self.device=device
-        self.currItemIndex=0 #index of current instruction
-        self.completed=False
-        self.currConfig=None
+    def __init__(self, device="", sequence=[]) -> None:
+        self.sequence = sequence
+        self.device = device
+        self.currItemIndex = 0
+        self.completed = False
+        self.currConfig = None
 
-    def setSequence(self,sequence):
-        self.sequence=sequence
-        self.currConfig=self.sequence[self.currItemIndex]
+    def setSequence(self, sequence):
+        self.sequence = sequence
+        self.currConfig = self.sequence[self.currItemIndex]
         return self.currConfig
         
     def next(self):
-        self.currItemIndex+=1
+        self.currItemIndex += 1
         if len(self.sequence) == self.currItemIndex:
-            self.currConfig=None
+            self.currConfig = None
         else:
-            self.currConfig=self.sequence[self.currItemIndex]
+            self.currConfig = self.sequence[self.currItemIndex]
                 
     def currConfiguration(self):
         if len(self.sequence) == self.currItemIndex:
             return None
-        #self.currConfig=self.sequence[self.currItemIndex]
         return self.sequence[self.currItemIndex]
 
-    def currItemComplete(self,**kwargs):
-        _thisItem=self.sequence[self.currItemIndex]
-        _return=(_thisItem.isComplete(self.device,**kwargs))
+    def currItemComplete(self, **kwargs):
+        _thisItem = self.sequence[self.currItemIndex]
+        _return = (_thisItem.isComplete(self.device, **kwargs))
         if _return:
             if (self.currItemIndex + 1) != len(self.sequence):
-                self.currItemIndex=self.currItemIndex + 1
+                self.currItemIndex += 1
             else:
                 self.currItemIndex = -2
                 self.completed = True
@@ -58,27 +55,19 @@ class Procedure:
         pass
 
 class FdpDecoder:
-    def __init__(self, currKwargs=None,confNum=0):
+    def __init__(self, currKwargs=None, confNum=0):
         self.currKwargs = currKwargs if currKwargs else {}
         self.decoderClasses = {
             "Delay": self._decodeDelay,
             "WaitUntil": self._decodeWaitUntil,
             "FlowPathAdjustment": self._decodeFlowPathAdjustment,
         }
-        self.confNum=confNum
+        self.confNum = confNum
 
     def _decodeDelay(self, data):
-        #print("_decodeDelay data: " + str (data))
         return Delay(initTimestamp=data["initTimestamp"], sleepTime=data["sleepTime"])
 
     def _decodeWaitUntil(self, data):
-        '''
-        print(self.currKwargs["conditionFunc"]),
-        print(self.currKwargs["conditionParam"]),
-        print(data["timeout"]),
-        print(data["initTimestamp"]),
-        print(data["completionMessage"])
-        '''
         return WaitUntil(
             conditionFunc=self.currKwargs["conditionFunc"],
             conditionParam=self.currKwargs["conditionParam"],
@@ -112,9 +101,9 @@ class ScriptParser:
             "FlowPathAdjustment": FlowPathAdjustment,
             "client": client,
         }
-        self.confNum=confNum
+        self.confNum = confNum
         
-    def convertJsonToPython(string):
+    def convertJsonToPython(self, string):
         replacements = {
             "true": "True",
             "false": "False",
@@ -138,7 +127,7 @@ class ScriptParser:
                 blockName, blockContent = line.split('=', 1)
                 blockName = blockName.strip()
                 if blockContent.startswith('[') and blockContent.endswith(']'):
-                    blockContent = blockContent[1:-1].strip()  # Remove the outer brackets and trim whitespace
+                    blockContent = blockContent[1:-1].strip()
                     try:
                         parsedBlock = ast.literal_eval(f'[{blockContent}]')
                         blocks[blockName] = parsedBlock
@@ -150,7 +139,7 @@ class ScriptParser:
             elif currentBlock and line.startswith('{') and line.endswith('}'):
                 try:
                     parsedContent = ast.literal_eval(line)
-                    blocks[currentBlock].append(parsedContent)  # Append additional JSON objects to current block
+                    blocks[currentBlock].append(parsedContent)
                 except Exception as e:
                     print(f"Error parsing additional block content: {e}")
         
@@ -169,35 +158,29 @@ class ScriptParser:
                 entry[key] = fdpDecoder.decode({key: entry[key]})
             if key == "client":
                 entry[key] = self.client
-        #print(entry)
         return entry
     
     def createProcedure(self, fdpDecoder):
         configurations = []
         for blockName, blockContent in self.blocks.items():
             nodeScripts = self.convertToNodeScripts(blockName, blockContent, fdpDecoder)
-            configurations.append(ConfigurationMock(nodeScripts,setMessage=("Config " + str(self.confNum) + " is complete!")))
-            self.confNum+=1
-        _proc=Procedure()
+            configurations.append(ConfigurationMock(nodeScripts, setMessage=("Config " + str(self.confNum) + " is complete!")))
+            self.confNum += 1
+        _proc = Procedure()
         _proc.setSequence(configurations)
         return _proc
 
-checkVal=0;
-def checkValFunc(val):
-    print("Checking val "+str(val)+"!")
-    return val==1
-
 class ConfigurationMock:
-    def __init__(self,commands,setMessage="Configuration set") -> None:
-        self.devices=[]
-        self.commands=commands
-        self.setMessage=setMessage
+    def __init__(self, commands, setMessage="Configuration set") -> None:
+        self.devices = []
+        self.commands = commands
+        self.setMessage = setMessage
 
-    def sendMQTT(self,waitForDelivery=False):
-        if (len(self.commands))==0:
+    def sendMQTT(self, waitForDelivery=False):
+        if (len(self.commands)) == 0:
             print("No commands left!")
             return
-        _currentCommand=(self.commands[0])
+        _currentCommand = (self.commands[0])
         if "Delay" in _currentCommand:
             if _currentCommand["Delay"].elapsed():
                 del self.commands[0]
@@ -213,20 +196,6 @@ class ConfigurationMock:
         else:
             print(self.commands[0])
             del self.commands[0]
-            '''
-            _topic=_currentCommand["topic"]
-            _client=_currentCommand["client"]
-            if not _client.is_connected():
-                _client.connect("localhost",1883)
-            del _currentCommand["topic"]
-            del _currentCommand["client"]
-            _result=_client.publish(_topic,json.dumps(_currentCommand))
-            if waitForDelivery:
-                _result.wait_for_publish(5)
-                #print(_result.is_published())
-            del self.commands[0]
-            #return _result
-            '''
 
 class WaitUntil:
     def __init__(self, conditionFunc, conditionParam, timeout=60, initTimestamp=None, completionMessage="WaitUntil complete"):
