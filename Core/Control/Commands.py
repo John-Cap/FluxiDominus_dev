@@ -18,16 +18,20 @@ class Procedure:
         self.device=device
         self.currItemIndex=0 #index of current instruction
         self.completed=False
+        self.currConfig=None
 
     def setSequence(self,sequence):
         self.sequence=sequence
-
+        self.currConfig=sequence[self.currItemIndex]
+        
     def next(self):
         self.currItemIndex+=1
-
+        self.currConfig=self.sequence[self.currItemIndex]
+                
     def currConfiguration(self):
         if len(self.sequence) == self.currItemIndex:
             return None
+        #self.currConfig=self.sequence[self.currItemIndex]
         return self.sequence[self.currItemIndex]
 
     def currItemComplete(self,**kwargs):
@@ -331,15 +335,20 @@ class SlugCollected(Condition):
         self.slug=slug
     def check(self):
         return self.slug.collected
-
+    
 class WaitUntil:
-    def __init__(self,condition,timeout=60,initTimestamp=datetime.now().time(),completionMessage="WaitUntil complete"):
-        self.condition=condition
-        self.timeout=timeout
-        self.initTimestamp=initTimestamp
-        self.completionMessage=completionMessage
+    def __init__(self, condition_func, condition_param, timeout=60, initTimestamp=None, completionMessage="WaitUntil complete"):
+        self.condition_func = condition_func
+        self.condition_param = condition_param
+        self.timeout = timeout
+        self.initTimestamp = initTimestamp if initTimestamp else time.time()
+        self.completionMessage = completionMessage
+
     def check(self):
-        return self.condition.check()
+        current_time = time.time()
+        if current_time - self.initTimestamp > self.timeout:
+            return False
+        return self.condition_func(self.condition_param)
 
 class TempReached:
     def __init__(self,condition,timeout=60,initTimestamp=datetime.now().time(),completionMessage="WaitUntil complete"):

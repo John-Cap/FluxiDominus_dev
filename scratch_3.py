@@ -5,12 +5,57 @@ import time
 
 from Core.Communication.IO import IO
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
-from Core.Control.Commands import Delay, Procedure
+from Core.Control.Commands import Delay
 import ast
 import re
 #from Core.Control.Commands import Configuration, Delay, Procedure, WaitUntil
 from Core.Fluids.FlowPath import FlowPathAdjustment
 import paho.mqtt.client as mqtt
+
+class Procedure:
+    def __init__(self,device="",sequence=[]) -> None:
+        self.sequence=sequence #array of items
+        self.device=device
+        self.currItemIndex=0 #index of current instruction
+        self.completed=False
+        self.currConfig=None
+
+    def setSequence(self,sequence):
+        self.sequence=sequence
+        self.currConfig=self.sequence[self.currItemIndex]
+        return self.currConfig
+        
+    def next(self):
+        self.currItemIndex+=1
+        if len(self.sequence) == self.currItemIndex:
+            self.currConfig=None
+        else:
+            self.currConfig=self.sequence[self.currItemIndex]
+                
+    def currConfiguration(self):
+        if len(self.sequence) == self.currItemIndex:
+            return None
+        #self.currConfig=self.sequence[self.currItemIndex]
+        return self.sequence[self.currItemIndex]
+
+    def currItemComplete(self,**kwargs):
+        _thisItem=self.sequence[self.currItemIndex]
+        _return=(_thisItem.isComplete(self.device,**kwargs))
+        if _return:
+            if (self.currItemIndex + 1) != len(self.sequence):
+                self.currItemIndex=self.currItemIndex + 1
+            else:
+                self.currItemIndex = -2
+                self.completed = True
+            return _return
+        else:
+            return False
+
+    def executeNext(self):
+        pass
+
+    def execute(self):
+        pass
 
 class FdpDecoder:
     def __init__(self, currKwargs=None,confNum=0):
@@ -133,7 +178,9 @@ class ScriptParser:
             nodeScripts = self.convertToNodeScripts(blockName, blockContent, fdpDecoder)
             configurations.append(ConfigurationMock(nodeScripts,setMessage=("Config " + str(self.confNum) + " is complete!")))
             self.confNum+=1
-        return Procedure(sequence=configurations)
+        _proc=Procedure()
+        _proc.setSequence(configurations)
+        return _proc
 
 checkVal=0;
 def checkValFunc(val):
@@ -145,29 +192,6 @@ class ConfigurationMock:
         self.devices=[]
         self.commands=commands
         self.setMessage=setMessage
-
-    def sendAndSet(self):
-        if (len(self.commands))==0:
-            return
-        if isinstance(self.commands[0],Delay):
-            if (self.commands[0]).elapsed():
-                del self.commands[0]
-                return
-            else:
-                return
-        elif isinstance(self.commands[0],WaitUntil):
-            if (self.commands[0]).check():
-                print("Waituntil true!")
-                del self.commands[0]
-                return
-            else:
-                print("Waituntil false!")
-                return
-        else:
-            _io=IO()
-            _io.write(json.dumps(self.commands[0]))
-            sys.stdout.flush()
-            del self.commands[0]
 
     def sendMQTT(self,waitForDelivery=False):
         if (len(self.commands))==0:
@@ -187,8 +211,9 @@ class ConfigurationMock:
             else:
                 return
         else:
+            print(self.commands[0])
             del self.commands[0]
-            return
+            '''
             _topic=_currentCommand["topic"]
             _client=_currentCommand["client"]
             if not _client.is_connected():
@@ -201,21 +226,19 @@ class ConfigurationMock:
                 #print(_result.is_published())
             del self.commands[0]
             #return _result
-
+            '''
 class WaitUntil:
     def __init__(self, conditionFunc, conditionParam, timeout=60, initTimestamp=None, completionMessage="WaitUntil complete"):
         self.conditionFunc = conditionFunc
         self.conditionParam = conditionParam
         self.timeout = timeout
-        self.initTimestamp = initTimestamp if initTimestamp else time.time()
+        self.initTimestamp = None
         self.completionMessage = completionMessage
 
     def check(self):
-        #print("Checking...")
+        if self.initTimestamp is None:
+            self.initTimestamp=time.time()
         current_time = time.time()
-        print(current_time)
-        print(self.initTimestamp)        
-        print(self.timeout)
         if current_time - self.initTimestamp > self.timeout:
             print("WaitUntil timed out!")
             return True
@@ -242,15 +265,15 @@ commandBlock_1=[
         "topic":"subflow/flowsynmax2/cmnd",
         "client":"client"
     },
-    {"WaitUntil":{"conditionFunc":'checkValFunc',"conditionParam":1,"timeout":60,"initTimestamp":None,"sleepTime":10,"completionMessage":"No message!"}},
+    {"WaitUntil":{"conditionFunc":'checkValFunc',"conditionParam":1,"timeout":5,"initTimestamp":None,"completionMessage":"No message!"}},
     {
         "deviceName":"sf10Vapourtec1",
         "inUse":True,
-        "settings":{"command":"SET","mode":"FLOW","flowrate":1},
+        "settings":{"command":"SET","mode":"FLOW","flowrate":69},
         "topic":"subflow/sf10vapourtec1/cmnd",
         "client":"client"
     },
-    {"Delay":{"initTimestamp":None,"sleepTime":10}}
+    {"Delay":{"initTimestamp":None,"sleepTime":5}}
 ];
 commandBlock_2=[
     {
@@ -259,23 +282,37 @@ commandBlock_2=[
         "settings": {
             "subDevice": "PumpBFlowRate",
             "command": "SET",
-            "value": 0.0
+            "value": 60
         },
         "topic":"subflow/flowsynmax2/cmnd",
         "client":"client"
-    }
+    },
+    {"WaitUntil":{"conditionFunc":'checkValFunc',"conditionParam":4,"timeout":15,"initTimestamp":None,"completionMessage":"No message!"}}
 ];
 '''
-currKwargs={"conditionFunc":checkValFunc,"conditionParam":checkVal};
+
+#In the main process, somewhere else
+
+currKwargs={"conditionFunc":checkValFunc,"conditionParam":checkVal}; #Needs to be updatable
+
 fakeClient=1
 fdpDecoder = FdpDecoder(currKwargs=currKwargs)
 parser = ScriptParser(script, fakeClient)
+print(parser)
 procedure = parser.createProcedure(fdpDecoder)
-_currentConf=procedure.currConfiguration()
-print(_currentConf)
+#_currentConf=procedure.currConfiguration()
+print(procedure.sequence)
+
 doIt=True
 while doIt:
-    _currentConf.sendMQTT()
+    #print(procedure.currConfig)
+    if (len(procedure.currConfig.commands))==0:
+        print("Next procedure!")
+        procedure.next()
+    if procedure.currConfig is None:
+        exit()
+    else:
+        procedure.currConfig.sendMQTT()
     time.sleep(1)
     
 print("Done!")
