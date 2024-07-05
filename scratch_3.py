@@ -1,160 +1,170 @@
+import time
+import paho.mqtt.client as mqtt
 
+from Core.Communication.IO import IO
+from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
+
+script = '''
+commandBlock_1=[
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 1.0
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 15, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"Delay": {"sleepTime": 5, "initTimestamp": None}},
+    {
+        "deviceName":"sf10Vapourtec1",
+        "inUse":True,
+        "settings":{"command":"SET","mode":"FLOW","flowrate":0.5},
+        "topic":"subflow/sf10vapourtec1/cmnd",
+        "client":"client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 1
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },    
+    {"Delay": {"sleepTime": 10, "initTimestamp": None}},
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 0.5
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}}
+];
+commandBlock_2=[
+    {"Delay": {"sleepTime": 5, "initTimestamp": None}},
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 1.5
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"Delay": {"sleepTime": 5, "initTimestamp": None}},
+    {
+        "deviceName":"sf10Vapourtec1",
+        "inUse":True,
+        "settings":{"command":"SET","mode":"FLOW","flowrate":1.2},
+        "topic":"subflow/sf10vapourtec1/cmnd",
+        "client":"client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 0.8
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"Delay": {"sleepTime": 5, "initTimestamp": None}},
+    {
+        "deviceName":"sf10Vapourtec1",
+        "inUse":True,
+        "settings":{"command":"SET","mode":"FLOW","flowrate":0},
+        "topic":"subflow/sf10vapourtec1/cmnd",
+        "client":"client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 0
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    }
+];
+'''
 import threading
 import time
+import random
 
-from Core.Fluids.FlowPath import IR, FlowAddress, FlowOrigin, FlowPath, FlowTerminus, Pump, Slugs, TPiece, Tubing, Valve
+class IRThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.value = 0
+        self.lock = threading.Lock()
+        self.running = True
 
+    def run(self):
+        while self.running:
+            with self.lock:
+                self.value = random.randint(0, 20)  # Simulate value change
+            time.sleep(0.5)  # Simulate delay in value update
 
-_path=FlowPath()
+    def get_value(self):
+        with self.lock:
+            return self.value
 
-###############################################################
-# Fluid tracker + flow line
-#Stocks + pumps up to t piece
-_redStock=FlowOrigin(volume=0,name="RED_STOCK_LINE",flowrateIn=1.0)
-_blueStock=FlowOrigin(volume=0,name="BLUE_STOCK_LINE",flowrateIn=1.0)
-_pumplineSolv=FlowOrigin(volume=0,name="PUSH_SOLV_LINE",flowrateIn=1.0)
-#Pump lines
-_pumpline_1=Pump(volume=1.5,name="PUMP_1_LINE")
-#Valves
-_stocksValve=(Valve(volume=0,name="STOCKS_VALVE"))
-_collectValve=(Valve(volume=0,name="COLL_VALVE"))
-_RBValve=(Valve(volume=0,name="RB_VALVE"))
-#IR
-_IR=(IR(volume=0.05,name="IR"))
-#TPiece
-_Tpiece=(TPiece(volume=0.05,name="T_PIECE"))
-#Tubing
-_tubingToIR=(Tubing(volume=0.2513,name="TUBING_TO_IR"))
-_tubingToWC=(Tubing(volume=0.4712,name="TUBING_TO_WC"))
-_tubingToRBC=(Tubing(volume=0.2513,name="TUBING_TO_RBC"))
-#Terminus
-_waste=FlowTerminus(volume=0,name="WASTE")
-_blueCollect=FlowTerminus(volume=0,name="BLUE_COLLECT")
-_redCollect=FlowTerminus(volume=0,name="RED_COLLECT")
+    def stop(self):
+        self.running = False
 
-_collectWaste=FlowAddress('TO_WASTE',[],[[_collectValve,"WASTE"]])
-_collectBlue=FlowAddress('TO_BLUE',[],[[_collectValve,"COLLECT"],[_RBValve,"BLUE"]])
-_collectRed=FlowAddress('TO_RED',[],[[_collectValve,"COLLECT"],[_RBValve,"RED"]])
-###################
-#Connect components
+def checkValFunc(value):
+    return value > 18
 
-#Stock solutions
-_redStock.flowInto(_stocksValve,setNameIn="RED",setNameOut="VALVE")
-_blueStock.flowInto(_stocksValve,setNameIn="BLUE",setNameOut="VALVE")
-_stocksValve.flowInto(_pumpline_1)
-_stocksValve.switchToInlets("RED")
-#Pumplines
-_pumpline_1.flowInto(_Tpiece)
-_pumplineSolv.flowInto(_Tpiece)
-#Tubing etc to WC
-_Tpiece.flowInto(_tubingToIR)
-_tubingToIR.flowInto(_IR)
-_IR.flowInto(_tubingToWC)
-_tubingToWC.flowInto(_collectValve)
-_collectValve.flowInto(_waste,setNameOut="WASTE")
-_collectValve.flowInto(_tubingToRBC,setNameOut="COLLECT")
-_collectValve.switchToOutlets("WASTE")
-#R/B collect
-_tubingToRBC.flowInto(_RBValve)
-_RBValve.flowInto(_blueCollect,setNameOut="BLUE")
-_RBValve.flowInto(_redCollect,setNameOut="RED")
+# Start IR thread
+ir_thread = IRThread()
+ir_thread.start()
 
-#Create paths
+def getLivingValue():
+    return ir_thread.get_value()
 
-_path.addPath(
-    [
-        _redStock,
-        _blueStock,
-        _stocksValve,
+# Set up MQTT client
+client = mqtt.Client()
+client.connect("146.64.91.174", 1883, 60)
+#client.connect("localhost", 1883, 60)
+# Create script parser and decoder
+script_parser = ScriptParser(script, client)
+decoder_kwargs = {
+    "conditionFunc": checkValFunc,
+    "conditionParam": getLivingValue
+}
 
-        _pumpline_1,
-        _pumplineSolv,
-        _Tpiece,
+fakeClient=1
+fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
+parser = ScriptParser(script, client)
+procedure = parser.createProcedure(fdpDecoder)
 
-        _tubingToIR,
-        _IR,
-
-        _tubingToWC,
-        _collectValve,
-        _waste,
-
-        _tubingToRBC,
-        _RBValve,
-        _blueCollect,
-        _redCollect
-    ]
-)
-
-#_path.addPath([_redStock,_blueStock,_stocksValve,_pumpline_1])
-_path.selectPath()
-_redStock.associatedFlowPath=_path
-_blueStock.associatedFlowPath=_path
-_pumplineSolv.associatedFlowPath=_path
-
-for _x in _path.segments:
-    print("*********")
-    print(_x.name)
-    print(_x.inletSets)
-    print(_x.outletSets)
-    print(_x.inlets)
-    print(_x.outlets)
-
-_currOrigin=_redStock
-_currTerminus=_waste
-
-# Flag variable to indicate whether the thread should continue running
-running=True
-trackingCycleComplete=False
-allSlugs=Slugs()
-
-_slugVol=1
-
-def run_code():
-    global running
-    global allSlugs
-    global trackingCycleComplete
-    while running:
-        while trackingCycleComplete:
-            pass
-
-        _slug=_stocksValve.inlets[0].dispense()
-        allSlugs.slugs.append(_slug)
-        print(str(_slug.slugVolume()) + " mL")
-
-        _path.updateFlowrates()
-        for _x in _path.segments:
-            print(_x.flowrateOut)
-
-        _switched=False
-        _now=time.perf_counter()
-        _path.timePrev=time.perf_counter()
-        while not (_slug.tailHost is _currTerminus):
-            _path.advanceSlugs()
-            _vol=_slug.slugVolume()
-            print("Time: " + str(round(time.perf_counter() - _now, 0)) + " seconds, Fro h/pos: " + str(
-                _slug.frontHost.name) + ", " + str(round(_slug.frontHostPos, 2)) + "/" + str(
-                _slug.frontHost.volume) + " mL, tail h/pos: " + str(_slug.tailHost.name) + ", " + str(
-                round(_slug.tailHostPos, 2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(
-                round(_slug.frontHost.flowrateOut*60, 2)) + " mL.min-1, slug vol: " + str(
-                round(_vol, 2)) + " mL, vol collected: " + str(round(_slug.collectedVol, 2)) + " mL")
-            if not _switched and _vol > _slugVol:
-                _stocksValve.inlets[0].dispensing=False
-                _switched=True
-        print("************")
-        print(str(time.perf_counter() - _now) + " seconds")
-        print("Collected slug volumes")
-        for _x in _path.collectedSlugs:
-            print(_x.collectedVol)
-        print("Slug took " + str(_now-_slug.reachedTerminusAt) + " seconds to reach terminus")
-        print("************")
-
-        trackingCycleComplete=True
-
-# Create a thread for running the code
-thread=threading.Thread(target=run_code)
-
-# Start the thread
-thread.start()
-
-while True:
-    pass;
+doIt=True
+while doIt:
+    if (len(procedure.currConfig.commands))==0:
+        print("Next procedure!")
+        procedure.next()
+    if procedure.currConfig is None:
+        print("Procedure complete")
+        exit()
+    else:
+        #Send a command
+        procedure.currConfig.sendMQTT()
+    time.sleep(0.01)
