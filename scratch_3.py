@@ -1,365 +1,160 @@
 
-import json
-import sys
-import time
-
-from Core.Communication.IO import IO
-from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
-from Core.Control.Commands import Delay
-import ast
-import re
-#from Core.Control.Commands import Configuration, Delay, Procedure, WaitUntil
-from Core.Fluids.FlowPath import FlowPathAdjustment
-import paho.mqtt.client as mqtt
-
-class Procedure:
-    def __init__(self,device="",sequence=[]) -> None:
-        self.sequence=sequence #array of items
-        self.device=device
-        self.currItemIndex=0 #index of current instruction
-        self.completed=False
-        self.currConfig=None
-
-    def setSequence(self,sequence):
-        self.sequence=sequence
-        self.currConfig=self.sequence[self.currItemIndex]
-        return self.currConfig
-        
-    def next(self):
-        self.currItemIndex+=1
-        if len(self.sequence) == self.currItemIndex:
-            self.currConfig=None
-        else:
-            self.currConfig=self.sequence[self.currItemIndex]
-                
-    def currConfiguration(self):
-        if len(self.sequence) == self.currItemIndex:
-            return None
-        #self.currConfig=self.sequence[self.currItemIndex]
-        return self.sequence[self.currItemIndex]
-
-    def currItemComplete(self,**kwargs):
-        _thisItem=self.sequence[self.currItemIndex]
-        _return=(_thisItem.isComplete(self.device,**kwargs))
-        if _return:
-            if (self.currItemIndex + 1) != len(self.sequence):
-                self.currItemIndex=self.currItemIndex + 1
-            else:
-                self.currItemIndex = -2
-                self.completed = True
-            return _return
-        else:
-            return False
-
-    def executeNext(self):
-        pass
-
-    def execute(self):
-        pass
-
-class FdpDecoder:
-    def __init__(self, currKwargs=None,confNum=0):
-        self.currKwargs = currKwargs if currKwargs else {}
-        self.decoderClasses = {
-            "Delay": self._decodeDelay,
-            "WaitUntil": self._decodeWaitUntil,
-            "FlowPathAdjustment": self._decodeFlowPathAdjustment,
-        }
-        self.confNum=confNum
-
-    def _decodeDelay(self, data):
-        #print("_decodeDelay data: " + str (data))
-        return Delay(initTimestamp=data["initTimestamp"], sleepTime=data["sleepTime"])
-
-    def _decodeWaitUntil(self, data):
-        '''
-        print(self.currKwargs["conditionFunc"]),
-        print(self.currKwargs["conditionParam"]),
-        print(data["timeout"]),
-        print(data["initTimestamp"]),
-        print(data["completionMessage"])
-        '''
-        return WaitUntil(
-            conditionFunc=self.currKwargs["conditionFunc"],
-            conditionParam=self.currKwargs["conditionParam"],
-            timeout=data["timeout"],
-            initTimestamp=data["initTimestamp"],
-            completionMessage=data["completionMessage"]
-        )
-
-    def _decodeFlowPathAdjustment(self, data):
-        instance = self.currKwargs.get(data["instance"])
-        attributeName = self.currKwargs.get(data["attributeName"], data["attributeName"])
-        valueOrMethod = self.currKwargs.get(data["valueOrMethod"])
-        args = self.currKwargs.get(data["args"], [])
-        return FlowPathAdjustment(instance, attributeName, valueOrMethod, args)
-
-    def decode(self, obj):
-        if isinstance(obj, dict):
-            for key, value in obj.items():
-                if key in self.decoderClasses:
-                    return self.decoderClasses[key](value)
-        return obj
-    
-class ScriptParser:
-    def __init__(self, script, client, confNum=0):
-        self.client = client
-        self.script = self._removeComments(script)
-        self.blocks = self._parseScript()
-        self.decoderClasses = {
-            "Delay": Delay,
-            "WaitUntil": WaitUntil,
-            "FlowPathAdjustment": FlowPathAdjustment,
-            "client": client,
-        }
-        self.confNum=confNum
-        
-    def convertJsonToPython(string):
-        replacements = {
-            "true": "True",
-            "false": "False",
-            "null": "None"
-        }
-        for jsonValue, pythonValue in replacements.items():
-            string = string.replace(jsonValue, pythonValue)
-        return string
-
-    def _removeComments(self, text):
-        pattern = r"/\*.*?\*/"
-        return re.sub(pattern, "", text, flags=re.DOTALL)
-
-    def _parseScript(self):
-        blocks = {}
-        currentBlock = None
-
-        for line in self.script.split(';'):
-            line = line.strip()
-            if '=' in line:
-                blockName, blockContent = line.split('=', 1)
-                blockName = blockName.strip()
-                if blockContent.startswith('[') and blockContent.endswith(']'):
-                    blockContent = blockContent[1:-1].strip()  # Remove the outer brackets and trim whitespace
-                    try:
-                        parsedBlock = ast.literal_eval(f'[{blockContent}]')
-                        blocks[blockName] = parsedBlock
-                        currentBlock = blockName
-                    except Exception as e:
-                        print(f"Error parsing block {blockName}: {e}")
-                else:
-                    currentBlock = None
-            elif currentBlock and line.startswith('{') and line.endswith('}'):
-                try:
-                    parsedContent = ast.literal_eval(line)
-                    blocks[currentBlock].append(parsedContent)  # Append additional JSON objects to current block
-                except Exception as e:
-                    print(f"Error parsing additional block content: {e}")
-        
-        return blocks
-
-    def convertToNodeScripts(self, blockName, blockContent, fdpDecoder):
-        nodeScripts = []
-        for entry in blockContent:
-            processedEntry = self._processEntry(entry, fdpDecoder)
-            nodeScripts.append(processedEntry)
-        return nodeScripts
-
-    def _processEntry(self, entry, fdpDecoder):
-        for key in entry:
-            if key in self.decoderClasses:
-                entry[key] = fdpDecoder.decode({key: entry[key]})
-            if key == "client":
-                entry[key] = self.client
-        #print(entry)
-        return entry
-    
-    def createProcedure(self, fdpDecoder):
-        configurations = []
-        for blockName, blockContent in self.blocks.items():
-            nodeScripts = self.convertToNodeScripts(blockName, blockContent, fdpDecoder)
-            configurations.append(ConfigurationMock(nodeScripts,setMessage=("Config " + str(self.confNum) + " is complete!")))
-            self.confNum+=1
-        _proc=Procedure()
-        _proc.setSequence(configurations)
-        return _proc
-
-checkVal=0;
-def checkValFunc(val):
-    print("Checking val "+str(val)+"!")
-    return val==1
-
-class ConfigurationMock:
-    def __init__(self,commands,setMessage="Configuration set") -> None:
-        self.devices=[]
-        self.commands=commands
-        self.setMessage=setMessage
-
-    def sendMQTT(self,waitForDelivery=False):
-        if (len(self.commands))==0:
-            print("No commands left!")
-            return
-        _currentCommand=(self.commands[0])
-        if "Delay" in _currentCommand:
-            if _currentCommand["Delay"].elapsed():
-                del self.commands[0]
-                return
-            else:
-                return
-        elif "WaitUntil" in _currentCommand:
-            if _currentCommand["WaitUntil"].check():
-                del self.commands[0]
-                return
-            else:
-                return
-        else:
-            print(self.commands[0])
-            del self.commands[0]
-            '''
-            _topic=_currentCommand["topic"]
-            _client=_currentCommand["client"]
-            if not _client.is_connected():
-                _client.connect("localhost",1883)
-            del _currentCommand["topic"]
-            del _currentCommand["client"]
-            _result=_client.publish(_topic,json.dumps(_currentCommand))
-            if waitForDelivery:
-                _result.wait_for_publish(5)
-                #print(_result.is_published())
-            del self.commands[0]
-            #return _result
-            '''
-
-class WaitUntil:
-    def __init__(self, conditionFunc, conditionParam, timeout=60, initTimestamp=None, completionMessage="WaitUntil complete"):
-        self.conditionFunc = conditionFunc
-        self.conditionParam = conditionParam
-        self.timeout = timeout
-        self.initTimestamp = None
-        self.completionMessage = completionMessage
-
-    def check(self):
-        if self.initTimestamp is None:
-            self.initTimestamp = time.time()
-        current_time = time.time()
-        if current_time - self.initTimestamp > self.timeout:
-            print("WaitUntil timed out!")
-            return True
-        print(self.conditionFunc(self.conditionParam()))
-        return self.conditionFunc(self.conditionParam())
-
-script = '''
-commandBlock_1=[
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 1.0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 15, "initTimestamp": None, "completionMessage": "No message!"}},
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 1.0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },    
-    {"Delay": {"sleepTime": 2, "initTimestamp": None}}
-];
-commandBlock_2=[
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 1.0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 15, "initTimestamp": None, "completionMessage": "No message!"}},
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 69
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    }
-];
-'''
 import threading
 import time
-import random
 
-class IRThread(threading.Thread):
-    def __init__(self):
-        super().__init__()
-        self.value = 0
-        self.lock = threading.Lock()
-        self.running = True
+from Core.Fluids.FlowPath import IR, FlowAddress, FlowOrigin, FlowPath, FlowTerminus, Pump, Slugs, TPiece, Tubing, Valve
 
-    def run(self):
-        while self.running:
-            with self.lock:
-                self.value = random.randint(0, 20)  # Simulate value change
-            time.sleep(0.5)  # Simulate delay in value update
 
-    def get_value(self):
-        with self.lock:
-            return self.value
+_path=FlowPath()
 
-    def stop(self):
-        self.running = False
+###############################################################
+# Fluid tracker + flow line
+#Stocks + pumps up to t piece
+_redStock=FlowOrigin(volume=0,name="RED_STOCK_LINE",flowrateIn=1.0)
+_blueStock=FlowOrigin(volume=0,name="BLUE_STOCK_LINE",flowrateIn=1.0)
+_pumplineSolv=FlowOrigin(volume=0,name="PUSH_SOLV_LINE",flowrateIn=1.0)
+#Pump lines
+_pumpline_1=Pump(volume=1.5,name="PUMP_1_LINE")
+#Valves
+_stocksValve=(Valve(volume=0,name="STOCKS_VALVE"))
+_collectValve=(Valve(volume=0,name="COLL_VALVE"))
+_RBValve=(Valve(volume=0,name="RB_VALVE"))
+#IR
+_IR=(IR(volume=0.05,name="IR"))
+#TPiece
+_Tpiece=(TPiece(volume=0.05,name="T_PIECE"))
+#Tubing
+_tubingToIR=(Tubing(volume=0.2513,name="TUBING_TO_IR"))
+_tubingToWC=(Tubing(volume=0.4712,name="TUBING_TO_WC"))
+_tubingToRBC=(Tubing(volume=0.2513,name="TUBING_TO_RBC"))
+#Terminus
+_waste=FlowTerminus(volume=0,name="WASTE")
+_blueCollect=FlowTerminus(volume=0,name="BLUE_COLLECT")
+_redCollect=FlowTerminus(volume=0,name="RED_COLLECT")
 
-def checkValFunc(value):
-    return value > 18
+_collectWaste=FlowAddress('TO_WASTE',[],[[_collectValve,"WASTE"]])
+_collectBlue=FlowAddress('TO_BLUE',[],[[_collectValve,"COLLECT"],[_RBValve,"BLUE"]])
+_collectRed=FlowAddress('TO_RED',[],[[_collectValve,"COLLECT"],[_RBValve,"RED"]])
+###################
+#Connect components
 
-# Start IR thread
-ir_thread = IRThread()
-ir_thread.start()
+#Stock solutions
+_redStock.flowInto(_stocksValve,setNameIn="RED",setNameOut="VALVE")
+_blueStock.flowInto(_stocksValve,setNameIn="BLUE",setNameOut="VALVE")
+_stocksValve.flowInto(_pumpline_1)
+_stocksValve.switchToInlets("RED")
+#Pumplines
+_pumpline_1.flowInto(_Tpiece)
+_pumplineSolv.flowInto(_Tpiece)
+#Tubing etc to WC
+_Tpiece.flowInto(_tubingToIR)
+_tubingToIR.flowInto(_IR)
+_IR.flowInto(_tubingToWC)
+_tubingToWC.flowInto(_collectValve)
+_collectValve.flowInto(_waste,setNameOut="WASTE")
+_collectValve.flowInto(_tubingToRBC,setNameOut="COLLECT")
+_collectValve.switchToOutlets("WASTE")
+#R/B collect
+_tubingToRBC.flowInto(_RBValve)
+_RBValve.flowInto(_blueCollect,setNameOut="BLUE")
+_RBValve.flowInto(_redCollect,setNameOut="RED")
 
-def getLivingValue():
-    return ir_thread.get_value()
+#Create paths
 
-# Set up MQTT client
-client = mqtt.Client()
-client.connect("test.mosquitto.org", 1883, 60)
+_path.addPath(
+    [
+        _redStock,
+        _blueStock,
+        _stocksValve,
 
-# Create script parser and decoder
-script_parser = ScriptParser(script, client)
-decoder_kwargs = {
-    "conditionFunc": checkValFunc,
-    "conditionParam": getLivingValue
-}
+        _pumpline_1,
+        _pumplineSolv,
+        _Tpiece,
 
-fakeClient=1
-fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
-parser = ScriptParser(script, client)
-procedure = parser.createProcedure(fdpDecoder)
+        _tubingToIR,
+        _IR,
 
-doIt=True
-while doIt:
-    if (len(procedure.currConfig.commands))==0:
-        print("Next procedure!")
-        procedure.next()
-    if procedure.currConfig is None:
-        print("Procedure complete")
-        exit()
-    else:
-        #Send a command
-        procedure.currConfig.sendMQTT()
-    time.sleep(1)
-    
-print("Done!")
+        _tubingToWC,
+        _collectValve,
+        _waste,
+
+        _tubingToRBC,
+        _RBValve,
+        _blueCollect,
+        _redCollect
+    ]
+)
+
+#_path.addPath([_redStock,_blueStock,_stocksValve,_pumpline_1])
+_path.selectPath()
+_redStock.associatedFlowPath=_path
+_blueStock.associatedFlowPath=_path
+_pumplineSolv.associatedFlowPath=_path
+
+for _x in _path.segments:
+    print("*********")
+    print(_x.name)
+    print(_x.inletSets)
+    print(_x.outletSets)
+    print(_x.inlets)
+    print(_x.outlets)
+
+_currOrigin=_redStock
+_currTerminus=_waste
+
+# Flag variable to indicate whether the thread should continue running
+running=True
+trackingCycleComplete=False
+allSlugs=Slugs()
+
+_slugVol=1
+
+def run_code():
+    global running
+    global allSlugs
+    global trackingCycleComplete
+    while running:
+        while trackingCycleComplete:
+            pass
+
+        _slug=_stocksValve.inlets[0].dispense()
+        allSlugs.slugs.append(_slug)
+        print(str(_slug.slugVolume()) + " mL")
+
+        _path.updateFlowrates()
+        for _x in _path.segments:
+            print(_x.flowrateOut)
+
+        _switched=False
+        _now=time.perf_counter()
+        _path.timePrev=time.perf_counter()
+        while not (_slug.tailHost is _currTerminus):
+            _path.advanceSlugs()
+            _vol=_slug.slugVolume()
+            print("Time: " + str(round(time.perf_counter() - _now, 0)) + " seconds, Fro h/pos: " + str(
+                _slug.frontHost.name) + ", " + str(round(_slug.frontHostPos, 2)) + "/" + str(
+                _slug.frontHost.volume) + " mL, tail h/pos: " + str(_slug.tailHost.name) + ", " + str(
+                round(_slug.tailHostPos, 2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(
+                round(_slug.frontHost.flowrateOut*60, 2)) + " mL.min-1, slug vol: " + str(
+                round(_vol, 2)) + " mL, vol collected: " + str(round(_slug.collectedVol, 2)) + " mL")
+            if not _switched and _vol > _slugVol:
+                _stocksValve.inlets[0].dispensing=False
+                _switched=True
+        print("************")
+        print(str(time.perf_counter() - _now) + " seconds")
+        print("Collected slug volumes")
+        for _x in _path.collectedSlugs:
+            print(_x.collectedVol)
+        print("Slug took " + str(_now-_slug.reachedTerminusAt) + " seconds to reach terminus")
+        print("************")
+
+        trackingCycleComplete=True
+
+# Create a thread for running the code
+thread=threading.Thread(target=run_code)
+
+# Start the thread
+thread.start()
+
+while True:
+    pass;
