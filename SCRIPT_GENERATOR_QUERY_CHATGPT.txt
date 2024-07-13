@@ -1,382 +1,121 @@
-This is a Flutter class that lets the user build a flowchem reactor script:
+Error :O -> 
 
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter_flow_chart/includes/plutter.dart';
+Connected to broker
+Published: {'deviceName': 'sf10Vapourtec1', 'inUse': True, 'settings': {'command': 'SET', 'mode': 'FLOW', 'flowrate': 1}}
+Published: {'deviceName': 'flowsynmaxi2', 'inUse': True, 'settings': {'subDevice': 'PumpBFlowRate', 'command': 'SET', 'value': 0.4}}
+WaitUntil started!
+Traceback (most recent call last):
+  File "c:\Python_Projects\FluxiDominus_dev\main.py", line 99, in <module>
+    procedure.currConfig.sendMQTT()
+  File "c:\Python_Projects\FluxiDominus_dev\Core\Control\Commands.py", line 192, in sendMQTT
+    if _currentCommand["WaitUntil"].check():
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Python_Projects\FluxiDominus_dev\Core\Control\Commands.py", line 347, in check
+    _b=self.conditionFunc(self.conditionParam())
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Python_Projects\FluxiDominus_dev\main.py", line 62, in checkTempFunc
+    _b=value > targetTemp
+               ^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'targetTemp' where it is not associated with a value
 
-class ScriptGeneratorWidget extends StatefulWidget {
-  @override
-  _ScriptGeneratorWidgetState createState() => _ScriptGeneratorWidgetState();
-}
+My code as it stands:
 
-class _ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget> {
-  final MqttService _mqttService = MqttService();
-  String? _selectedDevice;
-  String? _selectedCommand;
-  String _value = '';
+import time
 
-  final List<String> _devices = [
-    'flowsynmaxi2',
-    'sf10Vapourtec1',
-    'hotchip1',
-    'hotchip2',
-    'hotcoil1',
-    'hotcoil2'
-  ];
+import paho.mqtt.client as mqtt
 
-  final Map<String, List<String>> _commands = {
-    'flowsynmaxi2': [
-      'FlowSynValveA',
-      'FlowSynValveB',
-      'FlowCWValve',
-      'PumpBFlowRate',
-      'PumpAFlowRate'
-    ],
-    'sf10Vapourtec1': ['Flowrate'],
-    'hotchip1': ['Temp'],
-    'hotchip2': ['Temp'],
-    'hotcoil1': ['Temp'],
-    'hotcoil2': ['Temp']
-  };
+from Core.Communication.Network import MQTTTemperatureUpdater
+from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 
-  final List<Map<String, String>> _submittedCommands = [];
-  final List<String> _blocks = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _mqttService.initializeMQTTClient();
-    _mqttService.connect();
-  }
-
-  @override
-  void dispose() {
-    _mqttService.disconnect();
-    super.dispose();
-  }
-
-  bool isNumeric(String s) {
-    return double.tryParse(s) != null;
-  }
-
-  double parseToDouble(String s) {
-    if (isNumeric(s)) {
-      return double.parse(s);
-    } else {
-      throw FormatException("The provided string is not a valid number.");
-    }
-  }
-
-  void _submitCommand() {
-    if (_selectedDevice != null &&
-        _selectedCommand != null &&
-        _value.isNotEmpty) {
-      final message = {
-        'device': _selectedDevice!,
-        'command': _selectedCommand!,
-        'value': _value,
-      };
-      _mqttService.publishMessage('chemistry/command', jsonEncode(message));
-      setState(() {
-        _submittedCommands.add({
-          'device': _selectedDevice!,
-          'command': _selectedCommand!,
-          'value': _value,
-        });
-      });
-    } else {
-      print('WJ - Please fill in all fields');
-    }
-  }
-
-  void _addBlock(String blockName) {
-    if (blockName.isNotEmpty) {
-      final block = {
-        'command': 'addBlock',
-        'data': {
-          'block_name': blockName,
-          'device_settings': _submittedCommands,
+script = '''
+commandBlock_1=[
+    {
+        "deviceName":"sf10Vapourtec1",
+        "inUse":True,
+        "settings":{"command":"SET","mode":"FLOW","flowrate":1},
+        "topic":"subflow/sf10vapourtec1/cmnd",
+        "client":"client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 0.40
         },
-      };
-      _mqttService.publishMessage('chemistry/command', jsonEncode(block));
-      setState(() {
-        _blocks.add(blockName);
-        _submittedCommands.clear();
-      });
-    } else {
-      print('WJ - Block name cannot be empty');
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}}
+];
+commandBlock_2=[
+    {"Delay": {"sleepTime": 15, "initTimestamp": None}},
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 0
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {
+        "deviceName":"sf10Vapourtec1",
+        "inUse":True,
+        "settings":{"command":"SET","mode":"FLOW","flowrate":0},
+        "topic":"subflow/sf10vapourtec1/cmnd",
+        "client":"client"
     }
-  }
+];
+'''
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        DropdownButton<String>(
-          hint: Text('Select Device'),
-          value: _selectedDevice,
-          items: _devices.map((String device) {
-            return DropdownMenuItem<String>(
-              value: device,
-              child: Text(device),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            setState(() {
-              _selectedDevice = newValue;
-              _selectedCommand = null; // Reset comand when device changes
-            });
-          },
-        ),
-        if (_selectedDevice != null)
-          DropdownButton<String>(
-            hint: Text('Select Command'),
-            value: _selectedCommand,
-            items: _commands[_selectedDevice!]!.map((String command) {
-              return DropdownMenuItem<String>(
-                value: command,
-                child: Text(command),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                _selectedCommand = newValue;
-              });
-            },
-          ),
-        TextField(
-          decoration: InputDecoration(labelText: 'Value'),
-          onChanged: (value) {
-            _value = value;
-          },
-        ),
-        ElevatedButton(
-          onPressed: _submitCommand,
-          child: Text('Submit'),
-        ),
-        Expanded(
-          child: ListView(
-            children: [
-              ListTile(
-                title: Text('Submitted Commands'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _submittedCommands.map((command) {
-                    return Text(
-                        '${command['device']} - ${command['command']} - ${command['value']}');
-                  }).toList(),
-                ),
-              ),
-              ListTile(
-                title: Text('Blocks'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _blocks.map((block) {
-                    return Text(block);
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        TextField(
-          decoration: InputDecoration(labelText: 'Block Name'),
-          onSubmitted: _addBlock,
-        ),
-      ],
-    );
-  }
+updater = MQTTTemperatureUpdater()
+thread = updater.start()
+temps=[30,40,50,60,70,80]
+targetIndex=0
+maxIndex=5
+targetTemp=temps[targetIndex]
+
+def checkTempFunc(value):
+    _b=value > targetTemp
+    if _b:
+        targetIndex+=1
+        if targetIndex > maxIndex:
+            print("Max temp reached!")
+            return True
+        targetTemp=temps[targetIndex]
+    return _b
+
+def pullTemp():
+    return updater.getTemp()
+
+# Set up MQTT client
+client = mqtt.Client()
+client.connect("localhost", 1883, 60)
+# Create script parser and decoder
+script_parser = ScriptParser(script, client)
+decoder_kwargs = {
+    "conditionFunc": checkTempFunc,
+    "conditionParam": pullTemp
 }
 
-Here are some debug outputs from the Flutter side:
-WJ received message: {"status": "error", "message": "Unknown command"} from topic: chemistry/response>
-WJ Published message: {"device":"flowsynmaxi2","command":"PumpBFlowRate","value":"1"} to topic: chemistry/command
-WJ received message: {"status": "error", "message": "Unknown command"} from topic: chemistry/response>
-WJ Published message: {"command":"addBlock","data":{"block_name":"Mr_Block","device_settings":[{"device":"sf10Vapourtec1","command":"Flowrate","value":"0.5"},{"device":"flowsynmaxi2","command":"PumpBFlowRate","value":"1"}]}} to topic: chemistry/command
-WJ received message: {"status": "success", "message": "Block added"} from topic: chemistry/response>
+fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
+parser = ScriptParser(script, client)
+procedure = parser.createProcedure(fdpDecoder)
 
-On the Python side this is happening:
-
-class CustomCommands:
-    def __init__(self):
-        self.commands = {}
-
-    def registerCommand(self, commandClass):
-        commandName = commandClass.__name__
-        commandParams = [param for param in vars(commandClass()).keys()]
-        self.commands[commandName] = commandParams
-
-    def getCommandParams(self, commandName):
-        return self.commands.get(commandName, None)
-
-class FlowChemAutomation:
-    def __init__(self):
-        self.devices = {
-            "flowsynmaxi2": {
-                "FlowSynValveA": {
-                    "command": "SET",
-                    "value": [True, False]
-                },
-                "FlowSynValveB": {
-                    "command": "SET",
-                    "value": [True, False]
-                },
-                "FlowCWValve": {
-                    "command": "SET",
-                    "value": [True, False]
-                },
-                "PumpBFlowRate": {
-                    "command": "SET",
-                    "value": "float"  # any float
-                },
-                "PumpAFlowRate": {
-                    "command": "SET",
-                    "value": "float"  # any float
-                }
-            },
-            "sf10Vapourtec1": {
-                "command": "SET",
-                "mode": "FLOW",
-                "flowrate": "float"  # any float
-            },
-            "hotchip1":{
-                "command":"SET",
-                "temp": "float"
-            },
-            "hotchip2":{
-                "command":"SET",
-                "temp": "float"
-            },
-            "hotcoil1":{
-                "command":"SET",
-                "temp": "float"
-            },
-            "hotcoil2":{
-                "command":"SET",
-                "temp": "float"
-            }
-        }
-        self.blockCounter = 1
-        self.generatedBlocks = {}
-        self.customCommandsInst = CustomCommands()
-        
-    def convertJsonToPython(self,string):
-        replacements = {
-            "true": "True",
-            "false": "False",
-            "null": "None"
-        }
-        for jsonValue, pythonValue in replacements.items():
-            string = string.replace(jsonValue, pythonValue)
-        return string.replace("'",'"')
-
-    def generateBlock(self, deviceName, subDevice, value):
-        value=Utils().parseValue(value)
-        if deviceName in self.customCommandsInst.commands:
-            for _x in value:
-                value[_x]=eval(value[_x])
-            jsonBlock = {
-                deviceName: value #{"Delay":{"initTimestamp":None,"sleepTime":20}}
-            }
-            print("DeviceName and.. " + str(deviceName) + " " + str(value))
-        elif deviceName in self.devices:
-            if deviceName == "flowsynmaxi2":
-                if subDevice not in self.devices[deviceName]:
-                    raise ValueError(f"Sub-device '{subDevice}' not found for device {deviceName}")
-                setting = self.devices[deviceName][subDevice]
-                if setting["value"] == "float" and not (isinstance(value, float) or isinstance(value, int)):
-                    raise ValueError("Setting value must be a float!")
-                elif setting["value"] != "float" and value not in setting["value"]:
-                    raise ValueError(f"Invalid value for {subDevice}!")
-
-                jsonBlock = {
-                    "deviceName": deviceName,
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": subDevice,
-                        "command": setting["command"],
-                        "value": value
-                    },
-                    "topic": f"subflow/flowsynmaxi2/cmnd",
-                    "client": "client"
-                }
-
-            elif deviceName == "sf10Vapourtec1":
-                setting = self.devices[deviceName]
-                if not (isinstance(value, float) or isinstance(value, int)):
-                    raise ValueError("Setting value must be a float or int!")
-
-                jsonBlock = {
-                    "deviceName": deviceName,
-                    "inUse": True,
-                    "settings": {
-                        "command": setting["command"],
-                        "mode": setting["mode"],
-                        "flowrate": value
-                    },
-                    "topic": f"subflow/{deviceName.lower()}/cmnd",
-                    "client": "client"
-                }
-            elif "hotchip" in deviceName or "hotcoil" in deviceName:
-                setting = self.devices[deviceName]
-                if not (isinstance(value, float) or isinstance(value, int)):
-                    raise ValueError("Setting value must be a float or int!")
-
-                jsonBlock = {
-                    "deviceName": deviceName,
-                    "inUse": True,
-                    "settings": {
-                        "command": setting["command"],
-                        "temp": value
-                    },
-                    "topic": f"subflow/{deviceName}/cmnd",
-                    "client": "client"
-                }
+doIt=True
+while doIt:
+    if (len(procedure.currConfig.commands))==0:
+        procedure.next()
+        if procedure.currConfig is None:
+            print("Procedure complete")
+            doIt=False
         else:
-            raise ValueError(f"Device '{deviceName}' not found!")
-
-        return jsonBlock
-
-    def addBlock(self, deviceSettingsList, blockName=""):
-        print("WJ - 'deviceSettingsList': " + str(deviceSettingsList))
-        _received=[]
-        for _x in deviceSettingsList:
-            _received.append([_x["device"],_x["command"],_x["value"]])
-        if blockName == "":
-            blockName = f"anonBlock_{self.blockCounter}"
-            self.blockCounter += 1
-
-        self.generatedBlocks[blockName] = [self.generateBlock(device, subDevice, value) for device, subDevice, value in _received]
-
-        #self.saveBlocksToFile()
-
-    def saveBlocksToFile(self, filename="default_script",save_directory=""):
-        if save_directory=="":
-            home_directory = os.path.expanduser("~")
-            save_directory = os.path.join(home_directory, "flowchem_scripts")
-
-        # Ensure the directory exists
-        os.makedirs(save_directory, exist_ok=True)
-
-        file_path = os.path.join(save_directory, filename)
-        if not file_path.endswith('.fdp'):
-            file_path += '.fdp'
-
-        try:
-            with open(file_path, 'w') as file:
-                blocks = ';\n'.join([
-                    f"{name}={json.dumps(block)}"
-                    for name, block in self.generatedBlocks.items()
-                ]) + ';'
-                blocks = self.convertJsonToPython(blocks)
-                print(blocks)
-                file.write(blocks)
-            print(f"File saved successfully at {file_path}")
-        except IOError as e:
-            print(f"An error occurred while writing to the file: {e}")
-
-Here is an example of how "Delay" is used alongside the current working device instructions:
-{"device":"flowsynmaxi2", "command":"FlowSynValveA", "value":"true"}, #Example of device-specific commands. The array contains values that will come from Flutter 
-{"device":"Delay","command":'None',"value":{"initTimestamp":'None',"sleepTime":'20'}}
-
-Note that many custom commands like "Delay" will be added. This is provided for on the Python side, but the Flutter side must be scalable to allow this too (perhaps with a dart class 'CustomCommands'). How can we do some minimal modifications on only the Flutter side?
+            print("Next procedure!")
+    else:
+        #Send a command
+        procedure.currConfig.sendMQTT()
+    time.sleep(0.1)

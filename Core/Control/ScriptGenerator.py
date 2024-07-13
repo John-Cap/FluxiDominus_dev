@@ -191,6 +191,7 @@ class FlowChemAutomation:
 if __name__ == "__main__":
     automation = FlowChemAutomation()
     automation.customCommandsInst.registerCommand(Delay)
+    automation.customCommandsInst.registerCommand(WaitUntil)
 
     # Add blocks using the new method
     automation.addBlock(
