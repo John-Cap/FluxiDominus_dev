@@ -8,7 +8,7 @@ _this=MQTTReader()
 _this.readMQTTLoop()
 
 # MQTT Broker Settings
-broker_address = "192.168.1.2"
+broker_address = "146.64.91.174"
 port = 1883
 
 # Callback function to handle when the client receives a CONNACK response from the server
@@ -29,6 +29,10 @@ client.on_message = MQTTReader().on_message
 
 client.connect(broker_address, port, 1)
 client.loop_start()
+
+#{"deviceName":"hotcoil1","deviceType":"Hotchip","cmnd":"POLL","settings":{"temp":29.5}, "state": {"temp": 14.5, "state":"ON"}}
+
+client.subscribe("subflow/hotcoil1/tele")
 
 while True:
     pass

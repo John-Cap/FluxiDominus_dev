@@ -6,6 +6,7 @@ import re
 import paho.mqtt.client as mqtt
 
 from Core.Communication.IO import IO
+from Core.Communication.Network import MQTTTemperatureUpdater
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Configuration, Delay
 from Core.Fluids.FlowPath import FlowPathAdjustment
@@ -15,18 +16,92 @@ from Core.Fluids.FlowPath import FlowPathAdjustment
 script = '''
 commandBlock_1=[
     {
-        "deviceName":"flowsynmaxi2", 
-        "inUse" : true,
-        settings:{
-            "subDevice": "Reactor1Temp",
-            "command":"SET",
-            "value": 45
-        }
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 1.0
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpAFlowRate",
+            "command": "SET",
+            "value": 1.0
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 15, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"Delay": {"sleepTime": 15, "initTimestamp": None}},
+    {
+        "deviceName":"sf10Vapourtec1",
+        "inUse":True,
+        "settings":{"command":"SET","mode":"FLOW","flowrate":0.25},
+        "topic":"subflow/sf10vapourtec1/cmnd",
+        "client":"client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 0.25
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpAFlowRate",
+            "command": "SET",
+            "value": 0.5
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },   
+    {"Delay": {"sleepTime": 15, "initTimestamp": None}},
+    {
+        "deviceName":"sf10Vapourtec1",
+        "inUse":True,
+        "settings":{"command":"SET","mode":"FLOW","flowrate":1},
+        "topic":"subflow/sf10vapourtec1/cmnd",
+        "client":"client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpBFlowRate",
+            "command": "SET",
+            "value": 0.40
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
+    },
+    {
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "settings": {
+            "subDevice": "PumpAFlowRate",
+            "command": "SET",
+            "value": 0.60
+        },
+        "topic": "subflow/flowsynmaxi2/cmnd",
+        "client": "client"
     },
     {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}}
 ];
 commandBlock_2=[
-    {"Delay": {"sleepTime": 60, "initTimestamp": None}},
+    {"Delay": {"sleepTime": 15, "initTimestamp": None}},
     {
         "deviceName": "flowsynmaxi2",
         "inUse": True,
@@ -82,15 +157,18 @@ class IRThread(threading.Thread):
     def stop(self):
         self.running = False
 
-def checkValFunc(value):
-    return value > 18
-
 # Start IR thread
 ir_thread = IRThread()
 ir_thread.start()
 
+updater = MQTTTemperatureUpdater()
+thread = updater.start()
+
+def checkValFunc(value):
+    return value > 18
+
 def getLivingValue():
-    return ir_thread.get_value()
+    return thread.get_value()
 
 # Set up MQTT client
 client = mqtt.Client()
