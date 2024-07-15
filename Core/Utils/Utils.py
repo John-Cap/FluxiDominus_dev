@@ -1,4 +1,6 @@
 import re
+from datetime import datetime, timedelta
+from time import sleep
 
 class Utils:
     def __init__(self) -> None:
@@ -50,3 +52,32 @@ class Utils:
             return float(value)
         else:
             return value
+
+class TimestampGenerator:
+    def __init__(self, genesisTime=datetime.now()):
+        self.genesisTime=genesisTime
+    
+    def generateTimestamp(self) -> str:
+        currentTime = datetime.now()
+        timestamp = currentTime.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        return timestamp
+    
+    def convertToSecondsSinceGenesis(self, timestamp: str) -> float:
+        timestampFormat = "%Y-%m-%d %H:%M:%S.%f"
+        timestampDatetime = datetime.strptime(timestamp, timestampFormat)
+        timeDelta = timestampDatetime - self.genesisTime
+        return timeDelta.total_seconds()
+
+if __name__ == "__main__":
+
+    # Example usage with default genesis time
+    timestampGeneratorDefault = TimestampGenerator()
+    thisTimestampDefault = timestampGeneratorDefault.generateTimestamp()
+    print(thisTimestampDefault)
+    sleep(5)
+    thisTimestampDefault = timestampGeneratorDefault.generateTimestamp()
+    print(thisTimestampDefault)
+    sleep(6)
+    thisTimestampDefault = timestampGeneratorDefault.generateTimestamp()
+    print(thisTimestampDefault)
+    sleep(7)

@@ -57,22 +57,26 @@ time.sleep(1)
 #updater.client.subscribe("subflow\hotcoil1\cmnd")
 time.sleep(1)
 
-temps = [30, 40, 50, 60, 50]
+temps = [33, 45, 52, 60, 53, 25]
+sequenceComplete=False
 targetIndex = 0
-maxIndex = len(temps)
+maxIndex = len(temps)-1
 targetTemp = temps[targetIndex]
 
-hitBracket=2.5 #abs distance from target temp to be considered reached
+hitBracket=2 #abs distance from target temp to be considered reached
 
 def checkTempFunc(value):
     #print(value)
-    global targetIndex, targetTemp
+    global targetIndex, targetTemp, sequenceComplete
+    if sequenceComplete:
+        return True
     _b = hitBracket >= abs(value-targetTemp)
     if _b:
         print("Target temperature "+str(targetTemp)+" reached!")
         targetIndex += 1
         if targetIndex > maxIndex:
             print("All temperatures reached!")
+            sequenceComplete=True
             return True
         targetTemp = temps[targetIndex]
     return _b
@@ -89,11 +93,11 @@ commandBlock_1=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 30,
+        "temperatureSet": 33,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
-    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 300, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 1500, "initTimestamp": None, "completionMessage": "No message!"}},
     {"Delay": {"sleepTime": 60, "initTimestamp": None}}
 ];
 commandBlock_2=[
@@ -101,11 +105,11 @@ commandBlock_2=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 40,
+        "temperatureSet": 45,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
-    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 300, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 1500, "initTimestamp": None, "completionMessage": "No message!"}},
     {"Delay": {"sleepTime": 60, "initTimestamp": None}}
 ];
 commandBlock_3=[
@@ -113,11 +117,11 @@ commandBlock_3=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 50,
+        "temperatureSet": 52,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
-    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 300, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 1500, "initTimestamp": None, "completionMessage": "No message!"}},
     {"Delay": {"sleepTime": 60, "initTimestamp": None}}
 ];
 commandBlock_4=[
@@ -129,7 +133,7 @@ commandBlock_4=[
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
-    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 300, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 1500, "initTimestamp": None, "completionMessage": "No message!"}},
     {"Delay": {"sleepTime": 60, "initTimestamp": None}}
 ];
 commandBlock_5=[
@@ -137,11 +141,11 @@ commandBlock_5=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 50,
+        "temperatureSet": 53,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
-    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 300, "initTimestamp": None, "completionMessage": "No message!"}},
+    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 1500, "initTimestamp": None, "completionMessage": "No message!"}},
     {"Delay": {"sleepTime": 60, "initTimestamp": None}}
 ];
 end=[
@@ -149,10 +153,11 @@ end=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 1,
+        "temperatureSet": 0.1,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
-    } 
+    },
+    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 1500, "initTimestamp": None, "completionMessage": "No message!"}}
 ];
 '''
 
