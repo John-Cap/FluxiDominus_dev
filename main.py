@@ -68,7 +68,7 @@ updater = MQTTTemperatureUpdater()
 thread = updater.start()
 time.sleep(2)
 
-temps = [30, 60, 90, 80, 70, 30]
+temps = [30, 40, 50, 55, 60, 0.5]
 sequenceComplete=False
 targetIndex = 0
 maxIndex = len(temps)-1
@@ -99,7 +99,8 @@ def pullTemp():
 #
 #{'deviceName': 'hotcoil1', 'command': 'SET', 'temperatureSet': 25}
 
-script ='''
+''' #Real script
+script =
 startPumps=[
     {
         "deviceName": "flowsynmaxi2",
@@ -107,7 +108,7 @@ startPumps=[
         "settings": {
             "subDevice": "PumpBFlowRate",
             "command": "SET",
-            "value": 0.83
+            "value": 1.33
         },
         "topic": "subflow/flowsynmaxi2/cmnd",
         "client": "client"
@@ -118,11 +119,12 @@ startPumps=[
         "settings": {
             "subDevice": "PumpAFlowRate",
             "command": "SET",
-            "value": 0.83
+            "value": 1.33
         },
         "topic": "subflow/flowsynmaxi2/cmnd",
         "client": "client"
-    }
+    },
+    {"Delay": {"sleepTime": 60, "initTimestamp": None}}
 ];
 commandBlock_1=[
     {
@@ -141,7 +143,7 @@ commandBlock_2=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 60,
+        "temperatureSet": 40,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
@@ -153,7 +155,7 @@ commandBlock_3=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 90,
+        "temperatureSet": 50,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
@@ -165,7 +167,7 @@ commandBlock_4=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 80,
+        "temperatureSet": 55,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
@@ -177,7 +179,7 @@ commandBlock_5=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET", 
-        "temperatureSet": 70,
+        "temperatureSet": 60,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
@@ -189,14 +191,18 @@ end=[
         "deviceName":"hotcoil1", 
         "inUse" : True,
         "command":"SET",
-        "temperatureSet": 25,
+        "temperatureSet": 0.5,
         "topic":"subflow/hotcoil1/cmnd",
         "client":"client"
     },
     {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 1500, "initTimestamp": None, "completionMessage": "No message!"}}
 ];
 '''
-
+script='''
+mr_block=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.5}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.5}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 0}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.3}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.7}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 5}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.85}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": 
+True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.15}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
+flowsyn_fr_2=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
+'''
 # Set up MQTT client
 client = mqtt.Client()
 client.connect("localhost", 1883, 60)
@@ -230,7 +236,7 @@ while doIt:
         else:
             print("Next procedure!")
     else:
-        procedure.currConfig.sendMQTT()
+        procedure.currConfig.sendMQTT(waitForDelivery=True)
     time.sleep(0.1)
 thread.join()
 exit()
