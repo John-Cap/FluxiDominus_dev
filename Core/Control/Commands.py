@@ -229,7 +229,7 @@ class Delay:
     def elapsed(self):
         if not self.saidItOnce:
             self.saidItOnce=True
-            print("Delay started!")
+            #print("Delay started!")
         if self.initTimestamp is None:
             self.initTimestamp=time.time()
         return (time.time() - self.initTimestamp) > self.sleepTime

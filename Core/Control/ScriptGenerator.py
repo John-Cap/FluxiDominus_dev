@@ -191,7 +191,7 @@ class FlowChemAutomation:
 if __name__ == "__main__":
     automation = FlowChemAutomation()
     automation.customCommandsInst.registerCommand(Delay)
-    automation.customCommandsInst.registerCommand(WaitUntil)
+    #automation.customCommandsInst.registerCommand(WaitUntil)
 
     # Add blocks using the new method
     automation.addBlock(
@@ -219,4 +219,4 @@ if __name__ == "__main__":
     )
     
     # Save blocks to a file
-    automation.saveBlocksToFile('automation_script.fdp',r"C:/Python_Projects/fluxidominus_dev")
+    automation.saveBlocksToFile('automation_script.fdp',r"C:\Python_Projects\FluxiDominus_dev")
