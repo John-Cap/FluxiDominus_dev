@@ -1,122 +1,136 @@
-import json
-import sys
-import time
 import ast
 import re
+from Core.Control.Commands import Configuration, Delay, Procedure, WaitUntil
+from Core.Fluids.FlowPath import FlowPathAdjustment
 import paho.mqtt.client as mqtt
 
-from Core.Communication.IO import IO
-from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
-from Core.Control.Commands import Configuration, Delay
-from Core.Fluids.FlowPath import FlowPathAdjustment
-#{"payload":{"deviceName":"flowsynmaxi2",  "inUse":true, "settings":{"command":"SET", "subDevice":"FlowSynValveB", "value": True}}}
-
-
-script = '''
-commandBlock_1=[
-    {
-        "deviceName":"flowsynmaxi2", 
-        "inUse" : true,
-        settings:{
-            "subDevice": "Reactor1Temp",
-            "command":"SET",
-            "value": 45
+class FdpDecoder:
+    def __init__(self, currKwargs=None, confNum=0):
+        self.currKwargs = currKwargs if currKwargs else {}
+        self.decoderClasses = {
+            "Delay": self._decodeDelay,
+            "WaitUntil": self._decodeWaitUntil,
+            "FlowPathAdjustment": self._decodeFlowPathAdjustment,
         }
-    },
-    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}}
-];
-commandBlock_2=[
-    {"Delay": {"sleepTime": 60, "initTimestamp": None}},
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpAFlowRate",
-            "command": "SET",
-            "value": 0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {
-        "deviceName":"sf10Vapourtec1",
-        "inUse":True,
-        "settings":{"command":"SET","mode":"FLOW","flowrate":0},
-        "topic":"subflow/sf10vapourtec1/cmnd",
-        "client":"client"
-    }
-];
-'''
-import threading
-import time
-import random
+        self.confNum = confNum
 
-class IRThread(threading.Thread):
-    def __init__(self):
-        super().__init__()
-        self.value = 0
-        self.lock = threading.Lock()
-        self.running = True
+    def _decodeDelay(self, data):
+        return Delay(initTimestamp=data["initTimestamp"], sleepTime=data["sleepTime"])
 
-    def run(self):
-        while self.running:
-            with self.lock:
-                self.value = random.randint(0, 20)  # Simulate value change
-            time.sleep(0.5)  # Simulate delay in value update
+    def _decodeWaitUntil(self, data):
+        return WaitUntil(
+            conditionFunc=self.currKwargs["conditionFunc"],
+            conditionParam=self.currKwargs["conditionParam"],
+            timeout=data["timeout"],
+            initTimestamp=data["initTimestamp"],
+            completionMessage=data["completionMessage"]
+        )
 
-    def get_value(self):
-        with self.lock:
-            return self.value
+    def _decodeFlowPathAdjustment(self, data):
+        instance = self.currKwargs.get(data["instance"])
+        attributeName = self.currKwargs.get(data["attributeName"], data["attributeName"])
+        valueOrMethod = self.currKwargs.get(data["valueOrMethod"])
+        args = self.currKwargs.get(data["args"], [])
+        return FlowPathAdjustment(instance, attributeName, valueOrMethod, args)
 
-    def stop(self):
-        self.running = False
+    def decode(self, obj):
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key in self.decoderClasses:
+                    return self.decoderClasses[key](value)
+        return obj
 
-def checkValFunc(value):
-    return value > 18
+class ScriptParser:
+    def __init__(self, script, client, confNum=0):
+        self.client = client
+        self.script = self._removeComments(script)
+        self.blocks = self._parseScript()
+        self.decoderClasses = {
+            "Delay": Delay,
+            "WaitUntil": WaitUntil,
+            "FlowPathAdjustment": FlowPathAdjustment,
+            "client": client,
+        }
+        self.confNum = confNum
 
-# Start IR thread
-ir_thread = IRThread()
-ir_thread.start()
+    def convertJsonToPython(self, string):
+        replacements = {
+            "true": "True",
+            "false": "False",
+            "null": "None"
+        }
+        for jsonValue, pythonValue in replacements.items():
+            string = string.replace(jsonValue, pythonValue)
+        return string
 
-def getLivingValue():
-    return ir_thread.get_value()
+    def _removeComments(self, text):
+        pattern = r"/\*.*?\*/"
+        return re.sub(pattern, "", text, flags=re.DOTALL)
 
-# Set up MQTT client
-client = mqtt.Client()
-#client.connect("146.64.91.174", 1883, 60)
-client.connect("localhost", 1883, 60)
-# Create script parser and decoder
-script_parser = ScriptParser(script, client)
-decoder_kwargs = {
-    "conditionFunc": checkValFunc,
-    "conditionParam": getLivingValue
-}
+    def _parseScript(self):
+        blocks = {}
+        currentBlock = None
 
-fakeClient=1
-fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
-parser = ScriptParser(script, client)
-procedure = parser.createProcedure(fdpDecoder)
+        for line in self.script.split(';'):
+            line = line.strip()
+            if '=' in line:
+                blockName, blockContent = line.split('=', 1)
+                blockName = blockName.strip()
+                if blockContent.startswith('[') and blockContent.endswith(']'):
+                    blockContent = blockContent[1:-1].strip()
+                    try:
+                        parsedBlock = ast.literal_eval(f'[{blockContent}]')
+                        blocks[blockName] = parsedBlock
+                        currentBlock = blockName
+                    except Exception as e:
+                        print(f"Error parsing block {blockName}: {e}")
+                else:
+                    currentBlock = None
+            elif currentBlock and line.startswith('{') and line.endswith('}'):
+                try:
+                    parsedContent = ast.literal_eval(line)
+                    blocks[currentBlock].append(parsedContent)
+                except Exception as e:
+                    print(f"Error parsing additional block content: {e}")
 
-doIt=True
-while doIt:
-    if (len(procedure.currConfig.commands))==0:
-        print("Next procedure!")
-        procedure.next()
-    if procedure.currConfig is None:
-        print("Procedure complete")
-        exit()
-    else:
-        #Send a command
-        procedure.currConfig.sendMQTT()
-    time.sleep(0.1)
+        return blocks
+
+    def convertToNodeScripts(self, blockName, blockContent, fdpDecoder):
+        nodeScripts = []
+        for entry in blockContent:
+            processedEntry = self._processEntry(entry, fdpDecoder)
+            nodeScripts.append(processedEntry)
+        return nodeScripts
+
+    def _processEntry(self, entry, fdpDecoder):
+        for key in entry:
+            if key in self.decoderClasses:
+                entry[key] = fdpDecoder.decode({key: entry[key]})
+            if key == "client":
+                entry[key] = self.client
+        return entry
+
+    def createProcedure(self, fdpDecoder):
+        configurations = []
+        for blockName, blockContent in self.blocks.items():
+            nodeScripts = self.convertToNodeScripts(blockName, blockContent, fdpDecoder)
+            configurations.append(Configuration(nodeScripts, setMessage=("Config " + str(self.confNum) + " is complete!")))
+            self.confNum += 1
+        _proc = Procedure()
+        _proc.setSequence(configurations)
+        return _proc
+
+if __name__ == "__main__":
+    script = '''
+        myBlock_123=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.5}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.5}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 0}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.3}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.7}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 5}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.85}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.15}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
+        /*ojbgojbag*/myBlock_456=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];    
+    '''
+
+    fdpDecoder = FdpDecoder()
+    parser = ScriptParser(script, mqtt.Client())
+    procedure = parser.createProcedure(fdpDecoder)
+
+    # Now use the procedure as needed
+    print(f"Procedure created with {len(procedure.sequence)} configurations.")
+    for idx, config in enumerate(procedure.sequence):
+        print(f"Configuration {idx + 1}: {config.commands}")

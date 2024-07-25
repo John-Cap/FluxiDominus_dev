@@ -147,19 +147,24 @@ class FlowChemAutomation:
             raise ValueError(f"Device '{deviceName.lower()}' not found!")
 
         return jsonBlock
-
+    
     def addBlock(self, deviceSettingsList, blockName=""):
-        print("WJ - 'deviceSettingsList': " + str(deviceSettingsList))
-        _received=[]
-        for _x in deviceSettingsList:
-            _received.append([_x["device"],_x["command"],_x["value"]])
-        if blockName == "":
-            blockName = f"anonBlock_{self.blockCounter}"
-            self.blockCounter += 1
+        try:
+            print("WJ - 'deviceSettingsList': " + str(deviceSettingsList))
+            _received = []
+            for _x in deviceSettingsList:
+                _received.append([_x["device"], _x["command"], _x["value"]])
+            
+            if blockName == "":
+                blockName = f"anonBlock_{self.blockCounter}"
+                self.blockCounter += 1
 
-        self.generatedBlocks[blockName] = [self.generateBlock(device, subDevice, value) for device, subDevice, value in _received]
-
-        #self.saveBlocksToFile()
+            self.generatedBlocks[blockName] = [self.generateBlock(device, subDevice, value) for device, subDevice, value in _received]
+            # Return success status
+            return {"status": "success", "blockName": blockName}
+        except Exception as e:
+            # Return error status
+            return {"status": "error", "message": str(e)}
 
     def saveBlocksToFile(self, filename="default_script",save_directory=""):
         if save_directory=="":
@@ -190,7 +195,7 @@ class FlowChemAutomation:
 # Example usage
 if __name__ == "__main__":
     automation = FlowChemAutomation()
-    automation.customCommandsInst.registerCommand(Delay)
+    #automation.customCommandsInst.registerCommand(Delay)
     #automation.customCommandsInst.registerCommand(WaitUntil)
 
     # Add blocks using the new method
@@ -208,14 +213,14 @@ if __name__ == "__main__":
             {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0.85'},
             {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '0.15'}
         ],
-        blockName="mr_block"
+        blockName="myBlock_123"
     )
     
     automation.addBlock(
         [
             {"device":"flowsynmaxi2", "command":"PumpBFlowRate", "value":"0"}, #Example of device-specific commands. The array contains values that will come from Flutter 
             {"device":"sf10Vapourtec1", "command":'None', "value":"0.0"}
-        ], blockName="flowsyn_fr_2"
+        ], blockName="myBlock_456"
     )
     
     # Save blocks to a file
