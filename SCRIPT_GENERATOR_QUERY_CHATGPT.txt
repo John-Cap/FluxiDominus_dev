@@ -1,5 +1,5 @@
-Wait, this is the current working code:
-"
+Okay wait...things are going off the rails here. Maybe we should redesign dart class ScriptGeneratorWidget and ScriptGenerator.py completely? The current code for ScriptGenerator.py:
+
 import json
 import os
 
@@ -149,19 +149,24 @@ class FlowChemAutomation:
             raise ValueError(f"Device '{deviceName.lower()}' not found!")
 
         return jsonBlock
-
+    
     def addBlock(self, deviceSettingsList, blockName=""):
-        print("WJ - 'deviceSettingsList': " + str(deviceSettingsList))
-        _received=[]
-        for _x in deviceSettingsList:
-            _received.append([_x["device"],_x["command"],_x["value"]])
-        if blockName == "":
-            blockName = f"anonBlock_{self.blockCounter}"
-            self.blockCounter += 1
+        try:
+            print("WJ - 'deviceSettingsList': " + str(deviceSettingsList))
+            _received = []
+            for _x in deviceSettingsList:
+                _received.append([_x["device"], _x["command"], _x["value"]])
+            
+            if blockName == "":
+                blockName = f"anonBlock_{self.blockCounter}"
+                self.blockCounter += 1
 
-        self.generatedBlocks[blockName] = [self.generateBlock(device, subDevice, value) for device, subDevice, value in _received]
-
-        #self.saveBlocksToFile()
+            self.generatedBlocks[blockName] = [self.generateBlock(device, subDevice, value) for device, subDevice, value in _received]
+            # Return success status
+            return {"status": "success", "blockName": blockName}
+        except Exception as e:
+            # Return error status
+            return {"status": "error", "message": str(e)}
 
     def saveBlocksToFile(self, filename="default_script",save_directory=""):
         if save_directory=="":
@@ -192,7 +197,7 @@ class FlowChemAutomation:
 # Example usage
 if __name__ == "__main__":
     automation = FlowChemAutomation()
-    automation.customCommandsInst.registerCommand(Delay)
+    #automation.customCommandsInst.registerCommand(Delay)
     #automation.customCommandsInst.registerCommand(WaitUntil)
 
     # Add blocks using the new method
@@ -200,32 +205,23 @@ if __name__ == "__main__":
         [
             {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '1'},
             {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0'},
-            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"15"}'},
-            {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0.5'},
-            {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '0.5'},
-            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"0"}'},
-            {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0.3'},
-            {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '0.7'},
-            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"5"}'},
-            {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0.85'},
-            {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '0.15'}
+            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"15"}'}
         ],
-        blockName="myBlock_1"
+        blockName="myBlock_123"
     )
     
     automation.addBlock(
         [
-            {"device":"flowsynmaxi2", "command":"PumpBFlowRate", "value":"0"}, #Example of device-specific commands. The array contains values that will come from Flutter 
+            {"device":"flowsynmaxi2", "command":"PumpAFlowRate", "value":"0"}, #Example of device-specific commands. The array contains values that will come from Flutter 
             {"device":"sf10Vapourtec1", "command":'None', "value":"0.0"}
-        ], blockName="myBlock_2"
+        ], blockName="myBlock_456"
     )
     
     # Save blocks to a file
     automation.saveBlocksToFile('automation_script.fdp',r"C:\Python_Projects\FluxiDominus_dev")
-"
-, whose main example correctly delivers:
-"
-myBlock_1=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.5}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.5}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 0}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.3}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.7}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 5}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.85}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.15}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
-myBlock_2=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
-"
-What (if anything) needs to change for our planned Flutter integration?
+
+-> example if __name__ == "__main__" gives the correctly parsed output in the file:
+myBlock_123=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}];
+myBlock_456=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpAFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
+
+Remember, the mqtt functionalities are working fine on both sides, so can be left unchanged. Dart successfully publishes on chemistry/command and class CommandHandler seems to see it on the Python side. Any new ideas on how these classes can be rethinked?

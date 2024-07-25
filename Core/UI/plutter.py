@@ -1,11 +1,10 @@
 import time
 import paho.mqtt.client as mqtt
 import json
-
 from Core.Control.ScriptGenerator import FlowChemAutomation
 
 class CommandHandler:
-    def __init__(self, broker_address='localhost', port=1883, topic_command='chemistry/command', topic_response='chemistry/response',automation=FlowChemAutomation()):
+    def __init__(self, broker_address='localhost', port=1883, topic_command='chemistry/command', topic_response='chemistry/response', automation=FlowChemAutomation()):
         self.broker_address = broker_address
         self.port = port
         self.topic_command = topic_command
@@ -20,44 +19,19 @@ class CommandHandler:
         self.commands[command] = handler
 
     def on_connect(self, client, userdata, flags, rc):
-        print(str(self.client) + " has connected to MQTT!")
-        
-    def on_message(self,client, userdata, message):
-        payload = json.loads(message.payload.decode('utf-8'))
-        print("Received:", payload)
+        print("Connected to MQTT broker")
 
-        if 'command' in payload and payload['command'] == 'addBlock':
-            block_name = payload['data']['block_name']
-            device_settings = payload['data']['device_settings']
-            try:
-                self.automation.addBlock(device_settings, blockName=block_name)
-                response = {'status': 'success', 'message': 'Block added'}
-            except ValueError as e:
-                response = {'status': 'error', 'message': str(e)}
-            self.publishResponse(response)
-        else:
-            response = {'status': 'error', 'message': 'Unknown command'}
-            self.publishResponse(response)
-
-    def publishResponse(self, response):
-        self.client.publish('chemistry/response', json.dumps(response))
-
-    '''
     def on_message(self, client, userdata, message):
         payload = json.loads(message.payload.decode('utf-8'))
-        print('Received: ' + str(payload))
-        command = payload['command']
-        data = payload['data']
-        
-        if command in self.commands:
-            result = self.commands[command](data)
-            response = {"status": "success", "result": result}
+        device = payload.get('device')
+        command = payload.get('command')
+        value = payload.get('value')
+
+        if device in self.commands:
+            self.commands[device](command, value)
         else:
-            response = {"status": "error", "message": "Unknown command"}
-        
-        print('Attempting to publish response: ' + str(response))
-        self.client.publish(self.topic_response, json.dumps(response))
-    '''
+            print(f"Unknown device: {device}")
+
     def start(self):
         self.client.connect(self.broker_address, self.port)
         self.client.subscribe(self.topic_command)
@@ -67,7 +41,22 @@ class CommandHandler:
         self.client.loop_stop()
         self.client.disconnect()
 
+def handle_command(command, value):
+    print(f"Handling command: {command} with value: {value}")
+    # Add logic to handle the command using FlowChemAutomation
+
+def main():
+    command_handler = CommandHandler()
+    command_handler.register_command('Delay', handle_command)
+    # Register more commands as needed
+
+    command_handler.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        command_handler.stop()
+
 if __name__ == "__main__":
-    CommandHandler().start()
-    while True:
-        time.sleep(0.1)
+    main()

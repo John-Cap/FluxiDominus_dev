@@ -203,22 +203,14 @@ if __name__ == "__main__":
         [
             {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '1'},
             {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0'},
-            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"15"}'},
-            {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0.5'},
-            {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '0.5'},
-            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"0"}'},
-            {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0.3'},
-            {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '0.7'},
-            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"5"}'},
-            {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0.85'},
-            {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '0.15'}
+            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"15"}'}
         ],
         blockName="myBlock_123"
     )
     
     automation.addBlock(
         [
-            {"device":"flowsynmaxi2", "command":"PumpBFlowRate", "value":"0"}, #Example of device-specific commands. The array contains values that will come from Flutter 
+            {"device":"flowsynmaxi2", "command":"PumpAFlowRate", "value":"0"}, #Example of device-specific commands. The array contains values that will come from Flutter 
             {"device":"sf10Vapourtec1", "command":'None', "value":"0.0"}
         ], blockName="myBlock_456"
     )
