@@ -29,8 +29,8 @@ class FlowChemAutomation:
         self.blocks={}
         self.blockNames=[]
         self.commandTemplates={
-            #Vapourtec SF10
-            "sf10vapourtec1fr":'''
+            #Vapourtec SF10's
+            "sf10vapourtec1_fr":'''
                 {
                     "deviceName":"sf10vapourtec1", 
                     "inUse" : True,
@@ -44,7 +44,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "sf10vapourtec2fr":'''
+            "sf10vapourtec2_fr":'''
                 {
                     "deviceName":"sf10vapourtec2", 
                     "inUse" : True,
@@ -60,7 +60,7 @@ class FlowChemAutomation:
             ''',
             
             #Hotcoils
-            "hotcoil1temp":'''
+            "hotcoil1_temp":'''
                 {
                     "deviceName":"hotcoil1", 
                     "inUse" : True,
@@ -70,7 +70,7 @@ class FlowChemAutomation:
                     "client":"client"                    
                 }
             ''',
-            "hotcoil2temp":'''
+            "hotcoil2_temp":'''
                 {
                     "deviceName":"hotcoil2", 
                     "inUse" : True,
@@ -82,7 +82,7 @@ class FlowChemAutomation:
             ''',
             
             #Hotchips
-            "hotchip1temp":'''
+            "hotchip1_temp":'''
                 {
                     "deviceName":"hotchip1", 
                     "inUse" : True,
@@ -92,7 +92,7 @@ class FlowChemAutomation:
                     "client":"client"                    
                 }
             ''',
-            "hotchip2temp":'''
+            "hotchip2_temp":'''
                 {
                     "deviceName":"hotchip2", 
                     "inUse" : True,
@@ -104,7 +104,7 @@ class FlowChemAutomation:
             ''',
             
             #Maxi
-            "flowsynmaxi1pafr":'''
+            "flowsynmaxi1_pafr":'''
                 {
                     "deviceName": "flowsynmaxi1",
                     "inUse": True,
@@ -117,7 +117,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi1pbfr":'''
+            "flowsynmaxi1_pbfr":'''
                 {
                     "deviceName": "flowsynmaxi1",
                     "inUse": True,
@@ -130,7 +130,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi1sva":'''
+            "flowsynmaxi1_sva":'''
                 {
                     "deviceName": "flowsynmaxi1",
                     "inUse": True,
@@ -143,7 +143,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi1svb":'''
+            "flowsynmaxi1_svb":'''
                 {
                     "deviceName": "flowsynmaxi1",
                     "inUse": True,
@@ -156,7 +156,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi1svcw":'''
+            "flowsynmaxi1_svcw":'''
                 {
                     "deviceName": "flowsynmaxi1",
                     "inUse": True,
@@ -169,7 +169,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi2pafr":'''
+            "flowsynmaxi2_pafr":'''
                 {
                     "deviceName": "flowsynmaxi2",
                     "inUse": True,
@@ -182,7 +182,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi2pbfr":'''
+            "flowsynmaxi2_pbfr":'''
                 {
                     "deviceName": "flowsynmaxi2",
                     "inUse": True,
@@ -195,7 +195,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi2sva":'''
+            "flowsynmaxi2_sva":'''
                 {
                     "deviceName": "flowsynmaxi2",
                     "inUse": True,
@@ -208,7 +208,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi2svb":'''
+            "flowsynmaxi2_svb":'''
                 {
                     "deviceName": "flowsynmaxi2",
                     "inUse": True,
@@ -221,7 +221,7 @@ class FlowChemAutomation:
                     "client":"client"
                 }
             ''',
-            "flowsynmaxi2svcw":'''
+            "flowsynmaxi2_svcw":'''
                 {
                     "deviceName": "flowsynmaxi2",
                     "inUse": True,
@@ -243,12 +243,228 @@ class FlowChemAutomation:
                 {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": >float<, "initTimestamp": None, "completionMessage": "No message!"}},
             '''
         }
+        self.commandTemplatesNested = {
+            "sf10vapourtec1": {
+                "fr": '''
+                    {
+                        "deviceName":"sf10vapourtec1", 
+                        "inUse" : True,
+                        "settings":{
+                            "command":"SET", 
+                            "mode": "FLOW",
+                            "valve": "A",
+                            "flowrate":>float<
+                        },
+                        "topic":"subflow/sf10vapourtec1/cmnd",
+                        "client":"client"
+                    }
+                '''
+            },
+            "sf10vapourtec2": {
+                "fr": '''
+                    {
+                        "deviceName":"sf10vapourtec2", 
+                        "inUse" : True,
+                        "settings":{
+                            "command":"SET", 
+                            "mode": "FLOW",
+                            "valve": "A",
+                            "flowrate":>float<
+                        },
+                        "topic":"subflow/sf10vapourtec2/cmnd",
+                        "client":"client"
+                    }
+                '''
+            },
+            "hotcoil1": {
+                "temp": '''
+                    {
+                        "deviceName":"hotcoil1", 
+                        "inUse" : True,
+                        "command":"SET", 
+                        "temperatureSet":>float<,
+                        "topic":"subflow/hotcoil1/cmnd",
+                        "client":"client"
+                    }
+                '''
+            },
+            "hotcoil2": {
+                "temp": '''
+                    {
+                        "deviceName":"hotcoil2", 
+                        "inUse" : True,
+                        "command":"SET", 
+                        "temperatureSet":>float<,
+                        "topic":"subflow/hotcoil2/cmnd",
+                        "client":"client"
+                    }
+                '''
+            },
+            "hotchip1": {
+                "temp": '''
+                    {
+                        "deviceName":"hotchip1", 
+                        "inUse" : True,
+                        "command":"SET", 
+                        "temperatureSet":>float<,
+                        "topic":"subflow/hotchip1/cmnd",
+                        "client":"client"
+                    }
+                '''
+            },
+            "hotchip2": {
+                "temp": '''
+                    {
+                        "deviceName":"hotchip2", 
+                        "inUse" : True,
+                        "command":"SET", 
+                        "temperatureSet":>float<,
+                        "topic":"subflow/hotchip2/cmnd",
+                        "client":"client"
+                    }
+                '''
+            },
+            "flowsynmaxi1": {
+                "pafr": '''
+                    {
+                        "deviceName": "flowsynmaxi1",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "PumpAFlowRate",
+                            "command": "SET",
+                            "value": >float<
+                        },
+                        "topic":"subflow/flowsynmaxi1/cmnd",
+                        "client":"client"
+                    }
+                ''',
+                "pbfr": '''
+                    {
+                        "deviceName": "flowsynmaxi1",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "PumpBFlowRate",
+                            "command": "SET",
+                            "value": >float<
+                        },
+                        "topic":"subflow/flowsynmaxi1/cmnd",
+                        "client":"client"
+                    }
+                ''',
+                "sva": '''
+                    {
+                        "deviceName": "flowsynmaxi1",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "FlowSynValveA",
+                            "command": "SET",
+                            "value": >bool<
+                        },
+                        "topic":"subflow/flowsynmaxi1/cmnd",
+                        "client":"client"
+                    }
+                ''',
+                "svb": '''
+                    {
+                        "deviceName": "flowsynmaxi1",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "FlowSynValveB",
+                            "command": "SET",
+                            "value": >bool<
+                        },
+                        "topic":"subflow/flowsynmaxi1/cmnd",
+                        "client":"client"
+                    }
+                ''',
+                "svcw": '''
+                    {
+                        "deviceName": "flowsynmaxi1",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "FlowCWValve",
+                            "command": "SET",
+                            "value": >bool<
+                        },
+                        "topic":"subflow/flowsynmaxi1/cmnd",
+                        "client":"client"
+                    }
+                '''
+            },
+            "flowsynmaxi2": {
+                "pafr": '''
+                    {
+                        "deviceName": "flowsynmaxi2",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "PumpAFlowRate",
+                            "command": "SET",
+                            "value": >float<
+                        },
+                        "topic":"subflow/flowsynmaxi2/cmnd",
+                        "client":"client"
+                    }
+                ''',
+                "pbfr": '''
+                    {
+                        "deviceName": "flowsynmaxi2",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "PumpBFlowRate",
+                            "command": "SET",
+                            "value": >float<
+                        },
+                        "topic":"subflow/flowsynmaxi2/cmnd",
+                        "client":"client"
+                    }
+                ''',
+                "sva": '''
+                    {
+                        "deviceName": "flowsynmaxi2",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "FlowSynValveA",
+                            "command": "SET",
+                            "value": >bool<
+                        },
+                        "topic":"subflow/flowsynmaxi2/cmnd",
+                        "client":"client"
+                    }
+                ''',
+                "svb": '''
+                    {
+                        "deviceName": "flowsynmaxi2",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "FlowSynValveB",
+                            "command": "SET",
+                            "value": >bool<
+                        },
+                        "topic":"subflow/flowsynmaxi2/cmnd",
+                        "client":"client"
+                    }
+                ''',
+                "svcw": '''
+                    {
+                        "deviceName": "flowsynmaxi2",
+                        "inUse": True,
+                        "settings": {
+                            "subDevice": "FlowCWValve",
+                            "command": "SET",
+                            "value": >bool<
+                        },
+                        "topic":"subflow/flowsynmaxi2/cmnd",
+                        "client":"client"
+                    }
+                '''
+            }
+        }
 
-    def parseBlockElement(self,setting,val):
-        if not setting in self.commandTemplates:
+    def parseBlockElement(self,device,setting,val):
+        if not device in self.commandTemplatesNested:
             #throw
             return
-        setThis=copy.deepcopy(self.commandTemplates[setting])
+        setThis=copy.deepcopy(self.commandTemplatesNested[device][setting])
         #Valid setting?
         for key in self.varBrackets: #TODO - this is stupid
             if key in setThis:
@@ -263,10 +479,10 @@ class FlowChemAutomation:
         self.blocks[blockName]=[]
         self.blockNames.append(blockName)
 
-    def addBlockElement(self,blockName,setting,val):
+    def addBlockElement(self,blockName,device,setting,val):
         if not blockName in self.blocks:
             self.addBlock(blockName)
-        self.blocks[blockName].append(self.parseBlockElement(setting,val))
+        self.blocks[blockName].append(self.parseBlockElement(device,setting,val))
         
     def saveBlocksToFile(self, filename="default_script",save_directory=""):
         if save_directory=="":
@@ -308,13 +524,20 @@ class FlowChemAutomation:
 # Example usage
 if __name__ == "__main__":
     automation = FlowChemAutomation()
-    automation.addBlockElement("block_1","sf10vapourtec1fr",1.0)
-    automation.addBlockElement("block_1","flowsynmaxi1pafr",1.0)
-    automation.addBlockElement("block_1","flowsynmaxi1sva",False)
+    automation.addBlockElement("block_1","sf10vapourtec1","fr",1.0)
+    #automation.addBlockElement("block_1","WaitUntil",50.0)
+    #automation.addBlockElement("block_1","flowsynmaxi1sva",False)
     
-    automation.addBlockElement("block_2","sf10vapourtec2fr",1.0)
-    automation.addBlockElement("block_2","flowsynmaxi2pbfr",1.0)
-    automation.addBlockElement("block_3","Delay",100.0)
-    automation.addBlockElement("block_2","flowsynmaxi1svcw",True)
+    #automation.addBlockElement("block_2","sf10vapourtec2fr",1.0)
+    #automation.addBlockElement("block_2","flowsynmaxi2pbfr",1.0)
+    #automation.addBlockElement("block_3","Delay",100.0)
+    automation.addBlockElement("block_2","flowsynmaxi1","svcw",True)
     
     automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")
+    
+    '''
+    Output:
+    
+    myBlock_123=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}];
+    myBlock_456=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpAFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
+    '''
