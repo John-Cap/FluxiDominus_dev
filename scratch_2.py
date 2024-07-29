@@ -1,702 +1,274 @@
 import time
-import threading
-
-from Core.Control.Commands import Command
-from Core.Utils.Utils import Utils
-
-#from Utils import GetOrDefault as getOrDef
+from typing import List, Dict, Optional, Union
 
 class FlowAddress:
-    def __init__(self,name,inletsSett=[],outletsSett=[]) -> None: #inlets
-        self.name=name
-        self.inletsSett=inletsSett
-        self.outletsSett=outletsSett
-    def setAddress(self,inletsSett,outletsSett):
-        self.inletsSett=inletsSett
-        self.outletsSett=outletsSett
+    def __init__(self, name: str, inletsSett: Dict[str, List['FlowComponent']] = None, outletsSett: Dict[str, List['FlowComponent']] = None) -> None:
+        self.name = name
+        self.inletsSett = inletsSett or {}
+        self.outletsSett = outletsSett or {}
+
+    def setAddress(self, inletsSett: Dict[str, List['FlowComponent']], outletsSett: Dict[str, List['FlowComponent']]) -> None:
+        self.inletsSett = inletsSett
+        self.outletsSett = outletsSett
+
 
 class VolumeObject:
+    idCounter = 0
 
-    #Class var
-    idCounter=0
+    def __init__(self, volume: Optional[float] = None, inlets: Optional[List['FlowComponent']] = None, outlets: Optional[List['FlowComponent']] = None,
+                 name: Optional[str] = None, deviceName: Optional[str] = None, deviceType: Optional[str] = None, flowrateOut: Optional[float] = None,
+                 flowrateIn: Optional[float] = None, slugs: Optional[List['Slug']] = None, lastAdvance: Optional[float] = None, outletSets: Optional[Dict[str, List['FlowComponent']]] = None,
+                 inletSets: Optional[Dict[str, List['FlowComponent']]] = None, currOutlets: Optional[List['FlowComponent']] = None, currInlets: Optional[List['FlowComponent']] = None,
+                 remainder: Optional[float] = None, settings: Optional[Dict[str, Union[str, float, bool]]] = None, state: Optional[str] = None,
+                 availableCommands: Optional[List[str]] = None, dispensing: bool = False, associatedFlowPath: Optional['FlowPath'] = None) -> None:
+        self.volume = volume
+        self.inlets = inlets or []
+        self.outlets = outlets or []
+        self.name = name
+        self.deviceName = deviceName
+        self.deviceType = deviceType
+        self.flowrateIn = flowrateIn
+        self.flowrateOut = flowrateOut
+        self.slugs = slugs or []
+        self.lastAdvance = lastAdvance
+        self.outletSets = outletSets or {}
+        self.inletSets = inletSets or {}
+        self.currOutlets = currOutlets or []
+        self.currInlets = currInlets or []
+        self.remainder = remainder
+        self.flowrateShifted = False
+        self.settings = settings
+        self.state = state
+        self.availableCommands = availableCommands or []
+        self.dispensing = dispensing
+        self.associatedFlowPath = associatedFlowPath
+        self.id = VolumeObject.idCounter
+        VolumeObject.idCounter += 1
 
-    def __init__(self,volume=None,inlets=None,outlets=None,name=None,deviceName=None,deviceType=None,flowrateOut=None,flowrateIn=None,slugs=None,lastAdvance=None,outletSets=None,inletSets=None,currOutlets=None,currInlets=None,remainder=None,settings=None,state=None,availableCommands=None,dispensing=False,associatedFlowPath=None) -> None:
-        self.volume=volume
-        self.inlets=inlets
-        self.outlets=outlets
-        self.name=name
-        self.deviceName=deviceName
-        self.deviceType=deviceType
-        self.flowrateIn=flowrateIn
-        self.flowrateOut=flowrateOut
-        self.slugs=slugs
-        self.lastAdvance=lastAdvance
-        self.outletSets=outletSets
-        self.currOutlets=currOutlets
-        self.dispensing=dispensing
-        self.associatedFlowPath=associatedFlowPath
-        self.inletSets=inletSets
-        self.currInlets=currInlets
-        self.remainder=remainder
-        #Boolean flags
-        self.flowrateShifted=False
-        #Settings and commands
-        self.settings=settings
-        self.state=state
-        self.availableCommands=availableCommands
-        #Hashmap id generator
-        self.id=VolumeObject.idCounter
-        VolumeObject.idCounter+=1
-    
-    #def addCommand(self,command=Command()):
-    #    pass
-    
-    #def setFlowrate(self,command=Command()):
-    #    pass
-
-    def dispense(self,targetTerminus=None):
-        if not (self.dispensing) and not self.associatedFlowPath is None:
-            print(str(self.name) + " is busy dispensing!")
-            self.dispensing=True
-            _return=Slug(frontHost=self,tailHost=self,frontHostPos=0,tailHostPos=0,targetTerminus=targetTerminus)
+    def dispense(self, targetTerminus: Optional['FlowTerminus'] = None) -> Optional['Slug']:
+        if not self.dispensing and self.associatedFlowPath:
+            print(f"{self.name} is busy dispensing!")
+            self.dispensing = True
+            _return = Slug(frontHost=self, tailHost=self, frontHostPos=0, tailHostPos=0, targetTerminus=targetTerminus)
             print(_return)
             self.associatedFlowPath.slugs.append(_return)
             return _return
-    def terminateDispensing(self):
+        return None
+
+    def terminateDispensing(self) -> None:
         if self.dispensing:
-            self.dispensing=False
+            self.dispensing = False
 
-    def addInlet(self,comp,setName="DEFAULT"):
-        _thisInletSet=self.getInletSet(setName)
-        if len(_thisInletSet)==0:
-            print(str(self)+"InletHere1")
-            self.inletSets[setName]=[comp]
-            self.inlets=self.inletSets[setName]
-            #print(self.inletSets)          
-            self.flowrateShifted=True
-        elif len(_thisInletSet)==1 and _thisInletSet[0] is None:
-            print(str(self)+"InletHere2")            
-            self.inletSets[setName]=[comp]
-            self.inlets=self.inletSets[setName]
-            self.flowrateShifted=True
-        else:
-            print(str(self)+"InletHere3")
-            if not comp in _thisInletSet:
-                _thisInletSet.append(comp)
-    def addOutlet(self,comp,setName="DEFAULT"):
-        _thisOutletSet=self.getOutletSet(setName)
-        if len(_thisOutletSet)==0:
-            print(str(self)+"OutletHere1")            
+    def addInlet(self, comp: 'FlowComponent', setName: str = "DEFAULT") -> None:
+        _thisInletSet = self.getInletSet(setName)
+        if not _thisInletSet or (_thisInletSet == [None]):
+            self.inletSets[setName] = [comp]
+            self.inlets = self.inletSets[setName]
+            self.flowrateShifted = True
+        elif comp not in _thisInletSet:
+            _thisInletSet.append(comp)
+
+    def addOutlet(self, comp: 'FlowComponent', setName: str = "DEFAULT") -> None:
+        _thisOutletSet = self.getOutletSet(setName)
+        if not _thisOutletSet or (_thisOutletSet == [None]):
+            self.outletSets[setName] = [comp]
+            self.outlets = self.outletSets[setName]
+            self.flowrateShifted = True
+        elif comp not in _thisOutletSet:
             _thisOutletSet.append(comp)
-            self.outlets=_thisOutletSet
-            #print(self.getOutletSet(setName))
-            self.flowrateShifted=True
-        elif len(_thisOutletSet)==1 and _thisOutletSet[0] is None:
-            print(str(self)+"OutletHere2")
-            _thisOutletSet=[(comp)]
-            self.outlets=_thisOutletSet
-            self.flowrateShifted=True
-        else:
-            print(str(self)+"OutletHere3")
-            if not comp in _thisOutletSet:
-                _thisOutletSet.append(comp)
 
-    def flowInto(self,outlet,setNameIn="DEFAULT",setNameOut="DEFAULT"):
-        self.addOutlet(outlet,setNameOut)
-        outlet.addInlet(self,setNameIn)
-            
-    def addInletSet(self,setName="DEFAULT",inlets=[],overwrite=True):
-        if not setName in self.inletSets:
-            self.inletSets[setName]=inlets
-            return self.inletSets[setName]
+    def flowInto(self, outlet: 'FlowComponent', setNameIn: str = "DEFAULT", setNameOut: str = "DEFAULT") -> None:
+        self.addOutlet(outlet, setNameOut)
+        outlet.addInlet(self, setNameIn)
+
+    def addInletSet(self, setName: str = "DEFAULT", inlets: List['FlowComponent'] = None, overwrite: bool = True) -> Union[List['FlowComponent'], KeyError]:
+        if setName not in self.inletSets:
+            self.inletSets[setName] = inlets or []
         elif overwrite:
-            self.inletSets[setName]=inlets
-            return self.inletSets[setName]
+            self.inletSets[setName] = inlets or []
         else:
-            return KeyError.add_note("Inlet-set name already used")
-    def addOutletSet(self,setName="DEFAULT",outlets=[],overwrite=True):
-        if not setName in self.outletSets:
-            self.outletSets[setName]=outlets
-            return self.outletSets[setName]
+            return KeyError("Inlet-set name already used")
+        return self.inletSets[setName]
+
+    def addOutletSet(self, setName: str = "DEFAULT", outlets: List['FlowComponent'] = None, overwrite: bool = True) -> Union[List['FlowComponent'], KeyError]:
+        if setName not in self.outletSets:
+            self.outletSets[setName] = outlets or []
         elif overwrite:
-            self.outletSets[setName]=outlets
-            return self.outletSets[setName]          
+            self.outletSets[setName] = outlets or []
         else:
-            return KeyError.add_note("Outlet-set name already used")
+            return KeyError("Outlet-set name already used")
+        return self.outletSets[setName]
 
-    def switchToInlets(self,setName="DEFAULT"):
+    def switchToInlets(self, setName: str = "DEFAULT") -> None:
         if setName in self.inletSets:
-            self.inlets=self.inletSets[setName]
-    def switchToOutlets(self,setName="DEFAULT"):
-        if setName in self.outletSets:
-            self.outlets=self.outletSets[setName]
+            self.inlets = self.inletSets[setName]
 
-    def getInletSet(self,setName="DEFAULT"):
-        if self.inletSets is None:
-            self.inletSets={}
-        if setName in self.inletSets:
-            return self.inletSets[setName]
-        else:
-            self.inletSets[setName]=[]
-            return self.inletSets[setName]
-    def getOutletSet(self,setName="DEFAULT"):
-        if self.outletSets is None:
-            self.outletSets={}
+    def switchToOutlets(self, setName: str = "DEFAULT") -> None:
         if setName in self.outletSets:
-            return self.outletSets[setName]
-        else:
-            self.outletSets[setName]=[]
-            return self.outletSets[setName]
-        
-    def switchToDefaultInlets(self):
-        if len(self.inletSets) <= 1:
-            return self.inlets
-        else:
-            self.switchToInlet("DEFAULT")
-            return self.inlets
-    def switchToDefaultOutlets(self):
-        if len(self.outletSets) <= 1:
-            return self.outlets
-        else:
-            self.switchToOutlets("DEFAULT")
-            return self.outlets
-        
-    def cumulativeFlowrates(self):
+            self.outlets = self.outletSets[setName]
+
+    def getInletSet(self, setName: str = "DEFAULT") -> List['FlowComponent']:
+        return self.inletSets.setdefault(setName, [])
+
+    def getOutletSet(self, setName: str = "DEFAULT") -> List['FlowComponent']:
+        return self.outletSets.setdefault(setName, [])
+
+    def switchToDefaultInlets(self) -> List['FlowComponent']:
+        return self.switchToInlets("DEFAULT") if len(self.inletSets) > 1 else self.inlets
+
+    def switchToDefaultOutlets(self) -> List['FlowComponent']:
+        return self.switchToOutlets("DEFAULT") if len(self.outletSets) > 1 else self.outlets
+
+    def cumulativeFlowrates(self) -> None:
         if self.inlets is None:
-            self.inlets=[]
-        if len(self.inlets)==0:
-            self.flowrateOut=self.flowrateIn
+            self.inlets = []
+        if not self.inlets:
+            self.flowrateOut = self.flowrateIn
         else:
-            _flowrate=0
-            for _x in self.inlets:
-                if isinstance(_x,FlowOrigin):
-                    _flowrate=_flowrate+_x.flowrateIn           
-                elif not _x is None:
-                    _flowrate=_flowrate+_x.flowrateOut
-                else:    
-                    pass
-            self.flowrateIn=_flowrate
-            self.flowrateOut=_flowrate #only one outlet for now!
-            self.flowrateShifted=False
+            _flowrate = sum(
+                _x.flowrateIn if isinstance(_x, FlowOrigin) else _x.flowrateOut
+                for _x in self.inlets if _x is not None
+            )
+            self.flowrateIn = _flowrate
+            self.flowrateOut = _flowrate  # only one outlet for now!
+            self.flowrateShifted = False
 
-    def hostSlug(self,slug,initPos):
-        self.slugs.insert(0,slug)
-        slug.frontHost=self
-        slug.frontHostPos=initPos
+    def hostSlug(self, slug: 'Slug', initPos: float) -> None:
+        self.slugs.insert(0, slug)
+        slug.frontHost = self
+        slug.frontHostPos = initPos
 
-class Inlets:
-    def __init__(self) -> None:
-        self.inletIndex=0
-        self.inlets={}
 
-    def addInlet(self,inlet):
-        self.inlets[self.inletIndex]=inlet
-        self.inletIndex+=self.inletIndex
-
-    def getInlet(self,index):
-        return Utils().getOrDef(self.inlets,index,None)
-class Outlets:
-    def __init__(self) -> None:
-        pass    
-    def addOutlet(self,outlet):
-        self.outlets[self.outletIndex]=outlet
-        self.outletIndex+=self.outletIndex
-
-class VolObjNull(VolumeObject):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
-
-class FlowPath:
-    def __init__(self,segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
-        self.segments=segments
-        self.segmentSets=segmentSets
-        self.volume=0
-        self.componentIndex=0
-        self.slugs=slugs
-        self.flowrate=flowrate
-        self.timePrev=time
-        self.collectedSlugs=collectedSlugs
-
-    def setAddress(self,address):
-        _inlets=address.inletsSett
-        _outlets=address.outletsSett
-        for _x in _inlets:
-            _x[0].switchToInlets(_x[1])
-        for _x in _outlets:
-            _x[0].switchToOutlets(_x[1])            
-
-    def pathVolume(self,segmentSet=None):
-        if segmentSet is None:
-            segmentSet=self.segments
-        _vol=0
-        for _x in segmentSet:
-            _vol=_vol + _x.volume
-        return _vol
-
-    def addPath(self,segments,pathName="DEFAULT"):
-        self.segmentSets[pathName]=segments
-
-    def selectPath(self,pathName="DEFAULT"):
-        self.segments=self.segmentSets[pathName]
-        return self.segments
-    
-    def appendComponent(self,comp,pathName="DEFAULT"):
-        if not pathName in self.segmentSets:
-            self.addPath([comp],pathName)
-            return
-        else:
-            _theseSeg=self.segmentSets[pathName]
-            _theseSeg.append(comp)
-        self.volume=self.pathVolume()
-        self.updateFlowrates()
-
-    def updateFlowrates(self):
-        for _x in self.segments:
-            _x.cumulativeFlowrates()
-
-    def updateSlugs(self):
-        for _x in self.segments:
-            pass
-
-    def advanceSlugs(self):
-        _nowTime=time.perf_counter()
-        _dT=_nowTime-self.timePrev        
-        self.timePrev=_nowTime
-
-        #Front
-        for _slug in self.slugs:
-            _frontHost=_slug.frontHost
-            if isinstance(_frontHost,FlowTerminus):
-                if _slug.reachedTerminusAt==-1:
-                    _slug.reachedTerminusAt=time.perf_counter()
-                continue
-            if _frontHost is None:
-                continue
-
-            _frontHostPos=_slug.frontHostPos
-         
-            _dV=_frontHost.flowrateOut*_dT
-            _newVol=_frontHostPos+_dV
-
-            if _newVol>_frontHost.volume:
-                _nextHost=_frontHost.outlets[0]          
-                if isinstance(_nextHost,FlowTerminus):
-                    _slug.frontHost=_nextHost
-                    _slug.frontHostPos=0
-                    _slug.collecting=True
-                else:                      
-                    _remainder=_newVol-_frontHost.volume
-                    print("Next host fr: " + str(_nextHost.flowrateOut))
-                    if _nextHost.flowrateOut!=_frontHost.flowrateOut:
-                        _currHostLeftToFill=(_frontHost.volume-_frontHostPos)
-                        _frontHostFillTime=_currHostLeftToFill/(_frontHost.flowrateOut)
-                        _dTRemainder=_dT-_frontHostFillTime
-                        #print("dTremainder: " + str(_dTRemainder) + ", next host fr: " + str((_nextHost.flowrateOut)))
-                        _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
-                        _slug.frontHost=_nextHost
-                        _slug.frontHostPos=_volumeAdd
-                        #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
-                    else:
-                        _slug.frontHost=_nextHost
-                        _slug.frontHostPos=_remainder                   
-            else:
-                _slug.frontHostPos=_newVol
-        #Tail
-        for _slug in self.slugs:
-            _tailHost=_slug.tailHost
-
-            if isinstance(_tailHost,FlowTerminus):
-                if _slug.collected==False:
-                    _slug.collected=True
-                continue
-            #elif isinstance(_tailHost,FlowOrigin) and _tailHost.dispensing:
-            elif _tailHost.dispensing:
-                continue
-                
-            _tailHostPos=_slug.tailHostPos
-         
-            _dV=_tailHost.flowrateOut*_dT
-
-            if isinstance(_slug.frontHost,FlowTerminus):
-                _slug.collectedVol=_slug.collectedVol+_dV
-
-            _newVol=_tailHostPos+_dV
-
-            if _newVol>_tailHost.volume:
-                _nextHost=_tailHost.outlets[0]                
-                if isinstance(_nextHost,FlowTerminus):
-                    _slug.tailHost=_nextHost
-                    _slug.tailHostPos=0
-                    self.collectedSlugs.append(_slug)
-                    del self.slugs[self.slugs.index(_slug)]
-                else:                      
-                    _remainder=_newVol-_tailHost.volume
-
-                    if _nextHost.flowrateOut!=_tailHost.flowrateOut:
-                        _currHostLeftToFill=(_tailHost.volume-_tailHostPos)
-                        _tailHostFillTime=_currHostLeftToFill/(_tailHost.flowrateOut)
-                        _dTRemainder=_dT-_tailHostFillTime
-                        _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
-                        _slug.tailHost=_nextHost
-                        _slug.tailHostPos=_volumeAdd
-                        #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
-                    else:
-                        _slug.tailHost=_nextHost
-                        _slug.tailHostPos=_remainder                   
-            else:
-                _slug.tailHostPos=_newVol
-                
 class FlowComponent(VolumeObject):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    pass
+
+
 class Tubing(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    pass
+
+
 class TPiece(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    pass
+
+
 class IR(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
-    def scan(self):
+    def scan(self) -> None:
         pass
 
+
 class Chip(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    pass
+
 
 class Coil(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    pass
+
 
 class Valve(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    pass
+
+
 class Pump(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    pass
+
+
 class FlowOrigin(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
-    '''
-    def dispense(self,targetTerminus=None):
-        if not (self.dispensing) and not self.associatedFlowPath is None:
-            self.dispensing=True
-            _return=Slug(frontHost=self,tailHost=self,frontHostPos=0,tailHostPos=0,targetTerminus=targetTerminus)
-            self.associatedFlowPath.slugs.append(_return)
-            return _return
-    '''
+    pass
+
+
 class FlowTerminus(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
-class FlowVelocity:  # mL per minute
-    def __init__(self,speed=0) -> None:
-        self.speed=speed
+    pass
 
-class Slugs:
-    def __init__(self,slugs=[],slugsCollected=[]) -> None:
-        self.slugs=slugs
-        self.slugsCollected=slugsCollected
 
-class SlugNull:
-    def __init__(self,volume=None,location=None,parentSlug=None,childSlug=None,elastic=None,hosts=None,tailHost=None,frontHost=None,tailHostPos=None,frontHostPos=None,stationary=True,collectedVol=0,collecting=False,reachedTerminusAt=0,targetTerminus=None,collected=False) -> None:
-        self.volume=volume
-        self.location=location
-        self.parentSlug=parentSlug
-        self.childSlug=childSlug
-        self.elastic=elastic #If elastic,the slug will be 'stretched' at junctions and not branched into new one
-        self.hosts=hosts
-        self.tailHost=tailHost
-        self.frontHost=frontHost
-        self.tailHostPos=tailHostPos #Volume of progress
-        self.frontHostPos=frontHostPos
-        self.stationary=stationary
-        self.collectedVol=collectedVol
-        self.collecting=collecting
-        self.reachedTerminusAt=reachedTerminusAt
-        self.targetTerminus=targetTerminus
-        self.collected=collected
+class FlowPath:
+    def __init__(self, segments: List[VolumeObject] = None, segmentSets: Dict[str, List[VolumeObject]] = None, slugs: List['Slug'] = None,
+                 flowrate: float = 0, time: float = time.perf_counter(), collectedSlugs: List['Slug'] = None) -> None:
+        self.segments = segments or []
+        self.segmentSets = segmentSets or {}
+        self.slugs = slugs or []
+        self.flowrate = flowrate
+        self.timePrev = time
+        self.collectedSlugs = collectedSlugs or []
 
-    def setTargetTerminus(self,terminus):
-        self.targetTerminus=terminus
+    def setAddress(self, address: FlowAddress) -> None:
+        for _x in address.inletsSett.values():
+            for comp in _x:
+                comp.switchToInlets(address.inletsSett.get(comp.name, "DEFAULT"))
+        for _x in address.outletsSett.values():
+            for comp in _x:
+                comp.switchToOutlets(address.outletsSett.get(comp.name, "DEFAULT"))
 
-    def branchSlug(self):
-        if self.elastic:
-            return self
-        _child=Slug(parentSlug=self)
-        return _child
+    def pathVolume(self, segmentSet: Optional[List[VolumeObject]] = None) -> float:
+        segmentSet = segmentSet or self.segments
+        return sum(_x.volume for _x in segmentSet)
 
-    def slugVolume(self):
-        _frontHost=self.frontHost
-        _tailHost=self.tailHost
+    def addPath(self, segments: List[VolumeObject], pathName: str = "DEFAULT") -> None:
+        self.segmentSets[pathName] = segments
+        self.segments = segments
 
-        if (_frontHost is _tailHost):
-            return (self.frontHostPos-self.tailHostPos)
-        else:
-            _thisComp=_tailHost
-            _volume=_tailHost.volume - self.tailHostPos
-            while True:
-                _thisComp=_thisComp.outlets[0]
-                if isinstance(_thisComp,FlowTerminus):
-                    return _volume
-                elif _thisComp is _frontHost:
-                    return (_volume+self.frontHostPos)
-                else:
-                    _volume=_volume+_thisComp.volume
+    def addSlug(self, slug: 'Slug') -> None:
+        self.slugs.append(slug)
 
-class Slug(SlugNull):
-    def __init__(self, volume=None, location=None, parentSlug=None, childSlug=None, elastic=None, hosts=None, tailHost=None, frontHost=None, tailHostPos=None, frontHostPos=None, stationary=True, collectedVol=0, collecting=False, reachedTerminusAt=0, targetTerminus=None, collected=False) -> None:
-        super().__init__(volume, location, parentSlug, childSlug, elastic, hosts, tailHost, frontHost, tailHostPos, frontHostPos, stationary, collectedVol, collecting, reachedTerminusAt, targetTerminus, collected)
+    def hostSlug(self, slug: 'Slug', initPos: float) -> None:
+        self.slugs.insert(0, slug)
+        slug.frontHost = self
+        slug.frontHostPos = initPos
 
-class FlowPathAdjustment:
-    def __init__(self, instance=None, attributeName="", valueOrMethod=None, *args) -> None:
-        self.instance=instance;
-        self.attributeName=attributeName;
-        self.valueOrMethod=valueOrMethod;
-        self.args=args;
-        #self.kwargs=kwargs
-    
-    def effect(self):
-        if self.instance is None:
-            return None
-        if callable(self.valueOrMethod):  # If value_or_method is callable, it's a method
-            method = self.valueOrMethod
-            method(*self.args)
-        else:  # Otherwise, it's a property
-            setattr(self.instance, self.attributeName, self.valueOrMethod)
+    def terminate(self, slug: 'Slug') -> None:
+        self.slugs.remove(slug)
+        slug.tailHost.terminateSlug(slug)
 
-class FlowJiggler: #Handles compound flowrates at a junction, i.e. correct flowrates for pumps to result in a constant flowrate at junction
-    def __init__(self,flowrates={},pumps=[]) -> None:
-        self.flowrates=flowrates
-        self.pumps=pumps
+    def terminateSlug(self, slug: 'Slug') -> None:
+        if slug in self.slugs:
+            self.slugs.remove(slug)
 
-    def addPump(self,pump,flowrate):
-        self.addPump(pump)
-        self.flowrates[pump.id]=flowrate
 
-    def setFlowKeepConst(self,pump,flowrate):
-        _id=pump.id
-        _len=len(self.pumps)
-        if _len==1:
-            self.flowrates[_id]=flowrate
-            return
-        elif _len==0:
-            self.addPump(pump,flowrate)
-            return
-        _totalFlowrate=0
-        for _x in self.flowrates.values():
-            _totalFlowrate=_totalFlowrate+_x
-        self.flowrates[_id]=flowrate
-        _remainder=_totalFlowrate-flowrate
-        if _remainder!=0:
-            _portion=_remainder/(_len-1)
-            for _x, _y in self.flowrates.items():
-                if _x!=_id:
-                    _new=_portion
-                    if _new<0:
-                        _new=0
-                    self.flowrates[_x]=_new
-        elif _remainder==0:
-            return
-#######################################################################################
-###Examples
+class Slug:
+    def __init__(self, frontHost: VolumeObject, tailHost: VolumeObject, frontHostPos: float, tailHostPos: float, targetTerminus: Optional[FlowTerminus] = None) -> None:
+        self.frontHost = frontHost
+        self.tailHost = tailHost
+        self.frontHostPos = frontHostPos
+        self.tailHostPos = tailHostPos
+        self.targetTerminus = targetTerminus
+
+    def __repr__(self) -> str:
+        return f"Slug(frontHost={self.frontHost.name}, tailHost={self.tailHost.name}, frontHostPos={self.frontHostPos}, tailHostPos={self.tailHostPos})"
+
+
+def main() -> None:
+    # Create components
+    pump1 = Pump(name="Pump1", flowrateIn=10.0)
+    valve1 = Valve(name="Valve1")
+    tubing1 = Tubing(name="Tubing1", flowrateIn=10.0)
+    terminus = FlowTerminus(name="Terminus")
+
+    # Create a flow path
+    path = FlowPath()
+
+    # Define address
+    address = FlowAddress(name="FlowPathAddress")
+    address.setAddress(
+        inletsSett={pump1.name: [pump1]},
+        outletsSett={terminus.name: [terminus]}
+    )
+
+    # Create a volume object
+    volume = VolumeObject(volume=100.0, name="Volume1", associatedFlowPath=path)
+    volume.addInlet(pump1)
+    volume.addOutlet(valve1)
+
+    # Dispense a slug
+    slug = volume.dispense(targetTerminus=terminus)
+    if slug:
+        print(f"Dispensed slug: {slug}")
+
+    # Add path segments
+    path.addPath([volume, tubing1, terminus])
+
+    # Print volume and path details
+    print(f"Volume: {volume.volume} L")
+    print(f"Path Volume: {path.pathVolume()} L")
+    print(f"Slugs in path: {path.slugs}")
+
 if __name__ == "__main__":
-    #Flow jiggler
-
-    '''
-    _jiggler=FlowJiggler(
-        flowrates={
-            str(_pump_1):1,
-            str(_pump_2):1
-        },
-        pumps=[_pump_1,_pump_2]
-    )
-    _jiggler.setFlowKeepConst(_pump_1,1.5)
-    for _x,_y in _jiggler.flowrates.items():
-        print(_x+" "+str(_y))
-    '''
-    # create flow path
-    _path=FlowPath()
-
-    #Stocks + pumps up to t piece
-
-    _redStock=FlowOrigin(dispensing=False,volume=0,inlets=[],outlets=[],name="RED_STOCK",flowrateIn=0.0,slugs=[])
-    _blueStock=FlowOrigin(dispensing=False,volume=0,inlets=[],outlets=[],name="BLUE_STOCK",flowrateIn=0.0,slugs=[])
-    #Pump lines
-    _pump_1=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_1",flowrateIn=0.0,slugs=[])
-    _pump_2=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_2",flowrateIn=0.0,slugs=[])
-    #Valves
-    _cwValve=(Valve(volume=0.05,inlets=[],outlets=[],name="CW_VALVE",slugs=[]))
-    #IR
-    _IR=(IR(volume=0.5,inlets=[],outlets=[],name="IR",slugs=[]))
-    #TPiece
-    _Tpiece=TPiece(dispensing=False,volume=0,inlets=[],outlets=[],name="T_PIECE",flowrateIn=0.0,slugs=[])
-    #Tubing
-    _coil=(Coil(volume=10,inlets=[],outlets=[],name="COIL",slugs=[]))
-    #Terminus
-    _waste=FlowTerminus(volume=0,inlets=[],outlets=[None],name="WASTE",flowrateIn=0,flowrateOut=0,slugs=[])
-    _collect=FlowTerminus(volume=0,inlets=[],outlets=[None],name="COLLECT",flowrateIn=0,flowrateOut=0,slugs=[])
-
-    ###################
-    #Connect components
-
-    #Stock solutions
-    _redStock.flowInto(_pump_1)
-    _blueStock.flowInto(_pump_2)
-    #Pumplines
-    _pump_1.flowInto(_Tpiece)
-    _pump_2.flowInto(_Tpiece)
-    #Tubing etc to WC
-    _Tpiece.flowInto(_coil)
-    _coil.flowInto(_IR)
-    _IR.flowInto(_cwValve)
-    _cwValve.flowInto(_waste,setNameOut="WASTE")
-    _cwValve.flowInto(_collect,setNameOut="COLLECT")
-    _cwValve.switchToOutlets("WASTE")
-    '''
-    #Create paths
-    '''
-    _path.addPath(
-
-        [
-            _redStock,
-            _blueStock,
-
-            _pump_1,
-            _pump_2,
-            
-            _Tpiece,
-
-            _coil,
-            _IR,
-
-            _cwValve,
-
-            _collect,
-            _waste
-        ]
-    )
-
-    _path.selectPath()
-
-    for _x in _path.segments:
-        print("*********")
-        print(_x.name)
-        print(_x.inletSets)    
-        print(_x.outletSets)
-        print(_x.inlets)   
-        print(_x.outlets)
-
-    for _x in _path.segments:
-        _x.associatedFlowPath=_path
-    _currOrigin=_Tpiece
-    _currTerminus=_waste
-    
-    
-    # Flag variable to indicate whether the thread should continue running
-    running=True
-    allSlugs=Slugs()
-
-    def run_code():
-        global running
-        global allSlugs
-        while running:
-            _flow_1=eval(input("Pump 1 flowrate: "))
-            _flow_2=eval(input("Pump 2 flowrate: "))
-            #_flow_3=eval(input("Pump 3 flowrate: "))
-            _slugVol=eval(input("Vol to dispense: "))
-            _redStock.flowrateIn=_flow_1/60
-            _blueStock.flowrateIn=_flow_2/60
-            #_origin_2.flowrateIn=_flow_2/60
-            #_origin_3.flowrateIn=_flow_3/60
-
-            _path.updateFlowrates()
-
-            for _x in _path.segments:
-                print(_x.flowrateOut)
-            
-            _slug=_currOrigin.dispense()
-            allSlugs.slugs.append(_slug)
-            print(str(_slug.slugVolume()) + " mL")
-
-            _switched=False
-            _now=time.perf_counter()
-            _path.timePrev=time.perf_counter()
-            while not (_slug.tailHost is _currTerminus):
-                _path.advanceSlugs()
-                _vol=_slug.slugVolume()
-                print("Time: " + str(round(time.perf_counter() - _now, 0)) + " seconds, Fro h/pos: " + str(
-                    _slug.frontHost.name) + ", " + str(round(_slug.frontHostPos, 2)) + "/" + str(
-                    _slug.frontHost.volume) + " mL, tail h/pos: " + str(_slug.tailHost.name) + ", " + str(
-                    round(_slug.tailHostPos, 2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(
-                    round(_slug.frontHost.flowrateOut*60, 2)) + " mL.min-1, slug vol: " + str(
-                    round(_vol, 2)) + " mL, vol collected: " + str(round(_slug.collectedVol, 2)) + " mL")
-                if not _switched and _vol > _slugVol:
-                    _currOrigin.dispensing=False
-                    _switched=True
-                time.sleep(0.25)
-            print("************")
-            print(str(time.perf_counter() - _now) + " seconds")
-            print("Collected slug volumes")
-            for _x in _path.collectedSlugs:
-                print(_x.collectedVol)
-            print("Slug took " + str(_now-_slug.reachedTerminusAt) + " seconds to reach terminus")
-            print("************")
-
-    # Create a thread for running the code
-    thread=threading.Thread(target=run_code)
-
-    # Start the thread
-    thread.start()
-
-    # Wait for user input to stop the thread
-    #time.sleep(10)
-
-    # Set the flag to stop the thread
-    #running=False
-
-    # Wait for the thread to finish
-    thread.join()
-
-    print("Thread has finished execution.")
-    print("We're done here")
-
-    ##OLD
-    '''
-
-    while True:
-        _flow_1=eval(input("Pump 1 flowrate: "))
-        _flow_2=eval(input("Pump 2 flowrate: "))
-        _flow_3=eval(input("Pump 3 flowrate: "))
-        _slugVol=eval(input("Vol to dispense: "))
-        _origin.flowrateIn=_flow_1
-        _origin_2.flowrateIn=_flow_2
-        _origin_3.flowrateIn=_flow_3
-
-        _slug=_origin.dispense()
-        print(str(_slug.slugVolume()) + " mL")
-
-        _path.updateFlowrates()
-        for _x in _path.segments:
-            print(_x.flowrateOut)
-
-        _switched=False
-        _now=time.perf_counter()
-        _path.timePrev=time.perf_counter()
-        while not (_slug.tailHost is _terminus_1):
-            _path.advanceSlugs()
-            _vol=_slug.slugVolume()
-            print("Time: " + str(round(time.perf_counter()-_now,0)) + " seconds, Front h/pos: " + str(_slug.frontHost.name) + ", " + str(round(_slug.frontHostPos,2)) + "/" + str(_slug.frontHost.volume) + " mL, tail h/pos: " + str(_slug.tailHost.name) + ", " + str(round(_slug.tailHostPos,2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(round(_slug.frontHost.flowrateOut,2)) + " mL.min-1, slug vol: " + str(round(_vol,2)) + " mL, vol collected: " + str(round(_slug.collectedVol,2)) + " mL")
-            if not _switched and _vol>_slugVol:
-                _origin.dispensing=False
-                _switched=True
-            #time.sleep(1)
-        print("************")
-        print(str(time.perf_counter()-_now) + " seconds")
-        print("Collected slug volumes")
-        for _x in _path.collectedSlugs:
-            print(_x.collectedVol)
-        print("************")
-    '''
-
-    #######################################################################################
+    main()
