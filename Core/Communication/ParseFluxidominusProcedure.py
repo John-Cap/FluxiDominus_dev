@@ -52,7 +52,7 @@ class ScriptParser:
             "client": client,
         }
         self.confNum = confNum
-        
+
     def convertJsonToPython(self, string):
         replacements = {
             "true": "True",
@@ -92,7 +92,7 @@ class ScriptParser:
                     blocks[currentBlock].append(parsedContent)
                 except Exception as e:
                     print(f"Error parsing additional block content: {e}")
-        
+
         return blocks
 
     def convertToNodeScripts(self, blockName, blockContent, fdpDecoder):
@@ -109,7 +109,7 @@ class ScriptParser:
             if key == "client":
                 entry[key] = self.client
         return entry
-    
+
     def createProcedure(self, fdpDecoder):
         configurations = []
         for blockName, blockContent in self.blocks.items():
@@ -122,48 +122,8 @@ class ScriptParser:
 
 if __name__ == "__main__":
     script = '''
-    commandBlock_1=[
-        {
-            "deviceName": "flowsynmaxi2",
-            "inUse":True,
-            "settings": {
-                "subDevice": "PumpBFlowRate",
-                "command": "SET",
-                "value": 1.0
-            },
-            "topic":"subflow/flowsynmaxi2/cmnd",
-            "client":"client"
-        },
-        {"Delay":{"initTimestamp":None,"sleepTime":10}},
-        {
-            "deviceName":"sf10Vapourtec1",
-            "inUse":True,
-            "settings":{"command":"SET","mode":"FLOW","flowrate":1},
-            "topic":"subflow/sf10vapourtec1/cmnd",
-            "client":"client"
-        },
-        {"Delay":{"initTimestamp":None,"sleepTime":10}},
-        {
-            "deviceName":"sf10Vapourtec1",
-            "inUse":True,
-            "settings":{"command":"SET","mode":"FLOW","flowrate":0.0},
-            "topic":"subflow/sf10vapourtec1/cmnd",
-            "client":"client"
-        }
-    ];
-    commandBlock_2=[
-        {
-            "deviceName": "flowsynmaxi2",
-            "inUse":True,
-            "settings": {
-                "subDevice": "PumpBFlowRate",
-                "command": "SET",
-                "value": 0.0
-            },
-            "topic":"subflow/flowsynmaxi2/cmnd",
-            "client":"client"
-        }
-    ];
+    myBlock_123=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}];
+    myBlock_456=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpAFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
     '''
 
     fdpDecoder = FdpDecoder()

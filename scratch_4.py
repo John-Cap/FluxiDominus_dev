@@ -1,122 +1,63 @@
-import json
-import sys
 import time
-import ast
-import re
 import paho.mqtt.client as mqtt
+import json
+from Core.Control.ScriptGenerator import FlowChemAutomation
 
-from Core.Communication.IO import IO
-from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
-from Core.Control.Commands import Configuration, Delay
-from Core.Fluids.FlowPath import FlowPathAdjustment
-#{"payload":{"deviceName":"flowsynmaxi2",  "inUse":true, "settings":{"command":"SET", "subDevice":"FlowSynValveB", "value": True}}}
+class CommandHandler:
+    def __init__(self, broker_address='localhost', port=1883, topic_command='chemistry/command', topic_response='chemistry/response', automation=FlowChemAutomation()):
+        self.broker_address = broker_address
+        self.port = port
+        self.topic_command = topic_command
+        self.topic_response = topic_response
+        self.commands = {}
+        self.client = mqtt.Client()
+        self.client.on_message = self.on_message
+        self.client.on_connect = self.on_connect
+        self.automation = automation
 
+    def register_command(self, command, handler):
+        self.commands[command] = handler
 
-script = '''
-commandBlock_1=[
-    {
-        "deviceName":"flowsynmaxi2", 
-        "inUse" : true,
-        settings:{
-            "subDevice": "Reactor1Temp",
-            "command":"SET",
-            "value": 45
-        }
-    },
-    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}}
-];
-commandBlock_2=[
-    {"Delay": {"sleepTime": 60, "initTimestamp": None}},
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpAFlowRate",
-            "command": "SET",
-            "value": 0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {
-        "deviceName":"sf10Vapourtec1",
-        "inUse":True,
-        "settings":{"command":"SET","mode":"FLOW","flowrate":0},
-        "topic":"subflow/sf10vapourtec1/cmnd",
-        "client":"client"
-    }
-];
-'''
-import threading
-import time
-import random
+    def on_connect(self, client, userdata, flags, rc):
+        print("Connected to MQTT broker")
 
-class IRThread(threading.Thread):
-    def __init__(self):
-        super().__init__()
-        self.value = 0
-        self.lock = threading.Lock()
-        self.running = True
+    def on_message(self, client, userdata, message):
+        payload = json.loads(message.payload.decode('utf-8'))
+        device = payload.get('device')
+        command = payload.get('command')
+        value = payload.get('value')
+        print('Received: ' + str(device) + " " + str(command) + " " + str(value))
 
-    def run(self):
-        while self.running:
-            with self.lock:
-                self.value = random.randint(0, 20)  # Simulate value change
-            time.sleep(0.5)  # Simulate delay in value update
+        if device in self.commands:
+            self.commands[device](command, value)
+        else:
+            print(f"Unknown device: {device}")
 
-    def get_value(self):
-        with self.lock:
-            return self.value
+    def start(self):
+        self.client.connect(self.broker_address, self.port)
+        self.client.subscribe(self.topic_command)
+        self.client.loop_start()
 
     def stop(self):
-        self.running = False
+        self.client.loop_stop()
+        self.client.disconnect()
 
-def checkValFunc(value):
-    return value > 18
+def handle_command(command, value):
+    print(f"Handling command: {command} with value: {value}")
+    # Add logic to handle the command using FlowChemAutomation
 
-# Start IR thread
-ir_thread = IRThread()
-ir_thread.start()
+def main():
+    command_handler = CommandHandler()
+    command_handler.register_command('Delay', handle_command)
+    # Register more commands as needed
 
-def getLivingValue():
-    return ir_thread.get_value()
+    command_handler.start()
 
-# Set up MQTT client
-client = mqtt.Client()
-#client.connect("146.64.91.174", 1883, 60)
-client.connect("localhost", 1883, 60)
-# Create script parser and decoder
-script_parser = ScriptParser(script, client)
-decoder_kwargs = {
-    "conditionFunc": checkValFunc,
-    "conditionParam": getLivingValue
-}
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        command_handler.stop()
 
-fakeClient=1
-fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
-parser = ScriptParser(script, client)
-procedure = parser.createProcedure(fdpDecoder)
-
-doIt=True
-while doIt:
-    if (len(procedure.currConfig.commands))==0:
-        print("Next procedure!")
-        procedure.next()
-    if procedure.currConfig is None:
-        print("Procedure complete")
-        exit()
-    else:
-        #Send a command
-        procedure.currConfig.sendMQTT()
-    time.sleep(0.1)
+if __name__ == "__main__":
+    main()

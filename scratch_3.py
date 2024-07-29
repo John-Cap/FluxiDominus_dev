@@ -1,170 +1,219 @@
-import time
-import paho.mqtt.client as mqtt
+import json
+import os
 
-from Core.Communication.IO import IO
-from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
+from Core.Control.Commands import Delay, WaitUntil
+from Core.Utils.Utils import Utils
 
-script = '''
-commandBlock_1=[
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 1.0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 15, "initTimestamp": None, "completionMessage": "No message!"}},
-    {"Delay": {"sleepTime": 5, "initTimestamp": None}},
-    {
-        "deviceName":"sf10Vapourtec1",
-        "inUse":True,
-        "settings":{"command":"SET","mode":"FLOW","flowrate":0.5},
-        "topic":"subflow/sf10vapourtec1/cmnd",
-        "client":"client"
-    },
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 1
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },    
-    {"Delay": {"sleepTime": 10, "initTimestamp": None}},
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 0.5
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}}
-];
-commandBlock_2=[
-    {"Delay": {"sleepTime": 5, "initTimestamp": None}},
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 1.5
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}},
-    {"Delay": {"sleepTime": 5, "initTimestamp": None}},
-    {
-        "deviceName":"sf10Vapourtec1",
-        "inUse":True,
-        "settings":{"command":"SET","mode":"FLOW","flowrate":1.2},
-        "topic":"subflow/sf10vapourtec1/cmnd",
-        "client":"client"
-    },
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 0.8
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}},
-    {"Delay": {"sleepTime": 5, "initTimestamp": None}},
-    {
-        "deviceName":"sf10Vapourtec1",
-        "inUse":True,
-        "settings":{"command":"SET","mode":"FLOW","flowrate":0},
-        "topic":"subflow/sf10vapourtec1/cmnd",
-        "client":"client"
-    },
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    }
-];
-'''
-import threading
-import time
-import random
-
-class IRThread(threading.Thread):
+class CustomCommands:
     def __init__(self):
-        super().__init__()
-        self.value = 0
-        self.lock = threading.Lock()
-        self.running = True
+        self.commands = {}
 
-    def run(self):
-        while self.running:
-            with self.lock:
-                self.value = random.randint(0, 20)  # Simulate value change
-            time.sleep(0.5)  # Simulate delay in value update
+    def registerCommand(self, commandClass):
+        commandName = commandClass.__name__
+        commandParams = [param for param in vars(commandClass()).keys()]
+        self.commands[commandName] = commandParams
 
-    def get_value(self):
-        with self.lock:
-            return self.value
+    def getCommandParams(self, commandName):
+        return self.commands.get(commandName, None)
 
-    def stop(self):
-        self.running = False
+class FlowChemAutomation:
+    def __init__(self):
+        self.devices = {
+            "flowsynmaxi2": {
+                "FlowSynValveA": {
+                    "command": "SET",
+                    "value": [True, False]
+                },
+                "FlowSynValveB": {
+                    "command": "SET",
+                    "value": [True, False]
+                },
+                "FlowCWValve": {
+                    "command": "SET",
+                    "value": [True, False]
+                },
+                "PumpBFlowRate": {
+                    "command": "SET",
+                    "value": "float"  # any float
+                },
+                "PumpAFlowRate": {
+                    "command": "SET",
+                    "value": "float"  # any float
+                }
+            },
+            "sf10Vapourtec1": {
+                "command": "SET",
+                "mode": "FLOW",
+                "flowrate": "float"  # any float
+            },
+            "hotchip1":{
+                "command":"SET",
+                "temp": "float"
+            },
+            "hotchip2":{
+                "command":"SET",
+                "temp": "float"
+            },
+            "hotcoil1":{
+                "command":"SET",
+                "temp": "float"
+            },
+            "hotcoil2":{
+                "command":"SET",
+                "temp": "float"
+            }
+        }
+        self.blockCounter = 1
+        self.generatedBlocks = {}
+        self.customCommandsInst = CustomCommands()
+        self.customCommandsInst.registerCommand(Delay)
+        #self.customCommandsInst.registerCommand(WaitUntil)
+        
+    def convertJsonToPython(self,string):
+        replacements = {
+            "true": "True",
+            "false": "False",
+            "null": "None"
+        }
+        for jsonValue, pythonValue in replacements.items():
+            string = string.replace(jsonValue, pythonValue)
+        return string.replace("'",'"')
 
-def checkValFunc(value):
-    return value > 18
+    def generateBlock(self, deviceName, subDevice, value):
+        value=Utils().parseValue(value)
+        if deviceName in self.customCommandsInst.commands:
+            if isinstance(value,str):
+                value=eval(value)
+            for _x in value:
+                value[_x]=eval(value[_x])
+            jsonBlock = {
+                deviceName: value #{"Delay":{"initTimestamp":None,"sleepTime":20}}
+            }
+            #print("DeviceName and.. " + str(deviceName) + " " + str(value))
+        elif deviceName in self.devices:
+            if deviceName == "flowsynmaxi2":
+                if subDevice not in self.devices[deviceName]:
+                    raise ValueError(f"Sub-device '{subDevice}' not found for device {deviceName}")
+                setting = self.devices[deviceName][subDevice]
+                if setting["value"] == "float" and not (isinstance(value, float) or isinstance(value, int)):
+                    raise ValueError("Setting value must be a float!")
+                elif setting["value"] != "float" and value not in setting["value"]:
+                    raise ValueError(f"Invalid value for {subDevice}!")
 
-# Start IR thread
-ir_thread = IRThread()
-ir_thread.start()
+                jsonBlock = {
+                    "deviceName": deviceName,
+                    "inUse": True,
+                    "settings": {
+                        "subDevice": subDevice,
+                        "command": setting["command"],
+                        "value": value
+                    },
+                    "topic": f"subflow/{deviceName.lower()}/cmnd",
+                    "client": "client"
+                }
 
-def getLivingValue():
-    return ir_thread.get_value()
+            elif deviceName == "sf10Vapourtec1":
+                setting = self.devices[deviceName]
+                if not (isinstance(value, float) or isinstance(value, int)):
+                    raise ValueError("Setting value must be a float or int!")
 
-# Set up MQTT client
-client = mqtt.Client()
-client.connect("146.64.91.174", 1883, 60)
-#client.connect("localhost", 1883, 60)
-# Create script parser and decoder
-script_parser = ScriptParser(script, client)
-decoder_kwargs = {
-    "conditionFunc": checkValFunc,
-    "conditionParam": getLivingValue
-}
+                jsonBlock = {
+                    "deviceName": deviceName,
+                    "inUse": True,
+                    "settings": {
+                        "command": setting["command"],
+                        "mode": setting["mode"],
+                        "flowrate": value
+                    },
+                    "topic": f"subflow/{deviceName.lower()}/cmnd",
+                    "client": "client"
+                }
+            elif "hotchip" in deviceName or "hotcoil" in deviceName:
+                setting = self.devices[deviceName]
+                if not (isinstance(value, float) or isinstance(value, int)):
+                    raise ValueError("Setting value must be a float or int!")
 
-fakeClient=1
-fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
-parser = ScriptParser(script, client)
-procedure = parser.createProcedure(fdpDecoder)
+                jsonBlock = {
+                    "deviceName": deviceName,
+                    "inUse": True,
+                    "settings": {
+                        "command": setting["command"],
+                        "temp": value
+                    },
+                    "topic": f"subflow/{deviceName.lower()}/cmnd",
+                    "client": "client"
+                }
+        else:
+            raise ValueError(f"Device '{deviceName.lower()}' not found!")
 
-doIt=True
-while doIt:
-    if (len(procedure.currConfig.commands))==0:
-        print("Next procedure!")
-        procedure.next()
-    if procedure.currConfig is None:
-        print("Procedure complete")
-        exit()
-    else:
-        #Send a command
-        procedure.currConfig.sendMQTT()
-    time.sleep(0.01)
+        return jsonBlock
+    
+    def addBlock(self, deviceSettingsList, blockName=""):
+        try:
+            print("WJ - 'deviceSettingsList': " + str(deviceSettingsList))
+            _received = []
+            for _x in deviceSettingsList:
+                _received.append([_x["device"], _x["command"], _x["value"]])
+            
+            if blockName == "":
+                blockName = f"anonBlock_{self.blockCounter}"
+                self.blockCounter += 1
+
+            self.generatedBlocks[blockName] = [self.generateBlock(device, subDevice, value) for device, subDevice, value in _received]
+            # Return success status
+            return {"status": "success", "blockName": blockName}
+        except Exception as e:
+            # Return error status
+            return {"status": "error", "message": str(e)}
+
+    def saveBlocksToFile(self, filename="default_script",save_directory=""):
+        if save_directory=="":
+            home_directory = os.path.expanduser("~")
+            save_directory = os.path.join(home_directory, "flowchem_scripts")
+
+        # Ensure the directory exists
+        os.makedirs(save_directory, exist_ok=True)
+
+        file_path = os.path.join(save_directory, filename)
+        if not file_path.endswith('.fdp'):
+            file_path += '.fdp'
+
+        try:
+            with open(file_path, 'w') as file:
+                blocks = ';\n'.join([
+                    f"{name}={json.dumps(block)}"
+                    for name, block in self.generatedBlocks.items()
+                ]) + ';'
+                blocks = self.convertJsonToPython(blocks)
+                print(blocks)
+                file.write(blocks)
+            print(f"File saved successfully at {file_path}")
+        except IOError as e:
+            print(f"An error occurred while writing to the file: {e}")
+
+# Define custom command classes
+# Example usage
+if __name__ == "__main__":
+    automation = FlowChemAutomation()
+    #automation.customCommandsInst.registerCommand(Delay)
+    #automation.customCommandsInst.registerCommand(WaitUntil)
+
+    # Add blocks using the new method
+    automation.addBlock(
+        [
+            {'device': 'sf10Vapourtec1', 'command': 'Flowrate', 'value': '1'},
+            {'device': 'flowsynmaxi2', 'command': 'PumpBFlowRate', 'value': '0'},
+            {'device': 'Delay', 'command': 'None', 'value': '{"initTimestamp":"None","sleepTime":"15"}'}
+        ],
+        blockName="myBlock_123"
+    )
+    
+    automation.addBlock(
+        [
+            {"device":"flowsynmaxi2", "command":"PumpAFlowRate", "value":"0"}, #Example of device-specific commands. The array contains values that will come from Flutter 
+            {"device":"sf10Vapourtec1", "command":'None', "value":"0.0"}
+        ], blockName="myBlock_456"
+    )
+    
+    # Save blocks to a file
+    automation.saveBlocksToFile('automation_script.fdp',r"C:\Python_Projects\FluxiDominus_dev")

@@ -1,0 +1,2 @@
+block_1=[{"deviceName":"sf10vapourtec1","inUse":True,"settings":{"command":"SET","mode":"FLOW","valve":"A","flowrate":1.0},"topic":"subflow/sf10vapourtec1/cmnd","client":"client"}];
+block_2=[{"deviceName":"flowsynmaxi1","inUse":True,"settings":{"subDevice":"FlowCWValve","command":"SET","value":True},"topic":"subflow/flowsynmaxi1/cmnd","client":"client"}];

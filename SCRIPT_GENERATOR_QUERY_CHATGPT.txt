@@ -1,121 +1,193 @@
-Error :O -> 
+Okay, getting there. Blocks are correctly added and published. However, as pointed out, devices each have certain settings available. Look:
 
-Connected to broker
-Published: {'deviceName': 'sf10Vapourtec1', 'inUse': True, 'settings': {'command': 'SET', 'mode': 'FLOW', 'flowrate': 1}}
-Published: {'deviceName': 'flowsynmaxi2', 'inUse': True, 'settings': {'subDevice': 'PumpBFlowRate', 'command': 'SET', 'value': 0.4}}
-WaitUntil started!
-Traceback (most recent call last):
-  File "c:\Python_Projects\FluxiDominus_dev\main.py", line 99, in <module>
-    procedure.currConfig.sendMQTT()
-  File "c:\Python_Projects\FluxiDominus_dev\Core\Control\Commands.py", line 192, in sendMQTT
-    if _currentCommand["WaitUntil"].check():
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "c:\Python_Projects\FluxiDominus_dev\Core\Control\Commands.py", line 347, in check
-    _b=self.conditionFunc(self.conditionParam())
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "c:\Python_Projects\FluxiDominus_dev\main.py", line 62, in checkTempFunc
-    _b=value > targetTemp
-               ^^^^^^^^^^
-UnboundLocalError: cannot access local variable 'targetTemp' where it is not associated with a value
-
-My code as it stands:
-
-import time
-
-import paho.mqtt.client as mqtt
-
-from Core.Communication.Network import MQTTTemperatureUpdater
-from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
-
-script = '''
-commandBlock_1=[
-    {
-        "deviceName":"sf10Vapourtec1",
-        "inUse":True,
-        "settings":{"command":"SET","mode":"FLOW","flowrate":1},
-        "topic":"subflow/sf10vapourtec1/cmnd",
-        "client":"client"
-    },
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 0.40
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": 30, "initTimestamp": None, "completionMessage": "No message!"}}
-];
-commandBlock_2=[
-    {"Delay": {"sleepTime": 15, "initTimestamp": None}},
-    {
-        "deviceName": "flowsynmaxi2",
-        "inUse": True,
-        "settings": {
-            "subDevice": "PumpBFlowRate",
-            "command": "SET",
-            "value": 0
-        },
-        "topic": "subflow/flowsynmaxi2/cmnd",
-        "client": "client"
-    },
-    {
-        "deviceName":"sf10Vapourtec1",
-        "inUse":True,
-        "settings":{"command":"SET","mode":"FLOW","flowrate":0},
-        "topic":"subflow/sf10vapourtec1/cmnd",
-        "client":"client"
-    }
-];
-'''
-
-updater = MQTTTemperatureUpdater()
-thread = updater.start()
-temps=[30,40,50,60,70,80]
-targetIndex=0
-maxIndex=5
-targetTemp=temps[targetIndex]
-
-def checkTempFunc(value):
-    _b=value > targetTemp
-    if _b:
-        targetIndex+=1
-        if targetIndex > maxIndex:
-            print("Max temp reached!")
-            return True
-        targetTemp=temps[targetIndex]
-    return _b
-
-def pullTemp():
-    return updater.getTemp()
-
-# Set up MQTT client
-client = mqtt.Client()
-client.connect("localhost", 1883, 60)
-# Create script parser and decoder
-script_parser = ScriptParser(script, client)
-decoder_kwargs = {
-    "conditionFunc": checkTempFunc,
-    "conditionParam": pullTemp
+devicesAndTheirSettings = {
+    "sf10vapourtec1": ["fr"],
+    "sf10vapourtec2": ["fr"],
+    "hotcoil1": ["temp"],
+    "hotcoil2": ["temp"],
+    "hotchip1": ["temp"],
+    "hotchip2": ["temp"],
+    "flowsynmaxi1": ["pafr", "pbfr", "sva", "svb", "svcw"],
+    "flowsynmaxi2": ["pafr", "pbfr", "sva", "svb", "svcw"]
 }
 
-fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
-parser = ScriptParser(script, client)
-procedure = parser.createProcedure(fdpDecoder)
+so another dropdown is neccessary after selecting a device so the user can select one of the available settings for the device before submitting a value.
 
-doIt=True
-while doIt:
-    if (len(procedure.currConfig.commands))==0:
-        procedure.next()
-        if procedure.currConfig is None:
-            print("Procedure complete")
-            doIt=False
-        else:
-            print("Next procedure!")
-    else:
-        #Send a command
-        procedure.currConfig.sendMQTT()
-    time.sleep(0.1)
+Code as it stands:
+
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_flow_chart/includes/plutter_scratch.dart';
+
+class ScriptGeneratorWidget extends StatefulWidget {
+  @override
+  _ScriptGeneratorWidgetState createState() => _ScriptGeneratorWidgetState();
+}
+
+class _ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget> {
+  final List<String> _devices = [
+    'flowsynmaxi1',
+    'flowsynmaxi2',
+    'sf10vapourtec1',
+    'sf10vapourtec2',
+    'hotchip1',
+    'hotchip2',
+    'hotcoil1',
+    'hotcoil2',
+    'Delay',
+    'WaitUntil'
+  ];
+
+  final MqttService _mqttService = MqttService();
+
+  String _selectedDevice = '';
+  String _blockName = '';
+  final Map<String, List<Map<String, dynamic>>> _blocks = {};
+
+  final TextEditingController _valueController = TextEditingController();
+  final TextEditingController _blockNameController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _mqttService.initializeMQTTClient();
+    _mqttService.connect();
+  }
+
+  void _addCommand() {
+    final String setting = _selectedDevice;
+    final String value = _valueController.text;
+
+    if (_blockName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a block name')),
+      );
+      return;
+    }
+
+    if (_selectedDevice.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a device')),
+      );
+      return;
+    }
+
+    if (value.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a value')),
+      );
+      return;
+    }
+
+    final dynamic parsedValue = _parseValue(value);
+    final command = {'setting': setting, 'value': parsedValue};
+
+    setState(() {
+      if (_blocks[_blockName] == null) {
+        _blocks[_blockName] = [];
+      }
+      _blocks[_blockName]!.add(command);
+    });
+
+    _valueController.clear();
+  }
+
+  void _saveBlocks() {
+    final String jsonPayload = jsonEncode(_blocks);
+    _mqttService.publish('chemistry/command', jsonPayload);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Blocks saved and published to MQTT')),
+    );
+  }
+
+  dynamic _parseValue(String value) {
+    if (value.toLowerCase() == 'true' || value.toLowerCase() == 'false') {
+      return value.toLowerCase() == 'true';
+    } else if (double.tryParse(value) != null) {
+      return double.parse(value);
+    }
+    return value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('FlowChem Script Generator')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _blockNameController,
+              decoration: InputDecoration(labelText: 'Block Name'),
+              onChanged: (value) {
+                setState(() {
+                  _blockName = value;
+                });
+              },
+            ),
+            DropdownButton<String>(
+              hint: Text('Select Device'),
+              value: _selectedDevice.isEmpty ? null : _selectedDevice,
+              items: _devices.map((String device) {
+                return DropdownMenuItem<String>(
+                  value: device,
+                  child: Text(device),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedDevice = newValue ?? '';
+                });
+              },
+            ),
+            TextField(
+              controller: _valueController,
+              decoration: InputDecoration(labelText: 'Value'),
+            ),
+            ElevatedButton(
+              onPressed: _addCommand,
+              child: Text('Submit Command'),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _blocks.length,
+                itemBuilder: (context, index) {
+                  final blockName = _blocks.keys.elementAt(index);
+                  final commands = _blocks[blockName]!;
+
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                    child: ListTile(
+                      title: Text('Block: $blockName'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: commands.map((command) {
+                          return Text(
+                              '${command['setting']}: ${command['value']}');
+                        }).toList(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            ElevatedButton(
+              onPressed: _saveBlocks,
+              child: Text('Save and Publish'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void main() {
+  runApp(MaterialApp(
+    home: ScriptGeneratorWidget(),
+  ));
+}
