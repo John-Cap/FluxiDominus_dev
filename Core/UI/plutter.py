@@ -2,9 +2,10 @@ import time
 import paho.mqtt.client as mqtt
 import json
 from Core.Control.ScriptGenerator import FlowChemAutomation
+from Core.UI.brokers_and_topics import MqttTopics
 
 class CommandHandler:
-    def __init__(self, broker_address='localhost', port=1883, topic_command='chemistry/command', topic_response='chemistry/response', automation=FlowChemAutomation()):
+    def __init__(self, broker_address='localhost', port=1883, topic_command='chemistry/cmnd', topic_response='chemistry/response', automation=FlowChemAutomation(),topicSets=MqttTopics.getAllTopicSets()):
         self.broker_address = broker_address
         self.port = port
         self.topic_command = topic_command
@@ -14,6 +15,13 @@ class CommandHandler:
         self.client.on_message = self.on_message
         self.client.on_connect = self.on_connect
         self.automation = automation
+        self.topicSets=topicSets
+        
+        #TODO - move to config
+        self.lastMsgFromTopic={}
+        
+    def updateLastMsg(self,topic,msg):
+        self.lastMsgFromTopic[topic]=msg
 
     def register_command(self, command, handler):
         self.commands[command] = handler
@@ -23,9 +31,13 @@ class CommandHandler:
 
     def on_message(self, client, userdata, message):
         payload = json.loads(message.payload.decode('utf-8'))
+        print(payload)
+        self.updateLastMsg(message.topic,payload)
         device = payload.get('device')
         command = payload.get('command')
         value = payload.get('value')
+
+        print('Received message: '+str(payload))
 
         if device in self.commands:
             self.commands[device](command, value)
