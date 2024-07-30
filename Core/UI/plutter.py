@@ -5,15 +5,15 @@ from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.UI.brokers_and_topics import MqttTopics
 
 class CommandHandler:
-    def __init__(self, broker_address='localhost', port=1883, topic_command='chemistry/cmnd', topic_response='chemistry/response', automation=FlowChemAutomation(),topicSets=MqttTopics.getAllTopicSets()):
-        self.broker_address = broker_address
+    def __init__(self, broker_address='localhost', port=1883, topicResponse='chemistry/response', automation=FlowChemAutomation(),topicSets=MqttTopics.getAllTopicSets()):
+        self.brokerAddress = broker_address
         self.port = port
-        self.topic_command = topic_command
-        self.topic_response = topic_response
+        self.topicResponse = topicResponse
         self.commands = {}
         self.client = mqtt.Client()
-        self.client.on_message = self.on_message
-        self.client.on_connect = self.on_connect
+        self.client.on_message = self.onMessage
+        self.client.on_connect = self.onConnect
+        self.client.on_subscribe = self.onSubscribed
         self.automation = automation
         self.topicSets=topicSets
         
@@ -23,30 +23,35 @@ class CommandHandler:
     def updateLastMsg(self,topic,msg):
         self.lastMsgFromTopic[topic]=msg
 
-    def register_command(self, command, handler):
+    def registerCmnd(self, command, handler):
         self.commands[command] = handler
 
-    def on_connect(self, client, userdata, flags, rc):
+    def onConnect(self, client, userdata, flags, rc):
+        for set in self.topicSets:
+            for val in set.values():
+                self.client.subscribe(val)
         print("Connected to MQTT broker")
 
-    def on_message(self, client, userdata, message):
+    def onSubscribed(self, client, userdata, mid, reason_code_list):
+        print('WJ - subscribed to topic ')
+
+    def onMessage(self, client, userdata, message):
         payload = json.loads(message.payload.decode('utf-8'))
-        print(payload)
         self.updateLastMsg(message.topic,payload)
+        print(self.lastMsgFromTopic)
         device = payload.get('device')
         command = payload.get('command')
         value = payload.get('value')
 
-        print('Received message: '+str(payload))
+        #print('Received message: '+str(payload))
 
         if device in self.commands:
-            self.commands[device](command, value)
+            self.commands[device](device, command, value)
         else:
             print(f"Unknown device: {device}")
 
     def start(self):
-        self.client.connect(self.broker_address, self.port)
-        self.client.subscribe(self.topic_command)
+        self.client.connect(self.brokerAddress, self.port)
         self.client.loop_start()
 
     def stop(self):
@@ -59,7 +64,7 @@ def handle_command(command, value):
 
 def main():
     command_handler = CommandHandler()
-    command_handler.register_command('Delay', handle_command)
+    command_handler.registerCmnd('Delay', handle_command)
     # Register more commands as needed
 
     command_handler.start()

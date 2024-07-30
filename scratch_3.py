@@ -5,15 +5,15 @@ from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.UI.brokers_and_topics import MqttTopics
 
 class CommandHandler:
-    def __init__(self, broker_address='localhost', port=1883, topicCmnd='chemistry/cmnd', topicResponse='chemistry/response', automation=FlowChemAutomation(),topicSets=MqttTopics.getAllTopicSets()):
+    def __init__(self, broker_address='localhost', port=1883, topicResponse='chemistry/response', automation=FlowChemAutomation(),topicSets=MqttTopics.getAllTopicSets()):
         self.brokerAddress = broker_address
         self.port = port
-        self.topicCmnd = topicCmnd
         self.topicResponse = topicResponse
         self.commands = {}
         self.client = mqtt.Client()
         self.client.on_message = self.onMessage
         self.client.on_connect = self.onConnect
+        self.client.on_subscribe = self.onSubscribed
         self.automation = automation
         self.topicSets=topicSets
         
@@ -23,16 +23,17 @@ class CommandHandler:
     def updateLastMsg(self,topic,msg):
         self.lastMsgFromTopic[topic]=msg
 
-    def register_command(self, command, handler):
+    def registerCmnd(self, command, handler):
         self.commands[command] = handler
 
     def onConnect(self, client, userdata, flags, rc):
         for set in self.topicSets:
-            #print(set.values())
             for val in set.values():
                 self.client.subscribe(val)
-        #   self.client.subscribe(self.topicCmnd)
         print("Connected to MQTT broker")
+
+    def onSubscribed(self, client, userdata, mid, reason_code_list):
+        print('WJ - subscribed to topic ')
 
     def onMessage(self, client, userdata, message):
         payload = json.loads(message.payload.decode('utf-8'))
@@ -45,7 +46,7 @@ class CommandHandler:
         #print('Received message: '+str(payload))
 
         if device in self.commands:
-            self.commands[device](command, value)
+            self.commands[device](device, command, value)
         else:
             print(f"Unknown device: {device}")
 
@@ -63,7 +64,7 @@ def handle_command(command, value):
 
 def main():
     command_handler = CommandHandler()
-    command_handler.register_command('Delay', handle_command)
+    command_handler.registerCmnd('Delay', handle_command)
     # Register more commands as needed
 
     command_handler.start()
