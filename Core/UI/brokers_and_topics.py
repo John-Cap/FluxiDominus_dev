@@ -27,10 +27,10 @@ class MqttTopics:
     allTopics=[topicsCnmd,topicsTele,topicsUI]
 
     @staticmethod
-    def getUiTopic(type_):
-        if type_ not in MqttTopics.topicsUI:
-            raise Exception(f"UI topic not found: {type_}")
-        return MqttTopics.topicsUI[type_]
+    def getUiTopic(type):
+        if type not in MqttTopics.topicsUI:
+            raise Exception(f"UI topic not found: {type}")
+        return MqttTopics.topicsUI[type]
 
     @staticmethod
     def getCmndTopic(device):
