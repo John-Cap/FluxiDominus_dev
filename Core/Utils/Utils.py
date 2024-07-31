@@ -1,6 +1,8 @@
+import os
 import re
 from datetime import datetime, timedelta
 from time import sleep
+import uuid
 
 class Utils:
     def __init__(self) -> None:
@@ -52,8 +54,10 @@ class Utils:
             return float(value)
         else:
             return value
-import os
-from datetime import datetime
+
+    def generateUuid():
+        uniqueId = str(uuid.uuid1())
+        return uniqueId
 
 class TimestampGenerator:
     def __init__(self, genesisTime: datetime = None):

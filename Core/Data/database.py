@@ -1,5 +1,10 @@
 import mysql.connector
 from mysql.connector import Error
+from pymongo import MongoClient
+from datetime import datetime, timedelta
+import random
+import time
+import threading
 
 class MySQLDatabase:
     def __init__(self, host, port, user, password, database):
@@ -92,3 +97,66 @@ if __name__ == "__main__":
         print(row)
     
     db.close()
+
+class TimeSeriesDatabase:
+    def __init__(self, host, port, database_name, collection_name):
+        self.client = MongoClient(f'mongodb://{host}:{port}/')
+        self.db = self.client[database_name]
+        self.collection = self.db[collection_name]
+
+    def insertDataPoint(self):
+        data_point = {
+            'timestamp': datetime.utcnow(),
+            'value': random.uniform(20.0, 30.0),  # Example data
+            'metadata': {'sensor': 'sensor1'}
+        }
+        self.collection.insert_one(data_point)
+        print(f"Inserted data point: {data_point}")
+
+    def continuousInsertion(self):
+        try:
+            while True:
+                self.insertDataPoint()
+                time.sleep(1)  # Insert data every second
+        except KeyboardInterrupt:
+            print("Stopped inserting data.")
+
+    def fetchRecentData(self):
+        now = datetime.now(datetime.UTC)
+        ten_minutes_ago = now - timedelta(minutes=10)
+        cursor = self.collection.find({
+            'timestamp': {
+                '$gte': ten_minutes_ago,
+                '$lt': now
+            }
+        }).sort('timestamp', 1)  # Sort by timestamp in ascending order
+
+        for document in cursor:
+            print(document)
+
+    def continuousFetching(self):
+        try:
+            while True:
+                self.fetchRecentData()
+                time.sleep(10)  # Fetch data every 10 seconds
+        except KeyboardInterrupt:
+            print("Stopped fetching data.")
+
+    def start(self):
+        insertion_thread = threading.Thread(target=self.continuousInsertion)
+        fetching_thread = threading.Thread(target=self.continuousFetching)
+
+        insertion_thread.start()
+        fetching_thread.start()
+
+        insertion_thread.join()
+        fetching_thread.join()
+
+if __name__ == "__main__":
+    host = "146.64.91.174"
+    port = 27017
+    database_name = "Pharma"
+    collection_name = "pharma-data"
+
+    ts_db = TimeSeriesDatabase(host, port, database_name, collection_name)
+    ts_db.start()
