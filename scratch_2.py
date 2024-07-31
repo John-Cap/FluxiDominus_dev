@@ -1,10 +1,6 @@
 import time
 import threading
-
-from Core.Control.Commands import Command
 from Core.Utils.Utils import Utils
-
-#from Utils import GetOrDefault as getOrDef
 
 class FlowAddress:
     def __init__(self,name,inletsSett=[],outletsSett=[]) -> None: #inlets
@@ -501,21 +497,6 @@ class FlowJiggler: #Handles compound flowrates at a junction, i.e. correct flowr
 #######################################################################################
 ###Examples
 if __name__ == "__main__":
-    #Flow jiggler
-
-    '''
-    _jiggler=FlowJiggler(
-        flowrates={
-            str(_pump_1):1,
-            str(_pump_2):1
-        },
-        pumps=[_pump_1,_pump_2]
-    )
-    _jiggler.setFlowKeepConst(_pump_1,1.5)
-    for _x,_y in _jiggler.flowrates.items():
-        print(_x+" "+str(_y))
-    '''
-    # create flow path
     _path=FlowPath()
 
     #Stocks + pumps up to t piece
@@ -593,7 +574,7 @@ if __name__ == "__main__":
     _currTerminus=_waste
     
     
-    # Flag variable to indicate whether the thread should continue running
+    # Flag variable to indicate whether the thread should continue running?
     running=True
     allSlugs=Slugs()
 
@@ -634,7 +615,7 @@ if __name__ == "__main__":
                 if not _switched and _vol > _slugVol:
                     _currOrigin.dispensing=False
                     _switched=True
-                time.sleep(0.25)
+                time.sleep(0.1)
             print("************")
             print(str(time.perf_counter() - _now) + " seconds")
             print("Collected slug volumes")
@@ -645,58 +626,10 @@ if __name__ == "__main__":
 
     # Create a thread for running the code
     thread=threading.Thread(target=run_code)
-
-    # Start the thread
     thread.start()
-
-    # Wait for user input to stop the thread
-    #time.sleep(10)
-
-    # Set the flag to stop the thread
-    #running=False
 
     # Wait for the thread to finish
     thread.join()
-
-    print("Thread has finished execution.")
     print("We're done here")
-
-    ##OLD
-    '''
-
-    while True:
-        _flow_1=eval(input("Pump 1 flowrate: "))
-        _flow_2=eval(input("Pump 2 flowrate: "))
-        _flow_3=eval(input("Pump 3 flowrate: "))
-        _slugVol=eval(input("Vol to dispense: "))
-        _origin.flowrateIn=_flow_1
-        _origin_2.flowrateIn=_flow_2
-        _origin_3.flowrateIn=_flow_3
-
-        _slug=_origin.dispense()
-        print(str(_slug.slugVolume()) + " mL")
-
-        _path.updateFlowrates()
-        for _x in _path.segments:
-            print(_x.flowrateOut)
-
-        _switched=False
-        _now=time.perf_counter()
-        _path.timePrev=time.perf_counter()
-        while not (_slug.tailHost is _terminus_1):
-            _path.advanceSlugs()
-            _vol=_slug.slugVolume()
-            print("Time: " + str(round(time.perf_counter()-_now,0)) + " seconds, Front h/pos: " + str(_slug.frontHost.name) + ", " + str(round(_slug.frontHostPos,2)) + "/" + str(_slug.frontHost.volume) + " mL, tail h/pos: " + str(_slug.tailHost.name) + ", " + str(round(_slug.tailHostPos,2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(round(_slug.frontHost.flowrateOut,2)) + " mL.min-1, slug vol: " + str(round(_vol,2)) + " mL, vol collected: " + str(round(_slug.collectedVol,2)) + " mL")
-            if not _switched and _vol>_slugVol:
-                _origin.dispensing=False
-                _switched=True
-            #time.sleep(1)
-        print("************")
-        print(str(time.perf_counter()-_now) + " seconds")
-        print("Collected slug volumes")
-        for _x in _path.collectedSlugs:
-            print(_x.collectedVol)
-        print("************")
-    '''
 
     #######################################################################################

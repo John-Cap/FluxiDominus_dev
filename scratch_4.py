@@ -1,63 +1,40 @@
-import time
-import paho.mqtt.client as mqtt
-import json
-from Core.Control.ScriptGenerator import FlowChemAutomation
 
-class CommandHandler:
-    def __init__(self, broker_address='localhost', port=1883, topic_command='chemistry/command', topic_response='chemistry/response', automation=FlowChemAutomation()):
-        self.broker_address = broker_address
-        self.port = port
-        self.topic_command = topic_command
-        self.topic_response = topic_response
-        self.commands = {}
-        self.client = mqtt.Client()
-        self.client.on_message = self.on_message
-        self.client.on_connect = self.on_connect
-        self.automation = automation
+# Example usage
+import datetime
+from Core.Data.database import MySQLDatabase
+from Core.Data.experiment import StandardExperiment
 
-    def register_command(self, command, handler):
-        self.commands[command] = handler
-
-    def on_connect(self, client, userdata, flags, rc):
-        print("Connected to MQTT broker")
-
-    def on_message(self, client, userdata, message):
-        payload = json.loads(message.payload.decode('utf-8'))
-        device = payload.get('device')
-        command = payload.get('command')
-        value = payload.get('value')
-        print('Received: ' + str(device) + " " + str(command) + " " + str(value))
-
-        if device in self.commands:
-            self.commands[device](command, value)
-        else:
-            print(f"Unknown device: {device}")
-
-    def start(self):
-        self.client.connect(self.broker_address, self.port)
-        self.client.subscribe(self.topic_command)
-        self.client.loop_start()
-
-    def stop(self):
-        self.client.loop_stop()
-        self.client.disconnect()
-
-def handle_command(command, value):
-    print(f"Handling command: {command} with value: {value}")
-    # Add logic to handle the command using FlowChemAutomation
-
-def main():
-    command_handler = CommandHandler()
-    command_handler.register_command('Delay', handle_command)
-    # Register more commands as needed
-
-    command_handler.start()
-
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        command_handler.stop()
 
 if __name__ == "__main__":
-    main()
+    db = MySQLDatabase(
+        host="146.64.91.174",
+        port=3306,
+        user="pharma",
+        password="pharma",
+        database="pharma"
+    )
+
+    db.connect()
+
+    exp = StandardExperiment(db)
+    newExperiment = exp.createExperiment(
+        nameTest="Test1",
+        description="Description of Test1",
+        nameTester="Tester1",
+        fumehoodId="Fumehood1",
+        testScript=b'''
+mr_block=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.5}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.5}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 0}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.3}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.7}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 5}}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.85}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": 
+True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.15}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
+flowsyn_fr_2=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
+''',
+        lockScript=1,
+        flowScript=b"flow_content",
+        datetimeCreate=datetime.datetime.now()
+    )
+    print("Created experiment ID:", newExperiment.id)
+
+    fetchedExperiment = exp.getExperiment(newExperiment.id)
+    if fetchedExperiment:
+        print((fetchedExperiment.toDict()['testScript']).decode('utf-8'))
+
+    db.close()
