@@ -105,11 +105,19 @@ if __name__ == "__main__":
         data={'irScan': [1.2, 3.4, 5.6, 0.8]},
         metadata={"location": "Room 101", "type": "IR"}
     )
+    
+    dp3 = DataPoint(
+        experimentId="exp123",
+        deviceName="FIZZBANG",
+        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
+        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
+    )
 
     # Create DataSet and add DataPoints
     dataSet = DataSet()
     dataSet.addDataPoint(dp1)
     dataSet.addDataPoint(dp2)
+    dataSet.addDataPoint(dp3)
 
     # Print DataSet
     print(dataSet)

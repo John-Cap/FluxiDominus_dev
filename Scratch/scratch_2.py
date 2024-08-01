@@ -105,43 +105,44 @@ dp1 = DataPoint(
     deviceName="flowsynmaxi2",
     data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
     metadata={"location": "Room 101", "type": "temperature"}
-).toDict()
+)
 
 dp2 = DataPoint(
     experimentId="exp123",
     deviceName="IRSCANNER",
     data={'irScan': [1.2, 3.4, 5.6, 0.8]},
     metadata={"location": "Room 101", "type": "IR"}
-).toDict()
+)
 
 dp3 = DataPoint(
     experimentId="exp123",
     deviceName="FIZZBANG",
     data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
     metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
-).toDict()
-
-dataPoints=[dp1,dp2,dp3]
-
-for _x in dataPoints:
-    print(_x)
+)
 
 class TimeSeriesDatabase:
-    def __init__(self, host, port, database_name, collection_name,dataPoints=dataPoints):
+    def __init__(self, host, port, database_name, collection_name):
         self.client = MongoClient(f'mongodb://{host}:{port}/')
         self.db = self.client[database_name]
         self.collection = self.db[collection_name]
-        self.dataPoints=dataPoints
 
-    def insertDataPoint(self,data_point):
+    def insertDataPoint(self):
+        data_point = {
+            'timestamp': datetime.utcnow(),
+            'value': random.uniform(20.0, 30.0),  # Example data
+            'metadata': {'sensor': 'sensor1'}
+        }
         self.collection.insert_one(data_point)
         print(f"Inserted data point: {data_point}")
 
     def continuousInsertion(self):
+        _i=25
         try:
-            for _x in self.dataPoints:
-                self.insertDataPoint(_x)
-                time.sleep(5)  # Insert data every second
+            while _i!=0:
+                self.insertDataPoint()
+                time.sleep(1)  # Insert data every second
+                _i-=1
         except KeyboardInterrupt:
             print("Stopped inserting data.")
 

@@ -6,6 +6,8 @@ import random
 import time
 import threading
 
+from Scratch.scratch_3 import DataPoint
+
 class MySQLDatabase:
     def __init__(self, host, port, user, password, database):
         """Initialize the MySQLDatabase class with connection parameters."""
@@ -98,30 +100,24 @@ if __name__ == "__main__":
     
     db.close()
 '''
+
 class TimeSeriesDatabase:
-    def __init__(self, host, port, database_name, collection_name):
+    def __init__(self, host, port, database_name, collection_name, dataPoints):
         self.client = MongoClient(f'mongodb://{host}:{port}/')
         self.db = self.client[database_name]
         self.collection = self.db[collection_name]
+        self.dataPoints=dataPoints
 
-    def insertDataPoint(self):
-        data_point = {
-            'timestamp': datetime.utcnow(),
-            'value': random.uniform(20.0, 30.0),  # Example data
-            'metadata': {'sensor': 'sensor1'}
-        }
+    def insertDataPoint(self,data_point):
+        data_point["timestamp"]=datetime.utcnow()
         self.collection.insert_one(data_point)
         print(f"Inserted data point: {data_point}")
 
     def continuousInsertion(self):
-        _i=25
-        try:
-            while _i!=0:
-                self.insertDataPoint()
-                time.sleep(1)  # Insert data every second
-                _i-=1
-        except KeyboardInterrupt:
-            print("Stopped inserting data.")
+
+        for _x in self.dataPoints:
+            self.insertDataPoint(_x)
+            time.sleep(7)  # Insert data every second
 
     def fetchRecentData(self):
         now = datetime.utcnow()
@@ -160,6 +156,27 @@ if __name__ == "__main__":
     port = 27017
     database_name = "Pharma"
     collection_name = "pharma-data"
+    
+    dp1 = DataPoint(
+        experimentId="exp123",
+        deviceName="flowsynmaxi2",
+        data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
+        metadata={"location": "Room 101", "type": "temperature"}
+    ).toDict()
 
-    ts_db = TimeSeriesDatabase(host, port, database_name, collection_name)
+    dp2 = DataPoint(
+        experimentId="exp123",
+        deviceName="IRSCANNER",
+        data={'irScan': [1.2, 3.4, 5.6, 0.8]},
+        metadata={"location": "Room 101", "type": "IR"}
+    ).toDict()
+
+    dp3 = DataPoint(
+        experimentId="exp123",
+        deviceName="FIZZBANG",
+        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
+        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
+    ).toDict()
+
+    ts_db = TimeSeriesDatabase(host, port, database_name, collection_name,[dp1,dp2,dp3])
     ts_db.start()
