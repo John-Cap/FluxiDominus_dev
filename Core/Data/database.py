@@ -34,7 +34,7 @@ class MySQLDatabase:
             print(f"Error: {e}")
             self.connection = None
 
-    def create_table(self, table_name, schema):
+    def createTable(self, table_name, schema):
         """Create a table with the given schema."""
         if self.cursor:
             create_table_query = f"""
@@ -45,7 +45,7 @@ class MySQLDatabase:
             self.cursor.execute(create_table_query)
             print(f"Table '{table_name}' created successfully.")
 
-    def insert_records(self, table_name, columns, records):
+    def insertRecords(self, table_name, columns, records):
         """Insert multiple records into the specified table."""
         if self.cursor:
             insert_query = f"""
@@ -56,7 +56,7 @@ class MySQLDatabase:
             self.connection.commit()
             print(f"Records inserted successfully into '{table_name}'.")
 
-    def fetch_records(self, table_name):
+    def fetchRecords(self, table_name):
         """Fetch all records from the specified table."""
         if self.cursor:
             fetch_query = f"SELECT * FROM {table_name}"
@@ -71,8 +71,8 @@ class MySQLDatabase:
         if self.connection:
             self.connection.close()
         print("Database connection closed.")
-
-# Example usage
+'''
+# Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
     db = MySQLDatabase(
         host="146.64.91.174",
@@ -99,31 +99,26 @@ if __name__ == "__main__":
     db.close()
 
 class TimeSeriesDatabase:
-    def __init__(self, host, port, database_name, collection_name):
+    def __init__(self, host, port, database_name, collection_name, dataPoints):
         self.client = MongoClient(f'mongodb://{host}:{port}/')
         self.db = self.client[database_name]
         self.collection = self.db[collection_name]
+        self.dataPoints=dataPoints
 
-    def insertDataPoint(self):
-        data_point = {
-            'timestamp': datetime.utcnow(),
-            'value': random.uniform(20.0, 30.0),  # Example data
-            'metadata': {'sensor': 'sensor1'}
-        }
+    def insertDataPoint(self,data_point):
+        data_point["timestamp"]=datetime.utcnow()
         self.collection.insert_one(data_point)
         print(f"Inserted data point: {data_point}")
 
     def continuousInsertion(self):
-        try:
-            while True:
-                self.insertDataPoint()
-                time.sleep(1)  # Insert data every second
-        except KeyboardInterrupt:
-            print("Stopped inserting data.")
+
+        for _x in self.dataPoints:
+            self.insertDataPoint(_x)
+            time.sleep(7)  # Insert data every second
 
     def fetchRecentData(self):
-        now = datetime.now(datetime.UTC)
-        ten_minutes_ago = now - timedelta(minutes=10)
+        now = datetime.utcnow()
+        ten_minutes_ago = now - timedelta(seconds=5)
         cursor = self.collection.find({
             'timestamp': {
                 '$gte': ten_minutes_ago,
@@ -131,6 +126,7 @@ class TimeSeriesDatabase:
             }
         }).sort('timestamp', 1)  # Sort by timestamp in ascending order
 
+        print('Fetched the following documents:')
         for document in cursor:
             print(document)
 
@@ -157,6 +153,28 @@ if __name__ == "__main__":
     port = 27017
     database_name = "Pharma"
     collection_name = "pharma-data"
+    
+    dp1 = DataPoint(
+        experimentId="exp123",
+        deviceName="flowsynmaxi2",
+        data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
+        metadata={"location": "Room 101", "type": "temperature"}
+    ).toDict()
 
-    ts_db = TimeSeriesDatabase(host, port, database_name, collection_name)
+    dp2 = DataPoint(
+        experimentId="exp123",
+        deviceName="IRSCANNER",
+        data={'irScan': [1.2, 3.4, 5.6, 0.8]},
+        metadata={"location": "Room 101", "type": "IR"}
+    ).toDict()
+
+    dp3 = DataPoint(
+        experimentId="exp123",
+        deviceName="FIZZBANG",
+        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
+        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
+    ).toDict()
+
+    ts_db = TimeSeriesDatabase(host, port, database_name, collection_name,[dp1,dp2,dp3])
     ts_db.start()
+'''
