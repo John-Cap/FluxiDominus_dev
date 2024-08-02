@@ -6,6 +6,8 @@ import random
 import time
 import threading
 
+from Core.Data.data import DataPoint, DataPointFDE, DataSet, DataSetFDD, DataType
+
 class MySQLDatabase:
     def __init__(self, host, port, user, password, database):
         """Initialize the MySQLDatabase class with connection parameters."""
@@ -71,6 +73,7 @@ class MySQLDatabase:
         if self.connection:
             self.connection.close()
         print("Database connection closed.")
+
 '''
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
@@ -97,31 +100,31 @@ if __name__ == "__main__":
         print(row)
     
     db.close()
-
-class TimeSeriesDatabase:
+'''
+class TimeSeriesDatabaseMongo:
     def __init__(self, host, port, database_name, collection_name, dataPoints):
         self.client = MongoClient(f'mongodb://{host}:{port}/')
         self.db = self.client[database_name]
         self.collection = self.db[collection_name]
         self.dataPoints=dataPoints
 
-    def insertDataPoint(self,data_point):
-        data_point["timestamp"]=datetime.utcnow()
-        self.collection.insert_one(data_point)
-        print(f"Inserted data point: {data_point}")
+    def insertDataPoint(self,dataPoint):
+        dataPoint["timestamp"]=datetime.utcnow()
+        self.collection.insert_one(dataPoint)
+        print(f"Inserted data point: {dataPoint}")
 
     def continuousInsertion(self):
 
         for _x in self.dataPoints:
             self.insertDataPoint(_x)
-            time.sleep(7)  # Insert data every second
+            time.sleep(7)  # Insert data every 7 seconds
 
     def fetchRecentData(self):
         now = datetime.utcnow()
-        ten_minutes_ago = now - timedelta(seconds=5)
+        five_sec_ago = now - timedelta(seconds=30)
         cursor = self.collection.find({
             'timestamp': {
-                '$gte': ten_minutes_ago,
+                '$gte': five_sec_ago,
                 '$lt': now
             }
         }).sort('timestamp', 1)  # Sort by timestamp in ascending order
@@ -134,7 +137,7 @@ class TimeSeriesDatabase:
         try:
             while True:
                 self.fetchRecentData()
-                time.sleep(10)  # Fetch data every 10 seconds
+                time.sleep(6)  # Fetch data every 10 seconds
         except KeyboardInterrupt:
             print("Stopped fetching data.")
 
@@ -154,27 +157,46 @@ if __name__ == "__main__":
     database_name = "Pharma"
     collection_name = "pharma-data"
     
-    dp1 = DataPoint(
+    dp1 = DataPointFDE(
         experimentId="exp123",
         deviceName="flowsynmaxi2",
         data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
-        metadata={"location": "Room 101", "type": "temperature"}
+        metadata={"location": "Room 101"}
     ).toDict()
 
-    dp2 = DataPoint(
+    dp2 = DataPointFDE(
+        dataType=DataType("JUMP_THE_MOON"),
         experimentId="exp123",
         deviceName="IRSCANNER",
-        data={'irScan': [1.2, 3.4, 5.6, 0.8]},
+        data={'irScan': [1.2, 3.4, 5.6, 7.8]},
         metadata={"location": "Room 101", "type": "IR"}
     ).toDict()
 
-    dp3 = DataPoint(
+    dp3 = DataPointFDE(
         experimentId="exp123",
         deviceName="FIZZBANG",
         data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
         metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
     ).toDict()
 
-    ts_db = TimeSeriesDatabase(host, port, database_name, collection_name,[dp1,dp2,dp3])
+    dp4 = DataPointFDE(
+        dataType=DataType("IR_SCAN"),
+        experimentId="exp123",
+        deviceName="IRSCANNER",
+        data={'irScan': [1.2, 3.4, 5.6, 7.8]},
+        metadata={"location": "Room 101", "type": "IR"}
+    ).toDict()
+
+    dp5 = DataPointFDE(
+        experimentId="exp123",
+        deviceName="FIZZBANG",
+        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
+        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
+    ).toDict()
+    
+    dataSet=DataSetFDD(
+        [dp1,dp2,dp3,dp4,dp5]
+    )
+
+    ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,dataSet.dataPoints)
     ts_db.start()
-'''

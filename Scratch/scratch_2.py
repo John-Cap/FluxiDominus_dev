@@ -130,7 +130,7 @@ class TimeSeriesDatabase:
     def insertDataPoint(self):
         data_point = {
             'timestamp': datetime.utcnow(),
-            'value': random.uniform(20.0, 30.0),  # Example data
+            'value': random.uniform(1000, 2000),  # Example data
             'metadata': {'sensor': 'sensor1'}
         }
         self.collection.insert_one(data_point)

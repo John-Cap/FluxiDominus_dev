@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from Core.Utils.Utils import Utils
 
 class DataObj_TEMP:
@@ -52,13 +52,37 @@ class IrData(DataObj):
         self.flowScript = flowScript
         self.datetimeCreate = datetimeCreate
 
+class DataType:
+    def __init__(self, type="ANY") -> None:
+        self.type = type
+    
+    def getType(self):
+        return self.type
+
 class DataPoint:
-    def __init__(self, experimentId, deviceName, data, metadata=None):
-        self.experimentId = experimentId
-        self.deviceName = deviceName
+    def __init__(self, data, metadata=None, dataType = DataType()):
         self.timestamp = datetime.utcnow()
         self.data = data
         self.metadata = metadata if metadata else {}
+        self.dataType = dataType
+    
+    def toDict(self):
+        """Convert the DataPoint to a dictionary format."""
+        return {
+            'data': self.data,
+            'dataType': self.dataType.getType(),
+            'metadata': self.metadata,
+            'timestamp': self.timestamp
+        }
+    
+    def __repr__(self):
+        return f"<DataPoint(experimentId={self.experimentId}, deviceName={self.deviceName}, timestamp={self.timestamp})>"
+
+class DataPointFDE(DataPoint): #Fluxidominus default database obj
+    def __init__(self, data, metadata=None, dataType=DataType(), experimentId = "myNiceExperiment", deviceName = "NONE"):
+        super().__init__(data, metadata, dataType)
+        self.experimentId = experimentId
+        self.deviceName = deviceName
     
     def toDict(self):
         """Convert the DataPoint to a dictionary format."""
@@ -67,15 +91,16 @@ class DataPoint:
             'deviceName': self.deviceName,
             'timestamp': self.timestamp,
             'data': self.data,
+            'dataType': self.dataType.getType(),
             'metadata': self.metadata
         }
     
     def __repr__(self):
-        return f"<DataPoint(experimentId={self.experimentId}, deviceName={self.deviceName}, timestamp={self.timestamp})>"
+        return f"{self.toDict()}"
 
 class DataSet:
-    def __init__(self):
-        self.dataPoints = []
+    def __init__(self, dataPoints = []):
+        self.dataPoints = dataPoints
 
     def addDataPoint(self, dataPoint):
         if isinstance(dataPoint, DataPoint):
@@ -90,6 +115,10 @@ class DataSet:
     def __repr__(self):
         return f"<DataSet(numDataPoints={len(self.dataPoints)})>"
 
+class DataSetFDD(DataSet):
+    def __init__(self, dataPoints=[]):
+        super().__init__(dataPoints)
+        
 if __name__ == "__main__":
     # Create DataPoint instances
     dp1 = DataPoint(
@@ -103,7 +132,8 @@ if __name__ == "__main__":
         experimentId="exp123",
         deviceName="IRSCANNER",
         data={'irScan': [1.2, 3.4, 5.6, 0.8]},
-        metadata={"location": "Room 101", "type": "IR"}
+        metadata={"location": "Room 101", "type": "IR"},
+        dataType=DataType("BEER_FOR_BOYS").type()
     )
 
     # Create DataSet and add DataPoints
