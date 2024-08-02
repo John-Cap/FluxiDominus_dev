@@ -1,15 +1,15 @@
 from datetime import datetime
 
-from Core.Data.data_object import DataObj
+from Core.Data.data import DataObj_TEMP
 from Core.Data.database import MySQLDatabase
 
-class Experiment:
+class Experiment_TEMP:
     def __init__(self, db):
-        """Initialize the Experiment with a MySQLDatabase instance."""
+        """Initialize the Experiment_TEMP with a MySQLDatabase instance."""
         self.db = db
 
     def toDB(self, dataObj):
-        """Insert or update a DataObj instance in the database."""
+        """Insert or update a DataObj_TEMP instance in the database."""
         if self.db.cursor:
             if dataObj.id:
                 # Update existing record
@@ -41,13 +41,13 @@ class Experiment:
             print("Data inserted/updated successfully.")
 
     def fromDB(self, id):
-        """Fetch a DataObj instance from the database by ID."""
+        """Fetch a DataObj_TEMP instance from the database by ID."""
         if self.db.cursor:
             fetchQuery = "SELECT * FROM testlist WHERE id=%s"
             self.db.cursor.execute(fetchQuery, (id,))
             result = self.db.cursor.fetchone()
             if result:
-                return DataObj(
+                return DataObj_TEMP(
                     id=result[0],
                     nameTest=result[1],
                     description=result[2],
@@ -62,14 +62,14 @@ class Experiment:
                 print(f"No record found with ID {id}.")
                 return None
             
-class StandardExperiment(Experiment):
+class StandardExperiment_TEMP(Experiment_TEMP):
     def __init__(self, db):
         super().__init__(db)
 
     def createExperiment(self, nameTest, description, nameTester, fumehoodId, testScript,
                          lockScript, flowScript, datetimeCreate):
         """Create a new experiment and save it to the database."""
-        dataObj = DataObj(
+        dataObj = DataObj_TEMP(
             nameTest=nameTest,
             description=description,
             nameTester=nameTester,
@@ -98,9 +98,9 @@ if __name__ == "__main__":
 
     db.connect()
 
-    exp = StandardExperiment(db)
+    exp = StandardExperiment_TEMP(db)
     newExperiment = exp.createExperiment(
-        nameTest="Test1",
+        nameTest="MrTest",
         description="Description of Test1",
         nameTester="Tester1",
         fumehoodId="Fumehood1",

@@ -121,7 +121,7 @@ class TimeSeriesDatabaseMongo:
 
     def fetchRecentData(self):
         now = datetime.utcnow()
-        five_sec_ago = now - timedelta(seconds=30)
+        five_sec_ago = now - timedelta(seconds=5)
         cursor = self.collection.find({
             'timestamp': {
                 '$gte': five_sec_ago,
