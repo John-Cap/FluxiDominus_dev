@@ -6,29 +6,38 @@ import paho.mqtt.client as mqtt
 
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
+from Core.UI.brokers_and_topics import MqttTopics
 from Core.Utils.Utils import DataLogger, TimestampGenerator
 
-class MQTTTemperatureUpdater:
-    def __init__(self, broker_address="localhost", port=1883, topic="subflow/hotcoil1/tele"):
+class MqttDataLogger:
+    def __init__(self, broker_address="localhost", port=1883, client = None, topics=MqttTopics.getAllTopics()):
         self.broker_address = broker_address
         self.port = port
-        self.topic = topic
+        self.topics = topics
         self.temp = 0
-        self.IR=[]
-        self.client = mqtt.Client(client_id="", clean_session=True, userdata=None, protocol=mqtt.MQTTv311)
-        self.client.on_connect = self.on_connect
-        self.client.on_message = self.on_message
+        self.IR = []
+        
+        self.client = client if client else (mqtt.Client(client_id="", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
+        self.client.on_connect = self.onConnect
+        self.client.on_message = self.onMessage
+        self.client.on_subscribe = self.onSubscribe
+        
         self.saidItOnce=False
+        self.isSubscribed = {}
+        
+        self.lastMsgFromTopic={}
 
-    def on_connect(self, client, userdata, flags, rc):
+    def onSubscribe(self, client, userdata, mid, granted_qos):
+        pass
+
+    def onConnect(self, client, userdata, flags, rc):
         if rc == 0:
-            print("Temperature reader connected to broker")
+            
             self.client.subscribe(self.topic)
-            #self.client.subscribe("subflow/hotcoil1/cmnd")
-            self.client.subscribe("subflow/reactIR702L1/tele")
         else:
             print("Connection failed with error code " + str(rc))
-    def on_message(self, client, userdata, msg):
+            
+    def onMessage(self, client, userdata, msg):
         _msgContents = msg.payload.decode()
         _msgContents = _msgContents.replace("true", "True").replace("false", "False")
         _msgContents = ast.literal_eval(_msgContents)
@@ -64,7 +73,7 @@ class MQTTTemperatureUpdater:
         return self.IR
 
 # Create an instance of MQTTTemperatureUpdater
-updater = MQTTTemperatureUpdater()
+updater = MqttDataLogger()
 thread = updater.start()
 time.sleep(2)
 
