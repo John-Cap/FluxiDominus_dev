@@ -244,6 +244,11 @@ class FlowChemAutomation:
             '''
         }
         self.commandTemplatesNested = {
+            "Delay":{
+                "sleepTime":'''
+                    {"Delay": {"initTimestamp": None, "sleepTime": >float<}}
+                '''
+            },
             "sf10vapourtec1": {
                 "fr": '''
                     {
@@ -460,6 +465,15 @@ class FlowChemAutomation:
             }
         }
 
+    def parsePlutterIn(self,blocks):
+        print("WJ - Blocks in: " + str(blocks))
+        for key, val in blocks.items():
+            for cmnd in val:
+                print("Adding " + str(cmnd) + " to block " + key)
+                if isinstance(cmnd["value"],int):
+                    cmnd["value"]=float(cmnd["value"])
+                self.addBlockElement(key,cmnd["device"],cmnd["setting"],cmnd["value"])
+
     def parseBlockElement(self,device,setting,val):
         if not device in self.commandTemplatesNested:
             #throw
@@ -472,7 +486,7 @@ class FlowChemAutomation:
                     return ((setThis.replace(key,str(val))).replace(" ","")).replace("\n","")
                 else:
                     #Throw
-                    exit()
+                    print("WJ - Error!")
 
     def addBlock(self,blockName):
         #TODO - Check if block exists then throw
@@ -484,6 +498,24 @@ class FlowChemAutomation:
             self.addBlock(blockName)
         self.blocks[blockName].append(self.parseBlockElement(device,setting,val))
         
+    def parseToScript(self):
+        if len(self.blockNames) != 0:  
+            for blockName in self.blockNames:
+                blockElements=self.blocks[blockName]
+                self.output=self.output + blockName + "=["
+                finalIndex=len(blockElements)-1
+                for index, element in enumerate(blockElements):
+                    if index == finalIndex:
+                        self.output=self.output + element
+                    else:
+                        self.output=self.output + element + ","
+                self.output=self.output + "];" + "\n"
+            print(self.output)
+            return self.output
+        else:
+            print("WJ - No blocks!")
+
+            
     def saveBlocksToFile(self, filename="default_script",save_directory=""):
         if save_directory=="":
             home_directory = os.path.expanduser("~")
@@ -524,16 +556,19 @@ class FlowChemAutomation:
 # Example usage
 if __name__ == "__main__":
     automation = FlowChemAutomation()
-    automation.addBlockElement("block_1","sf10vapourtec1","fr",1.0)
+    #automation.addBlockElement("block_1","sf10vapourtec1","fr",1.0)
     #automation.addBlockElement("block_1","WaitUntil",50.0)
     #automation.addBlockElement("block_1","flowsynmaxi1sva",False)
     
     #automation.addBlockElement("block_2","sf10vapourtec2fr",1.0)
     #automation.addBlockElement("block_2","flowsynmaxi2pbfr",1.0)
     #automation.addBlockElement("block_3","Delay",100.0)
-    automation.addBlockElement("block_2","flowsynmaxi1","svcw",True)
-    
-    automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")
+    #automation.addBlockElement("block_2","flowsynmaxi1","svcw",True)
+    theseBlocks={"myBlock_1":[{"device":"hotcoil1","setting":"temp","value":3},{"device":"Delay","setting":"sleepTime","value":34.5}],"myBlock_2":[{"device":"sf10vapourtec1","setting":"fr","value":3.1}]}    
+    automation.parsePlutterIn(theseBlocks)
+    print(automation.parseToScript())
+    #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")    
+    #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")
     
     '''
     Output:
