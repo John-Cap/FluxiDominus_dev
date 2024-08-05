@@ -249,6 +249,11 @@ class FlowChemAutomation:
                     {"Delay": {"initTimestamp": None, "sleepTime": >float<}}
                 '''
             },
+            "WaitUntil":{
+                "timeout":'''
+                    {"WaitUntil": {"conditionFunc": "checkValFunc", "conditionParam": "getLivingValue", "timeout": >float<, "initTimestamp": None, "completionMessage": "No message!"}},
+                '''
+            },
             "sf10vapourtec1": {
                 "fr": '''
                     {
@@ -473,6 +478,7 @@ class FlowChemAutomation:
                 if isinstance(cmnd["value"],int):
                     cmnd["value"]=float(cmnd["value"])
                 self.addBlockElement(key,cmnd["device"],cmnd["setting"],cmnd["value"])
+        return (self.parseToScript())
 
     def parseBlockElement(self,device,setting,val):
         if not device in self.commandTemplatesNested:

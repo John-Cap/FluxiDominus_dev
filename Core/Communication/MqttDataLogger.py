@@ -1,3 +1,4 @@
+from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.UI.brokers_and_topics import MqttTopics
 
 
@@ -7,9 +8,8 @@ import paho.mqtt.client as mqtt
 import ast
 import threading
 
-
 class MqttDataLogger:
-    def __init__(self, broker_address="localhost", port=1883, client = None, topics=MqttTopics.getAllTopicSets()):
+    def __init__(self, broker_address="localhost", port=1883, client = None, topics=MqttTopics.getAllTopicSets(),automation=None):
         self.broker_address = broker_address
         self.port = port
         self.topics = topics
@@ -28,12 +28,15 @@ class MqttDataLogger:
         self.isSubscribed = {}
 
         self.lastMsgFromTopic={}
+        
+        self.automation=automation if automation else (FlowChemAutomation())
 
     def onSubscribe(self, client, userdata, mid, granted_qos):
         if mid in self.topicIDs:
             print("WJ - Subscribed to topic " + self.topicIDs[mid] + " with Qos " + str(granted_qos[0]) + "!")
 
     def onConnect(self, client, userdata, flags, rc):
+        print("WJ - Connected!")
         if rc == 0:
             for _x in self.topics:
                 for tpc in _x.values():
@@ -46,12 +49,13 @@ class MqttDataLogger:
             print("Connection failed with error code " + str(rc))
 
     def onMessage(self, client, userdata, msg):
-        print(client)
+        #print(msg)
         _msgContents = msg.payload.decode()
         topic=msg.topic
+        #print("WJ - topic: "+topic)
         _msgContents = _msgContents.replace("true", "True").replace("false", "False")
         _msgContents = ast.literal_eval(_msgContents)
-        print("Message received: " + str(_msgContents))
+        #print("Message received: " + str(_msgContents))
         self.lastMsgFromTopic[topic]=_msgContents
         if "deviceName" in _msgContents:
             #self.lastMsgFromTopic[_msgContents["deviceName"]]=_msgContents
@@ -67,7 +71,9 @@ class MqttDataLogger:
                 pass
                 #print("Message received: " + str(_msgContents))
         elif "script" in _msgContents:
-            self.script=_msgContents["script"]
+            _msgContents=_msgContents["script"]
+            #print("WJ - Received script: "+_msgContents)
+            self.script=self.automation.parsePlutterIn(_msgContents)
 
     def start(self):
         self.client.connect(self.broker_address, self.port)
