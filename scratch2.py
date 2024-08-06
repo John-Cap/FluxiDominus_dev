@@ -1,202 +1,81 @@
-import mysql.connector
-from mysql.connector import Error
-from pymongo import MongoClient
-from datetime import datetime, timedelta
-import random
-import time
-import threading
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import io
+import asyncio
+import websockets
+import base64
+import json
 
-from Core.Data.data import DataPoint, DataPointFDE, DataSet, DataSetFDD, DataType
+MAX_SLICES = 50  # Define the maximum number of X-Y slices
 
-class MySQLDatabase:
-    def __init__(self, host, port, user, password, database):
-        """Initialize the MySQLDatabase class with connection parameters."""
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        self.database = database
-        self.connection = None
-        self.cursor = None
+# Initialize view parameters
+elev = 0
+azim = 0
 
-    def connect(self):
-        """Establish a connection to the MySQL database."""
-        try:
-            self.connection = mysql.connector.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                database=self.database
-            )
-            if self.connection.is_connected():
-                self.cursor = self.connection.cursor()
-                print("Connected to the database.")
-        except Error as e:
-            print(f"Error: {e}")
-            self.connection = None
+incrCoeff=0.05
+incrVal=0.01
 
-    def createTable(self, table_name, schema):
-        """Create a table with the given schema."""
-        if self.cursor:
-            create_table_query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name} (
-                {schema}
-            )
-            """
-            self.cursor.execute(create_table_query)
-            print(f"Table '{table_name}' created successfully.")
-
-    def insertRecords(self, table_name, columns, records):
-        """Insert multiple records into the specified table."""
-        if self.cursor:
-            insert_query = f"""
-            INSERT INTO {table_name} ({', '.join(columns)})
-            VALUES ({', '.join(['%s'] * len(columns))})
-            """
-            self.cursor.executemany(insert_query, records)
-            self.connection.commit()
-            print(f"Records inserted successfully into '{table_name}'.")
-
-    def fetchRecords(self, table_name):
-        """Fetch all records from the specified table."""
-        if self.cursor:
-            fetch_query = f"SELECT * FROM {table_name}"
-            self.cursor.execute(fetch_query)
-            results = self.cursor.fetchall()
-            return results
-
-    def close(self):
-        """Close the database connection."""
-        if self.cursor:
-            self.cursor.close()
-        if self.connection:
-            self.connection.close()
-        print("Database connection closed.")
-
-'''
-# Example usage //Kyk, camel vs snekcase
-if __name__ == "__main__":
-    db = MySQLDatabase(
-        host="146.64.91.174",
-        port=3306,
-        user="pharma",
-        password="pharma",
-        database="pharma"
-    )
-
-    db.connect()
-    db.create_table("sample_table", "id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, age INT NOT NULL")
+# Generate some example data
+def generate_ir_data(step):
+    global incrCoeff
+    global incrVal
     
-    records = [
-        ("Alice", 30),
-        ("Bob", 25),
-        ("Charlie", 35)
-    ]
-    db.insert_records("sample_table", ["name", "age"], records)
-    
-    results = db.fetch_records("sample_table")
-    for row in results:
-        print(row)
-    
-    db.close()
-'''
-class TimeSeriesDatabaseMongo:
-    def __init__(self, host, port, database_name, collection_name, dataPoints):
-        self.client = MongoClient(f'mongodb://{host}:{port}/')
-        self.db = self.client[database_name]
-        self.collection = self.db[collection_name]
-        self.dataPoints=dataPoints
+    absorbance = (np.sin(np.linspace(0, 2 * np.pi, 100)) + np.random.normal(0, 0.1, 100))*incrCoeff
+    incrCoeff=incrCoeff+incrVal
+    return absorbance
 
-    def insertDataPoint(self,dataPoint):
-        dataPoint["timestamp"]=datetime.utcnow()
-        self.collection.insert_one(dataPoint)
-        print(f"Inserted data point: {dataPoint}")
+# Generate a 3D surface plot from IR data
+def generate_surface_plot(data):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    X = np.arange(data.shape[1])
+    Y = np.arange(data.shape[0])
+    X, Y = np.meshgrid(X, Y)
+    ax.plot_surface(X, Y, data, cmap='viridis')
+    ax.set_xlabel('Steps')
+    ax.set_ylabel('Time')
+    ax.set_zlabel('Absorbance')
 
-    def continuousInsertion(self):
+    ax.view_init(elev=elev, azim=azim)  # Set the view parameters
 
-        for _x in self.dataPoints:
-            self.insertDataPoint(_x)
-            time.sleep(7)  # Insert data every 7 seconds
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    plt.close(fig)
+    return buf
 
-    def fetchRecentData(self):
-        now = datetime.utcnow()
-        five_sec_ago = now - timedelta(seconds=5)
-        cursor = self.collection.find({
-            'timestamp': {
-                '$gte': five_sec_ago,
-                '$lt': now
-            }
-        }).sort('timestamp', 1)  # Sort by timestamp in ascending order
+async def send_plot(websocket):
+    data = []
+    while True:
+        step_data = generate_ir_data(len(data))
+        data.append(step_data)
+        if len(data) > MAX_SLICES:  # Keep only the last MAX_SLICES steps
+            data.pop(0)
+        data_array = np.array(data)
 
-        print('Fetched the following documents:')
-        for document in cursor:
-            print(document)
+        img_buf = generate_surface_plot(data_array)
+        img_base64 = base64.b64encode(img_buf.read()).decode('utf-8')
+        await websocket.send(img_base64)
+        await asyncio.sleep(1)  # Adjust the interval as needed
 
-    def continuousFetching(self):
-        try:
-            while True:
-                self.fetchRecentData()
-                time.sleep(6)  # Fetch data every 10 seconds
-        except KeyboardInterrupt:
-            print("Stopped fetching data.")
+async def handler(websocket, path):
+    global elev, azim
+    consumer_task = asyncio.create_task(send_plot(websocket))
 
-    def start(self):
-        insertion_thread = threading.Thread(target=self.continuousInsertion)
-        fetching_thread = threading.Thread(target=self.continuousFetching)
+    try:
+        async for message in websocket:
+            command = json.loads(message)
+            if command['action'] == 'zoom':
+                elev += command['value']
+            elif command['action'] == 'tilt_left_right':
+                azim += command['value']
+            elif command['action'] == 'tilt_up_down':
+                elev += command['value']
+    finally:
+        consumer_task.cancel()
 
-        insertion_thread.start()
-        fetching_thread.start()
+start_server = websockets.serve(handler, 'localhost',9003)
 
-        insertion_thread.join()
-        fetching_thread.join()
-
-if __name__ == "__main__":
-    host = "146.64.91.174"
-    port = 27017
-    database_name = "Pharma"
-    collection_name = "pharma-data"
-    
-    dp1 = DataPointFDE(
-        experimentId="exp123",
-        deviceName="flowsynmaxi2",
-        data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
-        metadata={"location": "Room 101"}
-    ).toDict()
-
-    dp2 = DataPointFDE(
-        dataType=DataType("JUMP_THE_MOON"),
-        experimentId="exp123",
-        deviceName="IRSCANNER",
-        data={'irScan': [1.2, 3.4, 5.6, 7.8]},
-        metadata={"location": "Room 101", "type": "IR"}
-    ).toDict()
-
-    dp3 = DataPointFDE(
-        experimentId="exp123",
-        deviceName="FIZZBANG",
-        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
-        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
-    ).toDict()
-
-    dp4 = DataPointFDE(
-        dataType=DataType("IR_SCAN"),
-        experimentId="exp123",
-        deviceName="IRSCANNER",
-        data={'irScan': [1.2, 3.4, 5.6, 7.8]},
-        metadata={"location": "Room 101", "type": "IR"}
-    ).toDict()
-
-    dp5 = DataPointFDE(
-        experimentId="exp123",
-        deviceName="FIZZBANG",
-        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
-        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
-    ).toDict()
-    
-    dataSet=DataSetFDD(
-        [dp1,dp2,dp3,dp4,dp5]
-    )
-
-    ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,dataSet.dataPoints)
-    ts_db.start()
+asyncio.get_event_loop().run_until_complete(start_server)
+asyncio.get_event_loop().run_forever()
