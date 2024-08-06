@@ -1,21 +1,21 @@
 class MqttTopics:
     topicsCnmd = {
-        "sf10vapourtec1": "subflow/sf10vapourtec1/cmnd",
+        #"sf10vapourtec1": "subflow/sf10vapourtec1/cmnd",
         "flowsynmaxi2": "subflow/flowsynmaxi2/cmnd",
-        "hotchip1": "subflow/hotchip1/cmnd",
-        "hotchip2": "subflow/hotchip2/cmnd",
+        #"hotchip1": "subflow/hotchip1/cmnd",
+        #"hotchip2": "subflow/hotchip2/cmnd",
         "hotcoil1": "subflow/hotcoil1/cmnd",
-        "hotcoil2": "subflow/hotcoil2/cmnd",
+        #"hotcoil2": "subflow/hotcoil2/cmnd",
         "reactIR702L1": "subflow/reactIR702L1/cmnd"
     }
 
     topicsTele = {
-        "sf10vapourtec1": "subflow/sf10vapourtec1/tele",
+        #"sf10vapourtec1": "subflow/sf10vapourtec1/tele",
         "flowsynmaxi2": "subflow/flowsynmaxi2/tele",
-        "hotchip1": "subflow/hotchip1/tele",
-        "hotchip2": "subflow/hotchip2/tele",
+        #"hotchip1": "subflow/hotchip1/tele",
+        #"hotchip2": "subflow/hotchip2/tele",
         "hotcoil1": "subflow/hotcoil1/tele",
-        "hotcoil2": "subflow/hotcoil2/tele",
+        #"hotcoil2": "subflow/hotcoil2/tele",
         "reactIR702L1": "subflow/reactIR702L1/tele"
     }
 
@@ -24,7 +24,11 @@ class MqttTopics:
         "ScriptGeneratorWidget": "chemistry/cmnd"
     }
 
-    allTopics=[topicsCnmd,topicsTele,topicsUI]
+    topicsTests={
+        "testSettings":"test/settings"
+    }
+
+    allTopics=[topicsCnmd,topicsTele,topicsUI,topicsTests]
 
     @staticmethod
     def getUiTopic(type):

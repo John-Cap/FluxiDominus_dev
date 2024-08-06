@@ -1,3 +1,4 @@
+'''
 import copy
 import datetime
 import time
@@ -47,7 +48,7 @@ client.loop_start()
 _MQTTReader=MQTTReader()
 _MQTTReader.readMQTTLoop()
 
-'''
+
 ###############################################################
 #IR
 _IRScanner=IRScanner().parseIrData()
@@ -224,7 +225,7 @@ kwarguments={
     "currTerminus":_currTerminus,
     "None":None
 }
-'''
+
 kwarguments={};
 ###############################################################
 #Main
@@ -257,14 +258,14 @@ while True:
         print("Go command published")
     else:
         print("Go command not delivered!")
-    '''
+    
     _procedure=Procedure(sequence=[
         Configuration(
             nodeScript,
             "->nodeScript 1 complete"
         )   
     ])
-    '''
+    
 
     #_currentConfigurator.sendMQTT()
     itemsQueued=True
@@ -296,7 +297,7 @@ while True:
         _starter={'running':False,'status':'Procedure complete'}
         _starter=json.dumps(_starter)
         _started=client.publish("test/status/",_starter)
-'''
+
 # Example usage
 from Core.UI.plutter import CommandHandler
 
