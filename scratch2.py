@@ -113,7 +113,7 @@ class IRPlotter:
             while True:
                 for irScan in data:
                     self.addIrData(irScan)
-                    time.sleep(1)
+                    time.sleep(0.25)
         
         threading.Thread(target=injectData, daemon=True).start()
 

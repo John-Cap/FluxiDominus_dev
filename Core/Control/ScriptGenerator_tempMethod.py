@@ -2,9 +2,6 @@
 import copy
 import os
 
-#from Core.Control.Commands import Delay, WaitUntil
-#from Core.Utils.Utils import Utils
-
 class CustomCommands:
     def __init__(self):
         self.commands = {}
@@ -471,10 +468,10 @@ class FlowChemAutomation:
         }
 
     def parsePlutterIn(self,blocks):
-        print("WJ - Blocks in: " + str(blocks))
+        #print("WJ - Blocks in: " + str(blocks))
         for key, val in blocks.items():
             for cmnd in val:
-                print("Adding " + str(cmnd) + " to block " + key)
+                #print("Adding " + str(cmnd) + " to block " + key)
                 if isinstance(cmnd["value"],int):
                     cmnd["value"]=float(cmnd["value"])
                 self.addBlockElement(key,cmnd["device"],cmnd["setting"],cmnd["value"])
@@ -505,7 +502,8 @@ class FlowChemAutomation:
         self.blocks[blockName].append(self.parseBlockElement(device,setting,val))
         
     def parseToScript(self):
-        if len(self.blockNames) != 0:  
+        if len(self.blockNames) != 0:
+            self.output=""
             for blockName in self.blockNames:
                 blockElements=self.blocks[blockName]
                 self.output=self.output + blockName + "=["
@@ -516,7 +514,9 @@ class FlowChemAutomation:
                     else:
                         self.output=self.output + element + ","
                 self.output=self.output + "];" + "\n"
-            print(self.output)
+            #print(self.output)
+            self.blocks={}
+            self.blockNames=[]
             return self.output
         else:
             print("WJ - No blocks!")
