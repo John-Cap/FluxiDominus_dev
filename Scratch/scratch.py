@@ -1,578 +1,369 @@
-#import json
+
 import copy
-import os
+import threading
+import time
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import io
+import asyncio
+import websockets
+import base64
+import json
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import io
+import asyncio
+import websockets
+import base64
+import json
 
-#from Core.Control.Commands import Delay, WaitUntil
-#from Core.Utils.Utils import Utils
+from Core.Control.IR import IRScanner
 
-class CustomCommands:
-    def __init__(self):
-        self.commands = {}
+class IRPlotter:
+    def __init__(self, maxSlices=50, elev=30, azim=45, zoom=1):
+        self.maxSlices = maxSlices
+        self.elev = elev
+        self.azim = azim
+        self.zoom = zoom
 
-    def registerCommand(self, commandClass):
-        commandName = commandClass.__name__
-        commandParams = [param for param in vars(commandClass()).keys()]
-        self.commands[commandName] = commandParams
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.ax.set_xlabel('Steps')
+        self.ax.set_ylabel('Time')
+        self.ax.set_zlabel('Absorbance')
 
-    def getCommandParams(self, commandName):
-        return self.commands.get(commandName, None)
+        self.data = []
 
-class FlowChemAutomation:
+    def addIrData(self, irData):
+        self.data.append(irData)
+        if len(self.data) > self.maxSlices:
+            self.data.pop(0)
 
-    def __init__(self):
-        self.output=""
-        self.varBrackets={
-            ">float<":float,
-            ">bool<":bool,
-            ">string<":str
-        }
-        self.blocks={}
-        self.blockNames=[]
-        self.commandTemplates={
-            #Vapourtec SF10's
-            "sf10vapourtec1_fr":'''
-                {
-                    "deviceName":"sf10vapourtec1", 
-                    "inUse" : True,
-                    "settings":{
-                        "command":"SET", 
-                        "mode": "FLOW",
-                        "valve": "A",
-                        "flowrate":>float<
-                    },
-                    "topic":"subflow/sf10vapourtec1/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "sf10vapourtec2_fr":'''
-                {
-                    "deviceName":"sf10vapourtec2", 
-                    "inUse" : True,
-                    "settings":{
-                        "command":"SET", 
-                        "mode": "FLOW",
-                        "valve": "A",
-                        "flowrate":>float<
-                    },
-                    "topic":"subflow/sf10vapourtec2/cmnd",
-                    "client":"client"
-                }
-            ''',
-            
-            #Hotcoils
-            "hotcoil1_temp":'''
-                {
-                    "deviceName":"hotcoil1", 
-                    "inUse" : True,
-                    "command":"SET", 
-                    "temperatureSet":>float<,
-                    "topic":"subflow/hotcoil1/cmnd",
-                    "client":"client"                    
-                }
-            ''',
-            "hotcoil2_temp":'''
-                {
-                    "deviceName":"hotcoil2", 
-                    "inUse" : True,
-                    "command":"SET", 
-                    "temperatureSet":>float<,
-                    "topic":"subflow/hotcoil2/cmnd",
-                    "client":"client"                    
-                }
-            ''',
-            
-            #Hotchips
-            "hotchip1_temp":'''
-                {
-                    "deviceName":"hotchip1", 
-                    "inUse" : True,
-                    "command":"SET", 
-                    "temperatureSet":>float<,
-                    "topic":"subflow/hotchip1/cmnd",
-                    "client":"client"                    
-                }
-            ''',
-            "hotchip2_temp":'''
-                {
-                    "deviceName":"hotchip2", 
-                    "inUse" : True,
-                    "command":"SET", 
-                    "temperatureSet":>float<,
-                    "topic":"subflow/hotchip2/cmnd",
-                    "client":"client"                    
-                }
-            ''',
-            
-            #Maxi
-            "flowsynmaxi1_pafr":'''
-                {
-                    "deviceName": "flowsynmaxi1",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "PumpAFlowRate",
-                        "command": "SET",
-                        "value": >float<
-                    },
-                    "topic":"subflow/flowsynmaxi1/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi1_pbfr":'''
-                {
-                    "deviceName": "flowsynmaxi1",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "PumpBFlowRate",
-                        "command": "SET",
-                        "value": >float<
-                    },
-                    "topic":"subflow/flowsynmaxi1/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi1_sva":'''
-                {
-                    "deviceName": "flowsynmaxi1",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "FlowSynValveA",
-                        "command": "SET",
-                        "value": >bool<
-                    },
-                    "topic":"subflow/flowsynmaxi1/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi1_svb":'''
-                {
-                    "deviceName": "flowsynmaxi1",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "FlowSynValveB",
-                        "command": "SET",
-                        "value": >bool<
-                    },
-                    "topic":"subflow/flowsynmaxi1/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi1_svcw":'''
-                {
-                    "deviceName": "flowsynmaxi1",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "FlowCWValve",
-                        "command": "SET",
-                        "value": >bool<
-                    },
-                    "topic":"subflow/flowsynmaxi1/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi2_pafr":'''
-                {
-                    "deviceName": "flowsynmaxi2",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "PumpAFlowRate",
-                        "command": "SET",
-                        "value": >float<
-                    },
-                    "topic":"subflow/flowsynmaxi2/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi2_pbfr":'''
-                {
-                    "deviceName": "flowsynmaxi2",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "PumpBFlowRate",
-                        "command": "SET",
-                        "value": >float<
-                    },
-                    "topic":"subflow/flowsynmaxi2/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi2_sva":'''
-                {
-                    "deviceName": "flowsynmaxi2",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "FlowSynValveA",
-                        "command": "SET",
-                        "value": >bool<
-                    },
-                    "topic":"subflow/flowsynmaxi2/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi2_svb":'''
-                {
-                    "deviceName": "flowsynmaxi2",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "FlowSynValveB",
-                        "command": "SET",
-                        "value": >bool<
-                    },
-                    "topic":"subflow/flowsynmaxi2/cmnd",
-                    "client":"client"
-                }
-            ''',
-            "flowsynmaxi2_svcw":'''
-                {
-                    "deviceName": "flowsynmaxi2",
-                    "inUse": True,
-                    "settings": {
-                        "subDevice": "FlowCWValve",
-                        "command": "SET",
-                        "value": >bool<
-                    },
-                    "topic":"subflow/flowsynmaxi2/cmnd",
-                    "client":"client"
-                }
-            ''',
-            
-            #Custom commands
-            "Delay":'''
-                {"Delay": {"initTimestamp": None, "sleepTime": >float<}}
-            ''',
-            "WaitUntil":'''
-                {"WaitUntil": {"conditionFunc": "checkTempFunc", "conditionParam": "pullTemp", "timeout": >float<, "initTimestamp": None, "completionMessage": "No message!"}},
-            '''
-        }
-        self.commandTemplatesNested = {
-            "Delay":{
-                "sleepTime":'''
-                    {"Delay": {"initTimestamp": None, "sleepTime": >float<}}
-                '''
-            },
-            "sf10vapourtec1": {
-                "fr": '''
-                    {
-                        "deviceName":"sf10vapourtec1", 
-                        "inUse" : True,
-                        "settings":{
-                            "command":"SET", 
-                            "mode": "FLOW",
-                            "valve": "A",
-                            "flowrate":>float<
-                        },
-                        "topic":"subflow/sf10vapourtec1/cmnd",
-                        "client":"client"
-                    }
-                '''
-            },
-            "sf10vapourtec2": {
-                "fr": '''
-                    {
-                        "deviceName":"sf10vapourtec2", 
-                        "inUse" : True,
-                        "settings":{
-                            "command":"SET", 
-                            "mode": "FLOW",
-                            "valve": "A",
-                            "flowrate":>float<
-                        },
-                        "topic":"subflow/sf10vapourtec2/cmnd",
-                        "client":"client"
-                    }
-                '''
-            },
-            "hotcoil1": {
-                "temp": '''
-                    {
-                        "deviceName":"hotcoil1", 
-                        "inUse" : True,
-                        "command":"SET", 
-                        "temperatureSet":>float<,
-                        "topic":"subflow/hotcoil1/cmnd",
-                        "client":"client"
-                    }
-                '''
-            },
-            "hotcoil2": {
-                "temp": '''
-                    {
-                        "deviceName":"hotcoil2", 
-                        "inUse" : True,
-                        "command":"SET", 
-                        "temperatureSet":>float<,
-                        "topic":"subflow/hotcoil2/cmnd",
-                        "client":"client"
-                    }
-                '''
-            },
-            "hotchip1": {
-                "temp": '''
-                    {
-                        "deviceName":"hotchip1", 
-                        "inUse" : True,
-                        "command":"SET", 
-                        "temperatureSet":>float<,
-                        "topic":"subflow/hotchip1/cmnd",
-                        "client":"client"
-                    }
-                '''
-            },
-            "hotchip2": {
-                "temp": '''
-                    {
-                        "deviceName":"hotchip2", 
-                        "inUse" : True,
-                        "command":"SET", 
-                        "temperatureSet":>float<,
-                        "topic":"subflow/hotchip2/cmnd",
-                        "client":"client"
-                    }
-                '''
-            },
-            "flowsynmaxi1": {
-                "pafr": '''
-                    {
-                        "deviceName": "flowsynmaxi1",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "PumpAFlowRate",
-                            "command": "SET",
-                            "value": >float<
-                        },
-                        "topic":"subflow/flowsynmaxi1/cmnd",
-                        "client":"client"
-                    }
-                ''',
-                "pbfr": '''
-                    {
-                        "deviceName": "flowsynmaxi1",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "PumpBFlowRate",
-                            "command": "SET",
-                            "value": >float<
-                        },
-                        "topic":"subflow/flowsynmaxi1/cmnd",
-                        "client":"client"
-                    }
-                ''',
-                "sva": '''
-                    {
-                        "deviceName": "flowsynmaxi1",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "FlowSynValveA",
-                            "command": "SET",
-                            "value": >bool<
-                        },
-                        "topic":"subflow/flowsynmaxi1/cmnd",
-                        "client":"client"
-                    }
-                ''',
-                "svb": '''
-                    {
-                        "deviceName": "flowsynmaxi1",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "FlowSynValveB",
-                            "command": "SET",
-                            "value": >bool<
-                        },
-                        "topic":"subflow/flowsynmaxi1/cmnd",
-                        "client":"client"
-                    }
-                ''',
-                "svcw": '''
-                    {
-                        "deviceName": "flowsynmaxi1",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "FlowCWValve",
-                            "command": "SET",
-                            "value": >bool<
-                        },
-                        "topic":"subflow/flowsynmaxi1/cmnd",
-                        "client":"client"
-                    }
-                '''
-            },
-            "flowsynmaxi2": {
-                "pafr": '''
-                    {
-                        "deviceName": "flowsynmaxi2",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "PumpAFlowRate",
-                            "command": "SET",
-                            "value": >float<
-                        },
-                        "topic":"subflow/flowsynmaxi2/cmnd",
-                        "client":"client"
-                    }
-                ''',
-                "pbfr": '''
-                    {
-                        "deviceName": "flowsynmaxi2",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "PumpBFlowRate",
-                            "command": "SET",
-                            "value": >float<
-                        },
-                        "topic":"subflow/flowsynmaxi2/cmnd",
-                        "client":"client"
-                    }
-                ''',
-                "sva": '''
-                    {
-                        "deviceName": "flowsynmaxi2",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "FlowSynValveA",
-                            "command": "SET",
-                            "value": >bool<
-                        },
-                        "topic":"subflow/flowsynmaxi2/cmnd",
-                        "client":"client"
-                    }
-                ''',
-                "svb": '''
-                    {
-                        "deviceName": "flowsynmaxi2",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "FlowSynValveB",
-                            "command": "SET",
-                            "value": >bool<
-                        },
-                        "topic":"subflow/flowsynmaxi2/cmnd",
-                        "client":"client"
-                    }
-                ''',
-                "svcw": '''
-                    {
-                        "deviceName": "flowsynmaxi2",
-                        "inUse": True,
-                        "settings": {
-                            "subDevice": "FlowCWValve",
-                            "command": "SET",
-                            "value": >bool<
-                        },
-                        "topic":"subflow/flowsynmaxi2/cmnd",
-                        "client":"client"
-                    }
-                '''
-            }
-        }
+    def initPlot(self):
+        if not self.data:
+            raise ValueError("No data to initialize plot")
+        dataArray = np.array(self.data)
+        x = np.arange(dataArray.shape[1])
+        y = np.arange(dataArray.shape[0])
+        x, y = np.meshgrid(x, y)
+        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
+        return surface,
 
-    def parsePlutterIn(self,blocks):
-        print("WJ - Blocks in: " + str(blocks))
-        for key, val in blocks.items():
-            for cmnd in val:
-                print("Adding " + str(cmnd) + " to block " + key)
-                if isinstance(cmnd["value"],int):
-                    cmnd["value"]=float(cmnd["value"])
-                self.addBlockElement(key,cmnd["device"],cmnd["setting"],cmnd["value"])
+    def updatePlot(self):
+        if not self.data:
+            raise ValueError("No data to update plot")
+        self.ax.clear()
+        self.ax.set_xlabel('Steps')
+        self.ax.set_ylabel('Time')
+        self.ax.set_zlabel('Absorbance')
+        self.ax.view_init(elev=self.elev, azim=self.azim)
+        self.ax.dist = self.zoom  # Apply zoom
+        dataArray = np.array(self.data)
+        x = np.arange(dataArray.shape[1])
+        y = np.arange(dataArray.shape[0])
+        x, y = np.meshgrid(x, y)
+        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
 
-    def parseBlockElement(self,device,setting,val):
-        if not device in self.commandTemplatesNested:
-            #throw
-            return
-        setThis=copy.deepcopy(self.commandTemplatesNested[device][setting])
-        #Valid setting?
-        for key in self.varBrackets: #TODO - this is stupid
-            if key in setThis:
-                if isinstance(val,self.varBrackets[key]):
-                    return ((setThis.replace(key,str(val))).replace(" ","")).replace("\n","")
-                else:
-                    #Throw
-                    print("WJ - Error!")
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        return buf
 
-    def addBlock(self,blockName):
-        #TODO - Check if block exists then throw
-        self.blocks[blockName]=[]
-        self.blockNames.append(blockName)
+    async def sendPlot(self, websocket):
+        while True:
+            imgBuf = self.updatePlot()
+            imgBase64 = base64.b64encode(imgBuf.read()).decode('utf-8')
+            await websocket.send(imgBase64)
+            await asyncio.sleep(1)
 
-    def addBlockElement(self,blockName,device,setting,val):
-        if not blockName in self.blocks:
-            self.addBlock(blockName)
-        self.blocks[blockName].append(self.parseBlockElement(device,setting,val))
-        
-    def parseToScript(self):
-        if len(self.blockNames) != 0:  
-            for blockName in self.blockNames:
-                blockElements=self.blocks[blockName]
-                self.output=self.output + blockName + "=["
-                finalIndex=len(blockElements)-1
-                for index, element in enumerate(blockElements):
-                    if index == finalIndex:
-                        self.output=self.output + element
-                    else:
-                        self.output=self.output + element + ","
-                self.output=self.output + "];" + "\n"
-            print(self.output)
-            return self.output
-        else:
-            print("WJ - No blocks!")
+    async def handler(self, websocket, path):
+        consumerTask = asyncio.create_task(self.sendPlot(websocket))
 
-            
-    def saveBlocksToFile(self, filename="default_script",save_directory=""):
-        if save_directory=="":
-            home_directory = os.path.expanduser("~")
-            save_directory = os.path.join(home_directory, "flowchem_scripts")
-
-        # Ensure the directory exists
-        os.makedirs(save_directory, exist_ok=True)
-
-        file_path = os.path.join(save_directory, filename)
-        if not file_path.endswith('.fdp'):
-            file_path += '.fdp'
         try:
-            with open(file_path, 'w') as file:
-                '''
-                blocks = ';\n'.join([
-                    f"{name}={json.dumps(block)}"
-                    for name, block in self.generatedBlocks.items()
-                ]) + ';'
-                blocks = self.convertJsonToPython(blocks)
-                '''
-                for blockName in self.blockNames:
-                    blockElements=self.blocks[blockName]
-                    self.output=self.output + blockName + "=["
-                    finalIndex=len(blockElements)-1
-                    for index, element in enumerate(blockElements):
-                        if index == finalIndex:
-                            self.output=self.output + element
-                        else:
-                            self.output=self.output + element + ","
-                    self.output=self.output + "];" + "\n"
-                print(self.output)
-                file.write(self.output)
-            print(f"File saved successfully at {file_path}")
-        except IOError as e:
-            print(f"An error occurred while writing to the file: {e}")
+            async for message in websocket:
+                command = json.loads(message)
+                if command['action'] == 'zoom':
+                    self.zoom += command['value']
+                elif command['action'] == 'tilt_left_right':
+                    self.azim += command['value']
+                elif command['action'] == 'tilt_up_down':
+                    self.elev += command['value']
+                elif command['action'] == 'add_data':
+                    irData = command['data']
+                    self.addIrData(irData)
+        finally:
+            consumerTask.cancel()
 
-# Define custom command classes
-# Example usage
+    def startServer(self, host='localhost', port=9003):
+        startServer = websockets.serve(self.handler, host, port)
+        asyncio.get_event_loop().run_until_complete(startServer)
+        asyncio.get_event_loop().run_forever()
+
+    def injectDataThread(self, data):
+        def injectData():
+            for irScan in data:
+                self.addIrData(irScan)
+                time.sleep(1)
+        
+        threading.Thread(target=injectData, daemon=True).start()
+
 if __name__ == "__main__":
-    automation = FlowChemAutomation()
-    #automation.addBlockElement("block_1","sf10vapourtec1","fr",1.0)
-    #automation.addBlockElement("block_1","WaitUntil",50.0)
-    #automation.addBlockElement("block_1","flowsynmaxi1sva",False)
+
+    _IRscanner = IRScanner()
+    _IRscanner.parseIrData()
+    _yData = copy.deepcopy(_IRscanner.arraysListHeatedReaction)
+    print(_yData)
     
-    #automation.addBlockElement("block_2","sf10vapourtec2fr",1.0)
-    #automation.addBlockElement("block_2","flowsynmaxi2pbfr",1.0)
-    #automation.addBlockElement("block_3","Delay",100.0)
-    #automation.addBlockElement("block_2","flowsynmaxi1","svcw",True)
-    theseBlocks={"myBlock_1":[{"device":"hotcoil1","setting":"temp","value":3},{"device":"Delay","setting":"sleepTime","value":34.5}],"myBlock_2":[{"device":"sf10vapourtec1","setting":"fr","value":3.1}]}    
-    automation.parsePlutterIn(theseBlocks)
-    print(automation.parseToScript())
-    #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")    
-    #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")
+    plotter = IRPlotter()
+    plotter.injectDataThread(_yData)
+    plotter.startServer()
+
+'''
+class IRPlotter:
+    def __init__(self, maxSlices=50, elev=30, azim=45, zoom=1):
+        self.maxSlices = maxSlices
+        self.elev = elev
+        self.azim = azim
+        self.zoom = zoom
+
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.ax.set_xlabel('Wavelength')
+        self.ax.set_ylabel('Time')
+        self.ax.set_zlabel('Absorbance')
+
+        self.data = []
+
+    def addIrData(self, irData):
+        self.data.append(irData)
+        if len(self.data) > self.maxSlices:
+            self.data.pop(0)
+
+    def initPlot(self):
+        if not self.data:
+            raise ValueError("No data to initialize plot")
+        dataArray = np.array(self.data)
+        x = np.arange(dataArray.shape[1])
+        y = np.arange(dataArray.shape[0])
+        x, y = np.meshgrid(x, y)
+        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
+        return surface,
+
+    def updatePlot(self):
+        if not self.data:
+            raise ValueError("No data to update plot")
+        self.ax.clear()
+        self.ax.set_xlabel('Steps')
+        self.ax.set_ylabel('Time')
+        self.ax.set_zlabel('Absorbance')
+        self.ax.view_init(elev=self.elev, azim=self.azim)
+        self.ax.dist = self.zoom  # Apply zoom
+        dataArray = np.array(self.data)
+        x = np.arange(dataArray.shape[1])
+        y = np.arange(dataArray.shape[0])
+        x, y = np.meshgrid(x, y)
+        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        return buf
+
+    async def sendPlot(self, websocket):
+        while True:
+            imgBuf = self.updatePlot()
+            imgBase64 = base64.b64encode(imgBuf.read()).decode('utf-8') #Hoekom encode en dan decode hy dit weer?!
+            await websocket.send(imgBase64)
+            await asyncio.sleep(1)
+
+    async def handler(self, websocket, path):
+        consumerTask = asyncio.create_task(self.sendPlot(websocket))
+
+        try:
+            async for message in websocket:
+                command = json.loads(message)
+                if command['action'] == 'zoom':
+                    self.zoom += command['value']
+                elif command['action'] == 'tilt_left_right':
+                    self.azim += command['value']
+                elif command['action'] == 'tilt_up_down':
+                    self.elev += command['value']
+                elif command['action'] == 'add_data':
+                    irData = command['data']
+                    self.addIrData(irData)
+        finally:
+            consumerTask.cancel()
+
+    def startServer(self, host='localhost', port=9003):
+        startServer = websockets.serve(self.handler, host, port)
+        asyncio.get_event_loop().run_until_complete(startServer)
+        asyncio.get_event_loop().run_forever()
+
+if __name__ == "__main__":
+    _IRscanner=IRScanner()
+    _IRscanner.parseIrData()
+    _yData=copy.deepcopy(_IRscanner.arraysListHeatedReaction)
     
-    '''
-    Output:
-    
-    myBlock_123=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}];
-    myBlock_456=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpAFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
-    '''
+    plotter = IRPlotter()
+    plotter.startServer()
+'''
+'''
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import io
+import asyncio
+import websockets
+import base64
+import json
+
+MAX_SLICES = 50  # Define the maximum number of X-Y slices
+
+# Initialize view parameters
+elevation = 30
+azimuth = 45
+
+growCoeff=0.05
+
+# Generate some example data
+def generateIrData(step):
+    global growCoeff
+    absorbance = (np.sin(np.linspace(0, 2 * np.pi, 100)) + np.random.normal(0, 0.1, 100))*growCoeff
+    growCoeff=growCoeff+0.01
+    return absorbance
+
+# Generate a 3D surface plot from IR data
+def generateSurfacePlot(data):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    X = np.arange(data.shape[1])
+    Y = np.arange(data.shape[0])
+    X, Y = np.meshgrid(X, Y)
+    ax.plot_surface(X, Y, data, cmap='viridis')
+    ax.set_xlabel('Steps')
+    ax.set_ylabel('Time')
+    ax.set_zlabel('Absorbance')
+
+    ax.view_init(elev=elevation, azim=azimuth)  # Set the view parameters
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    plt.close(fig)
+    return buf
+
+async def sendPlot(websocket):
+    data = []
+    while True:
+        stepData = generateIrData(len(data))
+        data.append(stepData)
+        if len(data) > MAX_SLICES:  # Keep only the last MAX_SLICES steps
+            data.pop(0)
+        dataArray = np.array(data)
+
+        imgBuf = generateSurfacePlot(dataArray)
+        imgBase64 = base64.b64encode(imgBuf.read()).decode('utf-8')
+        await websocket.send(imgBase64)
+        await asyncio.sleep(1)  # Adjust the interval as needed
+
+async def handler(websocket, path):
+    global elevation, azimuth
+    consumerTask = asyncio.create_task(sendPlot(websocket))
+
+    try:
+        async for message in websocket:
+            command = json.loads(message)
+            if command['action'] == 'zoom':
+                elevation += command['value']
+            elif command['action'] == 'tilt_left_right':
+                azimuth += command['value']
+            elif command['action'] == 'tilt_up_down':
+                elevation += command['value']
+    finally:
+        consumerTask.cancel()
+
+startServer = websockets.serve(handler, 'localhost',9003)
+
+asyncio.get_event_loop().run_until_complete(startServer)
+asyncio.get_event_loop().run_forever()
+'''
+
+#Example 1
+'''
+_IRscanner = IRScanner()
+_IRscanner.parseIrData()
+_yData=copy.deepcopy(_IRscanner.arraysListHeatedReaction) #Array with ~35 arrays with ~840 elements each
+_MixAvg=copy.deepcopy(_IRscanner.arraysListMixAvg) #Array with ~35 arrays with ~840 elements each
+#_yData=[_yData[0],_MixAvg,_MixAvg,_yData[1],_MixAvg,_MixAvg,_yData[2],_MixAvg,_MixAvg,_yData[3],_MixAvg,_MixAvg,_yData[4],_MixAvg,_MixAvg,_yData[5],_MixAvg,_MixAvg]
+_processedData=_yData
+
+num_time_steps = len(_processedData)
+num_x_steps = len(_processedData[0])
+#data_series = [[np.sin(x / num_x_steps * np.pi) * np.cos(x / num_x_steps * np.pi * t) for x in range(num_x_steps)] for t in range(num_time_steps)]
+
+# Convert data to numpy array for easier manipulation
+data_array = np.array(_processedData)
+
+# Create x and t arrays
+x = np.arange(num_x_steps)
+t = np.arange(num_time_steps)
+
+# Create meshgrid from x and t
+T, X = np.meshgrid(x, t)
+
+# Plot
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+ax.plot_surface(X, T, data_array, cmap='viridis')
+
+ax.set_xlabel('X')
+ax.set_ylabel('Time Steps')
+ax.set_zlabel('Y')
+ax.set_title('Surface Map of Time Steps')
+
+plt.show()
+
+#Example 2
+import copy
+import numpy as np
+import matplotlib.pyplot as plt
+
+from Core.Control.IR import IRScanner
+
+_IRscanner = IRScanner()
+_IRscanner.parseIrData()
+_yData=copy.deepcopy(_IRscanner.arraysListHeatedReaction) #Array with ~35 arrays with ~840 elements each
+_MixAvg=copy.deepcopy(_IRscanner.arraysListMixAvg) #Array with ~35 arrays with ~840 elements each
+#_yData=[_yData[0],_MixAvg,_MixAvg,_yData[1],_MixAvg,_MixAvg,_yData[2],_MixAvg,_MixAvg,_yData[3],_MixAvg,_MixAvg,_yData[4],_MixAvg,_MixAvg,_yData[5],_MixAvg,_MixAvg]
+_processedData=_yData
+
+num_time_steps = len(_processedData)
+num_x_steps = len(_processedData[0])
+#data_series = [[np.sin(x / num_x_steps * np.pi) * np.cos(x / num_x_steps * np.pi * t) for x in range(num_x_steps)] for t in range(num_time_steps)]
+
+# Convert data to numpy array for easier manipulation
+data_array = np.array(_processedData)
+
+# Create x and t arrays
+x = np.arange(num_x_steps)
+t = np.arange(num_time_steps)
+
+# Create meshgrid from x and t
+T, X = np.meshgrid(x, t)
+
+# Plot
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+ax.plot_surface(X, T, data_array, cmap='viridis')
+
+ax.set_xlabel('X')
+ax.set_ylabel('Time Steps')
+ax.set_zlabel('Y')
+ax.set_title('Surface Map of Time Steps')
+
+plt.show()
+'''

@@ -1,15 +1,14 @@
-from datetime import datetime
+
 import time
-import paho.mqtt.client as mqtt
 
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
+from Core.UI.plutter import MqttService
 from Core.Utils.Utils import DataLogger, TimestampGenerator
-from Core.Communication.MqttDataLogger import MqttDataLogger
 
 # Create an instance of MQTTTemperatureUpdater
-updater = MqttDataLogger()
+updater = MqttService(broker_address="localhost")
 thread = updater.start()
 time.sleep(2)
 
@@ -22,7 +21,6 @@ targetTemp = temps[targetIndex]
 hitBracket=2 #abs distance from target temp to be considered reached
 
 def checkTempFunc(value):
-    #print(value)
     global targetIndex, targetTemp, sequenceComplete
     if sequenceComplete:
         return True
@@ -40,22 +38,7 @@ def checkTempFunc(value):
 def pullTemp():
     return updater.getTemp()
 
-# Example script, parser and decoder setup
-#
-#{'deviceName': 'hotcoil1', 'command': 'SET', 'temperatureSet': 25}
-
-# Set up MQTT client
-client = mqtt.Client()
-client.connect("localhost", 1883, 60)
-client.loop_start()
-
-
-
-# Data logger
-
-
-# Create script parser and decoder
-# Assuming ScriptParser and FdpDecoder are defined elsewhere
+client = updater.client
 
 decoder_kwargs = {
     "conditionFunc": checkTempFunc,
@@ -68,8 +51,8 @@ automation = FlowChemAutomation()
 doIt = True
 _reportSleep=5
 _reportDelay=Delay(_reportSleep)
-logger = DataLogger('time_degrees_IR_1.txt')
-logger.logData(-1,[-1])
+#logger = DataLogger('time_degrees_IR_1.txt')
+#logger.logData(-1,[-1])
 
 parser=None
 procedure=None
@@ -79,24 +62,27 @@ while True:
     #Script posted?
     
     print("WJ - Waiting for script")
-    while (not "test/settings" in updater.lastMsgFromTopic) or updater.script=="":
+    while updater.script=="":
         time.sleep(0.5)
-        
     try:
-        print('WJ - Received script: '+updater.script)
+        '''
+        print('#######')
+        print('WJ - Parsed script is: '+updater.script)
+        print('#######')
+        '''
         parser = ScriptParser(updater.script, client)
         procedure = parser.createProcedure(fdpDecoder)
-        updater.script=""
-        print("WJ - Script received!")
+        
     except:
         print("Script parsing error!")
         exit()
-    
+        
+    updater.script=""
     doIt=True
     while doIt:
         if _reportDelay.elapsed():
             _reportDelay=Delay(_reportSleep)
-            logger.logData(updater.getTemp(),updater.getIR())
+            #logger.logData(updater.getTemp(),updater.getIR())
         if len(procedure.currConfig.commands) == 0:
             procedure.next()
             if procedure.currConfig is None:
@@ -106,6 +92,6 @@ while True:
                 print("Next procedure!")
         else:
             procedure.currConfig.sendMQTT(waitForDelivery=True)
-        time.sleep(0.1)
+        time.sleep(0.2)
 thread.join()
 exit()

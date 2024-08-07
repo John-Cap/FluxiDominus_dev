@@ -92,7 +92,11 @@ class ScriptParser:
                     blocks[currentBlock].append(parsedContent)
                 except Exception as e:
                     print(f"Error parsing additional block content: {e}")
-
+        '''         
+        blocks = {}
+        currentBlock = None
+        '''
+        #print(blocks)
         return blocks
 
     def convertToNodeScripts(self, blockName, blockContent, fdpDecoder):

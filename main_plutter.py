@@ -1,9 +1,8 @@
 
 import time
-from Core.UI.plutter import CommandHandler
-
+from Core.UI.plutter import MqttService
 
 if __name__ == "__main__":
-    CommandHandler().start()
+    MqttService().start()
     while True:
         time.sleep(0.1)
