@@ -4,6 +4,8 @@ import time
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
+from Core.Data.data import DataPointFDE
+from Core.Data.database import TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
 from Core.Utils.Utils import DataLogger, TimestampGenerator
 
@@ -38,6 +40,22 @@ def checkTempFunc(value):
 def pullTemp():
     return updater.getTemp()
 
+###########################################################
+#Package for MongoDB
+#Host details
+host = "146.64.91.174"
+port = 27017
+database_name = "Pharma"
+collection_name = "pharma-data"
+metadata={"location": "Room 101", "type": "Demo_Data"}
+
+#Start
+tsDb = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,[])
+tsDb.start()
+tsDb.pause()
+
+###########################################################
+
 client = updater.client
 
 decoder_kwargs = {
@@ -62,6 +80,7 @@ while True:
     #Script posted?
     
     print("WJ - Waiting for script")
+    tsDb.pause()
     while updater.script=="":
         time.sleep(0.5)
     try:
@@ -79,9 +98,15 @@ while True:
         
     updater.script=""
     doIt=True
+    updater.logData=True
+    tsDb.start()
     while doIt:
         if _reportDelay.elapsed():
+            print(updater.dataQueue)
             _reportDelay=Delay(_reportSleep)
+            if len(updater.dataQueue)!=0:
+                tsDb.dataPoints=tsDb.dataPoints+updater.dataQueue
+                updater.dataQueue=[]
             #logger.logData(updater.getTemp(),updater.getIR())
         if len(procedure.currConfig.commands) == 0:
             procedure.next()

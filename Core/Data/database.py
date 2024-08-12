@@ -108,6 +108,9 @@ class TimeSeriesDatabaseMongo:
         self.db = self.client[database_name]
         self.collection = self.db[collection_name]
         self.dataPoints=dataPoints
+        self.insertionInterval=10
+        self.pauseCollection=True
+        self.insertion_thread=None
 
     def insertDataPoint(self,dataPoint):
         dataPoint["timestamp"]=datetime.utcnow()
@@ -115,17 +118,26 @@ class TimeSeriesDatabaseMongo:
         print(f"Inserted data point: {dataPoint}")
 
     def continuousInsertion(self):
-
-        for _x in self.dataPoints:
-            self.insertDataPoint(_x)
-            time.sleep(7)  # Insert data every 7 seconds
+        while True:
+            while self.pauseCollection:
+                time.sleep(0.1)
+            if self.dataPoints is None or len(self.dataPoints)==0:
+                pass
+            else:
+                _numOf=len(self.dataPoints)
+                for _x in self.dataPoints:
+                    self.insertDataPoint(_x)
+                self.dataPoints=[]
+                print('WJ - Inserted {_numOf} datapoints into database {self.db}!')
+            time.sleep(self.insertionInterval)
+            
 
     def fetchRecentData(self):
         now = datetime.utcnow()
-        five_sec_ago = now - timedelta(seconds=30)
+        thirty_sec_ago = now - timedelta(seconds=30)
         cursor = self.collection.find({
             'timestamp': {
-                '$gte': five_sec_ago,
+                '$gte': thirty_sec_ago,
                 '$lt': now
             }
         }).sort('timestamp', 1)  # Sort by timestamp in ascending order
@@ -142,16 +154,26 @@ class TimeSeriesDatabaseMongo:
         except KeyboardInterrupt:
             print("Stopped fetching data.")
 
+    def pause(self):
+        self.pauseCollection=True
+
     def start(self):
-        insertion_thread = threading.Thread(target=self.continuousInsertion)
-        fetching_thread = threading.Thread(target=self.continuousFetching)
+        if not (self.insertion_thread is None):
+            self.pauseCollection=False
+        else:
+            insertion_thread = threading.Thread(target=self.continuousInsertion)
 
-        insertion_thread.start()
-        fetching_thread.start()
+            #fetching_thread = threading.Thread(target=self.continuousFetching)
 
-        insertion_thread.join()
-        fetching_thread.join()
+            insertion_thread.start()
+            #fetching_thread.start()
 
+            #insertion_thread.join()
+            #fetching_thread.join()
+            
+            self.insertion_thread=insertion_thread
+            self.pauseCollection=False
+            
 if __name__ == "__main__":
     host = "146.64.91.174"
     port = 27017
