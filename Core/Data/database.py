@@ -115,7 +115,7 @@ class TimeSeriesDatabaseMongo:
     def insertDataPoint(self,dataPoint):
         dataPoint["timestamp"]=datetime.utcnow()
         self.collection.insert_one(dataPoint)
-        print(f"Inserted data point: {dataPoint}")
+        #print(f"Inserted data point: {dataPoint}")
 
     def continuousInsertion(self):
         while True:
@@ -128,7 +128,7 @@ class TimeSeriesDatabaseMongo:
                 for _x in self.dataPoints:
                     self.insertDataPoint(_x)
                 self.dataPoints=[]
-                print('WJ - Inserted {_numOf} datapoints into database {self.db}!')
+                print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval)
             
 
@@ -163,10 +163,10 @@ class TimeSeriesDatabaseMongo:
         else:
             insertion_thread = threading.Thread(target=self.continuousInsertion)
 
-            #fetching_thread = threading.Thread(target=self.continuousFetching)
+            fetching_thread = threading.Thread(target=self.continuousFetching)
 
             insertion_thread.start()
-            #fetching_thread.start()
+            fetching_thread.start()
 
             #insertion_thread.join()
             #fetching_thread.join()

@@ -21,6 +21,7 @@ class MqttService:
         self.client.on_connect = self.onConnectTele #self.onConnect
         self.client.on_message = self.onMessage
         self.client.on_subscribe = self.onSubscribe
+        #self.client.on_publish=self.onPublish
         
         self.topicIDs={}
 

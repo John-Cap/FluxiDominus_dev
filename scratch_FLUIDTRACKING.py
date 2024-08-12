@@ -74,6 +74,7 @@ class MySQLDatabase:
             self.connection.close()
         print("Database connection closed.")
 
+
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
     db = MySQLDatabase(
@@ -85,16 +86,16 @@ if __name__ == "__main__":
     )
 
     db.connect()
-    db.create_table("sample_table", "id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, age INT NOT NULL")
+    db.createTable("sample_table", "id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, age INT NOT NULL")
     
     records = [
-        ("Alice", 30),
+        ("Sam", 30),
         ("Bob", 25),
         ("Charlie", 35)
     ]
-    db.insert_records("sample_table", ["name", "age"], records)
+    db.insertRecords("sample_table", ["name", "age"], records)
     
-    results = db.fetch_records("sample_table")
+    results = db.fetchRecords("sample_table")
     for row in results:
         print(row)
     
