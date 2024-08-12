@@ -103,7 +103,8 @@ if __name__ == "__main__":
 '''
 class TimeSeriesDatabaseMongo:
     def __init__(self, host, port, database_name, collection_name, dataPoints):
-        self.client = MongoClient(f'mongodb://{host}:{port}/')
+        #self.client = MongoClient(f'mongodb://{host}:{port}/')
+        self.client = MongoClient(host=host,port=port)
         self.db = self.client[database_name]
         self.collection = self.db[collection_name]
         self.dataPoints=dataPoints
@@ -199,4 +200,5 @@ if __name__ == "__main__":
     )
 
     ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,dataSet.dataPoints)
-    ts_db.start()
+    ts_db.insertDataPoint(dp1)
+    #ts_db.start()

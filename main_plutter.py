@@ -199,4 +199,7 @@ if __name__ == "__main__":
     )
 
     ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,dataSet.dataPoints)
+    time.sleep(10)
+    print(ts_db.client.server_info())
+    time.sleep(10)
     ts_db.start()
