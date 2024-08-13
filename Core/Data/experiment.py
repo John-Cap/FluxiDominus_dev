@@ -1,20 +1,25 @@
 from datetime import datetime
+import json
 
 from Core.Data.data import DataObj_TEMP
 from Core.Data.database import MySQLDatabase
 
 class Experiment_TEMP:
-    def __init__(self, db):
+    def __init__(self, db, tables):
         """Initialize the Experiment_TEMP with a MySQLDatabase instance."""
         self.db = db
+        self.tables=tables
+        self.table=tables[0]
 
-    def toDB(self, dataObj):
+    def toDB(self, dataObj, table=None):
+        if not table:
+            table=self.table
         """Insert or update a DataObj_TEMP instance in the database."""
         if self.db.cursor:
             if dataObj.id:
                 # Update existing record
-                updateQuery = """
-                UPDATE testlist
+                updateQuery = f"""
+                UPDATE {table}
                 SET nameTest=%s, description=%s, nameTester=%s, fumehoodId=%s, testScript=%s,
                     lockScript=%s, flowScript=%s, datetimeCreate=%s
                 WHERE id=%s
@@ -27,8 +32,8 @@ class Experiment_TEMP:
                 self.db.cursor.execute(updateQuery, values)
             else:
                 # Insert new record
-                insertQuery = """
-                INSERT INTO testlist (nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate)
+                insertQuery = f"""
+                INSERT INTO {table} (nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 values = (
@@ -40,10 +45,12 @@ class Experiment_TEMP:
             self.db.connection.commit()
             print("Data inserted/updated successfully.")
 
-    def fromDB(self, id):
+    def fromDB(self, id, table=None):
+        if not table:
+            table=self.table
         """Fetch a DataObj_TEMP instance from the database by ID."""
         if self.db.cursor:
-            fetchQuery = "SELECT * FROM testlist WHERE id=%s"
+            fetchQuery = f"SELECT * FROM {table} WHERE id=%s"
             self.db.cursor.execute(fetchQuery, (id,))
             result = self.db.cursor.fetchone()
             if result:
@@ -63,8 +70,8 @@ class Experiment_TEMP:
                 return None
             
 class StandardExperiment_TEMP(Experiment_TEMP):
-    def __init__(self, db):
-        super().__init__(db)
+    def __init__(self, db, tables):
+        super().__init__(db, tables)
 
     def createExperiment(self, nameTest, description, nameTester, fumehoodId, testScript,
                          lockScript, flowScript, datetimeCreate):
@@ -98,7 +105,8 @@ if __name__ == "__main__":
 
     db.connect()
 
-    exp = StandardExperiment_TEMP(db)
+    exp = StandardExperiment_TEMP(db,tables=["testlist"])
+    '''
     newExperiment = exp.createExperiment(
         nameTest="MrTest",
         description="Description of Test1",
@@ -110,9 +118,9 @@ if __name__ == "__main__":
         datetimeCreate=datetime.now()
     )
     print("Created experiment ID:", newExperiment.id)
-
-    fetchedExperiment = exp.getExperiment(newExperiment.id)
+    '''
+    fetchedExperiment = str(exp.fromDB(999).toDict())
     if fetchedExperiment:
-        print(fetchedExperiment.toDict())
+        print(fetchedExperiment)
 
     db.close()

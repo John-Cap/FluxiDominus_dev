@@ -9,13 +9,7 @@ import asyncio
 import websockets
 import base64
 import json
-import matplotlib.pyplot as plt
-import numpy as np
-import io
-import asyncio
-import websockets
-import base64
-import json
+
 
 from Core.Control.IR import IRScanner
 
@@ -102,7 +96,7 @@ class IRPlotter:
         finally:
             consumerTask.cancel()
 
-    def startServer(self, host='localhost', port=9003):
+    def startServer(self, host='146.64.91.174', port=9003):
         startServer = websockets.serve(self.handler, host, port)
         asyncio.get_event_loop().run_until_complete(startServer)
         asyncio.get_event_loop().run_forever()
