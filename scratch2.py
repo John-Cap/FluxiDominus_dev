@@ -9,13 +9,7 @@ import asyncio
 import websockets
 import base64
 import json
-import matplotlib.pyplot as plt
-import numpy as np
-import io
-import asyncio
-import websockets
-import base64
-import json
+
 
 from Core.Control.IR import IRScanner
 

@@ -119,7 +119,7 @@ if __name__ == "__main__":
     )
     print("Created experiment ID:", newExperiment.id)
     '''
-    fetchedExperiment = str(exp.fromDB(999).toDict())
+    fetchedExperiment = str(exp.fromDB(182).toDict())
     if fetchedExperiment:
         print(fetchedExperiment)
 
