@@ -1,7 +1,6 @@
 from datetime import datetime
 import enum
 import json
-import sys
 import time
 
 import numpy as np

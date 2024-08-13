@@ -21,7 +21,9 @@ class MqttTopics:
 
     topicsUI = {
         "FlowSketcher": "chemistry/cmnd",
-        "ScriptGeneratorWidget": "chemistry/cmnd"
+        "ScriptGeneratorWidget": "chemistry/cmnd",
+        #"TestListWidget":"ui/TestListWidget",
+        "FormPanelWidget":"ui/FormPanelWidget"
     }
 
     topicsTests={

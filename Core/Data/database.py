@@ -2,7 +2,6 @@ import mysql.connector
 from mysql.connector import Error
 from pymongo import MongoClient
 from datetime import datetime, timedelta
-import random
 import time
 import threading
 
@@ -163,10 +162,10 @@ class TimeSeriesDatabaseMongo:
         else:
             insertion_thread = threading.Thread(target=self.continuousInsertion)
 
-            fetching_thread = threading.Thread(target=self.continuousFetching)
+            #fetching_thread = threading.Thread(target=self.continuousFetching)
 
             insertion_thread.start()
-            fetching_thread.start()
+            #fetching_thread.start()
 
             #insertion_thread.join()
             #fetching_thread.join()

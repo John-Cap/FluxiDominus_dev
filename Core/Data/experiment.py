@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 
 from Core.Data.data import DataObj_TEMP
 from Core.Data.database import MySQLDatabase
@@ -106,7 +105,6 @@ if __name__ == "__main__":
     db.connect()
 
     exp = StandardExperiment_TEMP(db,tables=["testlist"])
-    '''
     newExperiment = exp.createExperiment(
         nameTest="MrTest",
         description="Description of Test1",
@@ -119,8 +117,9 @@ if __name__ == "__main__":
     )
     print("Created experiment ID:", newExperiment.id)
     '''
-    fetchedExperiment = str(exp.fromDB(999).toDict())
+    fetchedExperiment = str(exp.fromDB(182).toDict())
     if fetchedExperiment:
         print(fetchedExperiment)
 
     db.close()
+    '''
