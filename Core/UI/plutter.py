@@ -18,6 +18,8 @@ class MqttService:
         self.IR = []
         self.script = ""
         self.formPanelData={}
+        self.user=None
+        self.signedIn=False
 
         self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
         self.client.on_connect = self.onConnectTele #self.onConnect

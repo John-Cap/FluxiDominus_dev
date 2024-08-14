@@ -75,12 +75,20 @@ _reportDelay=Delay(_reportSleep)
 parser=None
 procedure=None
 doIt=True
+
+################################
+#Signed in?
+while updater.user == "" or not updater.signedIn:
+    time.sleep(0.2)
+################################
+
 # Main loop!
 while True:
     #Script posted?
     
     print("WJ - Waiting for script")
-    tsDb.pause()
+    updater.dataQueue=[]
+    tsDb.purgeAndPause()
     while updater.script=="":
         time.sleep(0.5)
 

@@ -16,7 +16,12 @@ class MySQLDatabase:
         self.password = password
         self.database = database
         self.connection = None
+        self.connected = False
         self.cursor = None
+        
+        self.tableVar={
+            "users":['orgId', 'lastLogin', 'firstName', 'lastName']
+        } #hardcoded
 
     def connect(self):
         """Establish a connection to the MySQL database."""
@@ -46,9 +51,10 @@ class MySQLDatabase:
             self.cursor.execute(create_table_query)
             print(f"Table '{table_name}' created successfully.")
 
-    def insertRecords(self, table_name, columns, records):
+    def insertRecords(self, table_name, records):
         """Insert multiple records into the specified table."""
         if self.cursor:
+            columns=self.tableVar[table_name]
             insert_query = f"""
             INSERT INTO {table_name} ({', '.join(columns)})
             VALUES ({', '.join(['%s'] * len(columns))})
@@ -73,7 +79,6 @@ class MySQLDatabase:
             self.connection.close()
         print("Database connection closed.")
 
-'''
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
     db = MySQLDatabase(
@@ -85,21 +90,28 @@ if __name__ == "__main__":
     )
 
     db.connect()
-    db.create_table("sample_table", "id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, age INT NOT NULL")
     
     records = [
-        ("Alice", 30),
-        ("Bob", 25),
-        ("Charlie", 35)
+        ("309930",datetime.now(),"Wessel","Bonnet"),
+        ("170850",datetime.now(),"Mulder","Scully")
     ]
-    db.insert_records("sample_table", ["name", "age"], records)
+    db.insertRecords("users", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
     
-    results = db.fetch_records("sample_table")
+    results = db.fetchRecords("users")
+    for row in results:
+        print(row)
+        
+    records_2 = [
+        ("309930",datetime.now(),"We ssel","Bon net")
+    ]
+    db.insertRecords("users", records_2) #['orgId', 'lastLogin', 'firstName', 'lastName']
+    
+    results = db.fetchRecords("users")
     for row in results:
         print(row)
     
     db.close()
-'''
+
 class TimeSeriesDatabaseMongo:
     def __init__(self, host, port, database_name, collection_name, dataPoints):
         #self.client = MongoClient(f'mongodb://{host}:{port}/')
@@ -129,7 +141,6 @@ class TimeSeriesDatabaseMongo:
                 self.dataPoints=[]
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval)
-            
 
     def fetchRecentData(self):
         now = datetime.utcnow()
@@ -156,6 +167,10 @@ class TimeSeriesDatabaseMongo:
     def pause(self):
         self.pauseCollection=True
 
+    def purgeAndPause(self):
+        self.dataPoints=[] #What happens if updater still wants to add some datapoints?
+        self.pause()
+
     def start(self):
         if not (self.insertion_thread is None):
             self.pauseCollection=False
@@ -172,7 +187,7 @@ class TimeSeriesDatabaseMongo:
             
             self.insertion_thread=insertion_thread
             self.pauseCollection=False
-            
+'''
 if __name__ == "__main__":
     host = "146.64.91.174"
     port = 27017
@@ -223,3 +238,4 @@ if __name__ == "__main__":
     ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,dataSet.dataPoints)
     ts_db.insertDataPoint(dp1)
     #ts_db.start()
+'''

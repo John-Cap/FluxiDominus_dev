@@ -1,123 +1,242 @@
-
-import copy
-import threading
+import mysql.connector
+from mysql.connector import Error
+from pymongo import MongoClient
+from datetime import datetime, timedelta
 import time
-import matplotlib.pyplot as plt
-import numpy as np
-import io
-import asyncio
-import websockets
-import base64
-import json
+import threading
 
+from Core.Data.data import DataPoint, DataPointFDE, DataSet, DataSetFDD, DataType
 
-from Core.Control.IR import IRScanner
-
-class IRPlotter:
-    def __init__(self, maxSlices=50, elev=30, azim=45, zoom=1):
-        self.maxSlices = maxSlices
-        self.elev = elev
-        self.azim = azim
-        self.zoom = zoom
-
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
-        self.ax.set_xlabel('Steps')
-        self.ax.set_ylabel('Time')
-        self.ax.set_zlabel('Absorbance')
-
-        self.data = []
-
-    def addIrData(self, irData):
-        self.data.append(irData)
-        if len(self.data) > self.maxSlices:
-            self.data.pop(0)
-
-    def initPlot(self):
-        if not self.data:
-            raise ValueError("No data to initialize plot")
-        dataArray = np.array(self.data)
-        x = np.arange(dataArray.shape[1])
-        y = np.arange(dataArray.shape[0])
-        x, y = np.meshgrid(x, y)
-        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
-        return surface,
-
-    def updatePlot(self):
-        if not self.data:
-            raise ValueError("No data to update plot")
-        self.ax.clear()
-        self.ax.set_xlabel('Steps')
-        self.ax.set_ylabel('Time')
-        self.ax.set_zlabel('Absorbance')
-        self.ax.view_init(elev=self.elev, azim=self.azim)
-        self.ax.dist = self.zoom  # Apply zoom
-        dataArray = np.array(self.data)
-        x = np.arange(dataArray.shape[1])
-        y = np.arange(dataArray.shape[0])
-        x, y = np.meshgrid(x, y)
-        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
-
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        return buf
-    
-    async def sendPlot(self, websocket):
-        while True:
-            imgBuf = self.updatePlot()
-            # Encode the image buffer to base64 string
-            imgBase64 = base64.b64encode(imgBuf.read()).decode('utf-8')
-            await websocket.send(imgBase64)
-            await asyncio.sleep(1)
-    '''
-    async def sendPlot(self, websocket):
-        while True:
-            imgBuf = self.updatePlot()
-            imgBase64 = base64.b64encode(imgBuf.read()).decode('utf-8')
-            await websocket.send(imgBase64)
-            await asyncio.sleep(1)
-    '''
-    async def handler(self, websocket, path):
-        consumerTask = asyncio.create_task(self.sendPlot(websocket))
-
-        try:
-            async for message in websocket:
-                command = json.loads(message)
-                if command['action'] == 'zoom':
-                    self.zoom += command['value']
-                elif command['action'] == 'tilt_left_right':
-                    self.azim += command['value']
-                elif command['action'] == 'tilt_up_down':
-                    self.elev += command['value']
-                elif command['action'] == 'add_data':
-                    irData = command['data']
-                    self.addIrData(irData)
-        finally:
-            consumerTask.cancel()
-
-    def startServer(self, host='146.64.91.174', port=9003):
-        startServer = websockets.serve(self.handler, host, port)
-        asyncio.get_event_loop().run_until_complete(startServer)
-        asyncio.get_event_loop().run_forever()
-
-    #Debug
-    def injectDataThread(self, data):
-        def injectData():
-            while True:
-                for irScan in data:
-                    self.addIrData(irScan)
-                    time.sleep(0.25)
+class MySQLDatabase:
+    def __init__(self, host, port, user, password, database):
+        """Initialize the MySQLDatabase class with connection parameters."""
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
+        self.database = database
+        self.connection = None
+        self.connected = False
+        self.cursor = None
         
-        threading.Thread(target=injectData, daemon=True).start()
+        self.tableVar={
+            "users":['orgId', 'lastLogin', 'firstName', 'lastName']
+        } #hardcoded
 
+    def connect(self):
+        """Establish a connection to the MySQL database."""
+        try:
+            self.connection = mysql.connector.connect(
+                host=self.host,
+                port=self.port,
+                user=self.user,
+                password=self.password,
+                database=self.database
+            )
+            if self.connection.is_connected():
+                self.cursor = self.connection.cursor()
+                print("Connected to the database.")
+        except Error as e:
+            print(f"Error: {e}")
+            self.connection = None
+
+    def createTable(self, table_name, schema):
+        """Create a table with the given schema."""
+        if self.cursor:
+            create_table_query = f"""
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                {schema}
+            )
+            """
+            self.cursor.execute(create_table_query)
+            print(f"Table '{table_name}' created successfully.")
+
+    def insertRecords(self, table_name, records):
+        """Insert multiple records into the specified table."""
+        if self.cursor:
+            columns=self.tableVar[table_name]
+            insert_query = f"""
+            INSERT INTO {table_name} ({', '.join(columns)})
+            VALUES ({', '.join(['%s'] * len(columns))})
+            """
+            self.cursor.executemany(insert_query, records)
+            self.connection.commit()
+            print(f"Records inserted successfully into '{table_name}'.")
+
+    def fetchRecords(self, table_name):
+        """Fetch all records from the specified table."""
+        if self.cursor:
+            fetch_query = f"SELECT * FROM {table_name}"
+            self.cursor.execute(fetch_query)
+            results = self.cursor.fetchall()
+            return results
+
+    def close(self):
+        """Close the database connection."""
+        if self.cursor:
+            self.cursor.close()
+        if self.connection:
+            self.connection.close()
+        print("Database connection closed.")
+
+# Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
+    db = MySQLDatabase(
+        host="146.64.91.174",
+        port=3306,
+        user="pharma",
+        password="pharma",
+        database="pharma"
+    )
 
-    _IRscanner = IRScanner()
-    _IRscanner.parseIrData()
-    _yData = copy.deepcopy(_IRscanner.arraysListHeatedReaction)
-    #print(_yData)
+    db.connect()
     
-    plotter = IRPlotter()
-    plotter.injectDataThread(_yData)
-    plotter.startServer()
+    records = [
+        ("309930",datetime.now(),"Wessel","Bonnet"),
+        ("170850",datetime.now(),"Mulder","Scully")
+    ]
+    db.insertRecords("users", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
+    
+    results = db.fetchRecords("users")
+    for row in results:
+        print(row)
+        
+    records_2 = [
+        ("309930",datetime.now(),"We ssel","Bon net")
+    ]
+    db.insertRecords("users", records_2) #['orgId', 'lastLogin', 'firstName', 'lastName']
+    
+    results = db.fetchRecords("users")
+    for row in results:
+        print(row)
+    
+    db.close()
+
+class TimeSeriesDatabaseMongo:
+    def __init__(self, host, port, database_name, collection_name, dataPoints):
+        #self.client = MongoClient(f'mongodb://{host}:{port}/')
+        self.client = MongoClient(host=host,port=port)
+        self.db = self.client[database_name]
+        self.collection = self.db[collection_name]
+        self.dataPoints=dataPoints
+        self.insertionInterval=10
+        self.pauseCollection=True
+        self.insertion_thread=None
+
+    def insertDataPoint(self,dataPoint):
+        dataPoint["timestamp"]=datetime.utcnow()
+        self.collection.insert_one(dataPoint)
+        #print(f"Inserted data point: {dataPoint}")
+
+    def continuousInsertion(self):
+        while True:
+            while self.pauseCollection:
+                time.sleep(0.1)
+            if self.dataPoints is None or len(self.dataPoints)==0:
+                pass
+            else:
+                _numOf=len(self.dataPoints)
+                for _x in self.dataPoints:
+                    self.insertDataPoint(_x)
+                self.dataPoints=[]
+                print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
+            time.sleep(self.insertionInterval)
+            
+
+    def fetchRecentData(self):
+        now = datetime.utcnow()
+        thirty_sec_ago = now - timedelta(seconds=30)
+        cursor = self.collection.find({
+            'timestamp': {
+                '$gte': thirty_sec_ago,
+                '$lt': now
+            }
+        }).sort('timestamp', 1)  # Sort by timestamp in ascending order
+
+        print('Fetched the following documents:')
+        for document in cursor:
+            print(document)
+
+    def continuousFetching(self):
+        try:
+            while True:
+                self.fetchRecentData()
+                time.sleep(6)  # Fetch data every 10 seconds
+        except KeyboardInterrupt:
+            print("Stopped fetching data.")
+
+    def pause(self):
+        self.pauseCollection=True
+
+    def purgeAndPause(self):
+        self.dataPoints=[] #What happens if updater still wants to add some datapoints?
+        self.pause()
+
+    def start(self):
+        if not (self.insertion_thread is None):
+            self.pauseCollection=False
+        else:
+            insertion_thread = threading.Thread(target=self.continuousInsertion)
+
+            #fetching_thread = threading.Thread(target=self.continuousFetching)
+
+            insertion_thread.start()
+            #fetching_thread.start()
+
+            #insertion_thread.join()
+            #fetching_thread.join()
+            
+            self.insertion_thread=insertion_thread
+            self.pauseCollection=False
+'''
+if __name__ == "__main__":
+    host = "146.64.91.174"
+    port = 27017
+    database_name = "Pharma"
+    collection_name = "pharma-data"
+    
+    dp1 = DataPointFDE(
+        experimentId="exp123",
+        deviceName="flowsynmaxi2",
+        data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
+        metadata={"location": "Room 101"}
+    ).toDict()
+
+    dp2 = DataPointFDE(
+        dataType=DataType("JUMP_THE_MOON"),
+        experimentId="exp123",
+        deviceName="IRSCANNER",
+        data={'irScan': [1.2, 3.4, 5.6, 7.8]},
+        metadata={"location": "Room 101", "type": "IR"}
+    ).toDict()
+
+    dp3 = DataPointFDE(
+        experimentId="exp123",
+        deviceName="FIZZBANG",
+        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
+        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
+    ).toDict()
+
+    dp4 = DataPointFDE(
+        dataType=DataType("IR_SCAN"),
+        experimentId="exp123",
+        deviceName="IRSCANNER",
+        data={'irScan': [1.2, 3.4, 5.6, 7.8]},
+        metadata={"location": "Room 101", "type": "IR"}
+    ).toDict()
+
+    dp5 = DataPointFDE(
+        experimentId="exp123",
+        deviceName="FIZZBANG",
+        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
+        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
+    ).toDict()
+    
+    dataSet=DataSetFDD(
+        [dp1,dp2,dp3,dp4,dp5]
+    )
+
+    ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,dataSet.dataPoints)
+    ts_db.insertDataPoint(dp1)
+    #ts_db.start()
+'''
