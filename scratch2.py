@@ -40,37 +40,45 @@ class MySQLDatabase:
             print(f"Error: {e}")
             self.connection = None
 
-    def createTable(self, table_name, schema):
+    def createTable(self, tableName, schema):
         """Create a table with the given schema."""
         if self.cursor:
-            create_table_query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name} (
+            createTableQuery = f"""
+            CREATE TABLE IF NOT EXISTS {tableName} (
                 {schema}
             )
             """
-            self.cursor.execute(create_table_query)
-            print(f"Table '{table_name}' created successfully.")
+            self.cursor.execute(createTableQuery)
+            print(f"Table '{tableName}' created successfully.")
 
-    def insertRecords(self, table_name, records):
+    def insertRecords(self, tableName, records):
         """Insert multiple records into the specified table."""
         if self.cursor:
-            columns=self.tableVar[table_name]
-            insert_query = f"""
-            INSERT INTO {table_name} ({', '.join(columns)})
+            columns=self.tableVar[tableName]
+            insertQuery = f"""
+            INSERT INTO {tableName} ({', '.join(columns)})
             VALUES ({', '.join(['%s'] * len(columns))})
             """
-            self.cursor.executemany(insert_query, records)
+            self.cursor.executemany(insertQuery, records)
             self.connection.commit()
-            print(f"Records inserted successfully into '{table_name}'.")
+            print(f"Records inserted successfully into '{tableName}'.")
 
-    def fetchRecords(self, table_name):
+    def fetchRecords(self, tableName):
         """Fetch all records from the specified table."""
         if self.cursor:
-            fetch_query = f"SELECT * FROM {table_name}"
-            self.cursor.execute(fetch_query)
+            fetchQuery = f"SELECT * FROM {tableName}"
+            self.cursor.execute(fetchQuery)
             results = self.cursor.fetchall()
             return results
 
+    def fetchRecordByColumnValue(self, tableName, columnName, value):
+        """Fetch a single record from the specified table where the column matches the given value."""
+        if self.cursor:
+            fetch_query = f"SELECT * FROM {tableName} WHERE {columnName} = %s"
+            self.cursor.execute(fetch_query, (value,))
+            result = self.cursor.fetchone()  # fetchone returns a single matching row
+            return result
+        
     def close(self):
         """Close the database connection."""
         if self.cursor:
@@ -92,8 +100,8 @@ if __name__ == "__main__":
     db.connect()
     
     records = [
-        ("309930",datetime.now(),"Wessel","Bonnet"),
-        ("170850",datetime.now(),"Mulder","Scully")
+        ("3094930",datetime.now(),"Wessel","Bonnet"),
+        ("1270850",datetime.now(),"Mulder","Scully")
     ]
     db.insertRecords("users", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
     
@@ -101,15 +109,8 @@ if __name__ == "__main__":
     for row in results:
         print(row)
         
-    records_2 = [
-        ("309930",datetime.now(),"We ssel","Bon net")
-    ]
-    db.insertRecords("users", records_2) #['orgId', 'lastLogin', 'firstName', 'lastName']
-    
-    results = db.fetchRecords("users")
-    for row in results:
-        print(row)
-    
+    print(db.fetchRecordByColumnValue("users","orgId","309930"))
+        
     db.close()
 
 class TimeSeriesDatabaseMongo:
@@ -141,7 +142,6 @@ class TimeSeriesDatabaseMongo:
                 self.dataPoints=[]
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval)
-            
 
     def fetchRecentData(self):
         now = datetime.utcnow()

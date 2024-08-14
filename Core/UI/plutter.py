@@ -6,6 +6,7 @@ import json
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
 from Core.UI.brokers_and_topics import MqttTopics
+from Core.authentication.authenticator import Authenticator
 
 class MqttService:
     def __init__(self, broker_address="localhost", port=1883, client = None, allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
@@ -18,8 +19,9 @@ class MqttService:
         self.IR = []
         self.script = ""
         self.formPanelData={}
-        self.user=None
-        self.signedIn=False
+        
+        #Authentication
+        self.authenticator=Authenticator()
 
         self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
         self.client.on_connect = self.onConnectTele #self.onConnect
@@ -124,6 +126,10 @@ class MqttService:
             _msgContents=_msgContents["FormPanelWidget"]
             self.formPanelData=_msgContents
             print(f"WJ - Received FormPanelData: {_msgContents}")
+        elif "LoginPageWidget" in _msgContents:
+            _msgContents=_msgContents["LoginPageWidget"]
+            print(f'WJ - Login page details: {_msgContents}')
+            #Authenticator.inDb()
 
     def start(self):
         self.client.connect(self.broker_address, self.port)

@@ -78,7 +78,7 @@ doIt=True
 
 ################################
 #Signed in?
-while updater.user == "" or not updater.signedIn:
+while not updater.authenticator.signedIn:
     time.sleep(0.2)
 ################################
 
