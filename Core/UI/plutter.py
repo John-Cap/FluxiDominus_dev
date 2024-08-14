@@ -8,14 +8,16 @@ from Core.Data.data import DataPointFDE
 from Core.UI.brokers_and_topics import MqttTopics
 
 class MqttService:
-    def __init__(self, broker_address="localhost", port=1883, client = None, allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),automation=None):
+    def __init__(self, broker_address="localhost", port=1883, client = None, allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
         self.broker_address = broker_address
         self.port = port
         self.allTopics = allTopics
         self.allTopicsTele=allTopicsTele
+        self.allTopicsUI=allTopicsUI
         self.temp = 0
         self.IR = []
         self.script = ""
+        self.formPanelData={}
 
         self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
         self.client.on_connect = self.onConnectTele #self.onConnect
@@ -68,6 +70,12 @@ class MqttService:
                     self.topicIDs[ret[1]]=tpc
                 else:
                     print("WJ - could not subscribe to topic "+tpc+"!")
+            for tpc in self.allTopicsUI.values():
+                ret=self.client.subscribe(tpc,qos=2)
+                if ret[0]==0:
+                    self.topicIDs[ret[1]]=tpc
+                else:
+                    print("WJ - could not subscribe to topic "+tpc+"!")
             #Test settings
             tpc="test/settings"
             ret=self.client.subscribe(topic="test/settings",qos=2)
@@ -110,6 +118,10 @@ class MqttService:
             print('############')
             print("WJ - Parsed script: "+str(self.script))
             print('############')
+        elif "FormPanelWidget" in _msgContents:
+            _msgContents=_msgContents["FormPanelWidget"]
+            self.formPanelData=_msgContents
+            print(f"WJ - Received FormPanelData: {_msgContents}")
 
     def start(self):
         self.client.connect(self.broker_address, self.port)
