@@ -1,3 +1,4 @@
+import random
 import mysql.connector
 from mysql.connector import Error
 from pymongo import MongoClient
@@ -86,7 +87,7 @@ class MySQLDatabase:
         if self.connection:
             self.connection.close()
         print("Database connection closed.")
-
+'''
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
     db = MySQLDatabase(
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     print(db.fetchRecordByColumnValue("users","orgId","309930"))
         
     db.close()
-
+'''
 class TimeSeriesDatabaseMongo:
     def __init__(self, host, port, database_name, collection_name, dataPoints):
         #self.client = MongoClient(f'mongodb://{host}:{port}/')
@@ -123,6 +124,7 @@ class TimeSeriesDatabaseMongo:
         self.insertionInterval=10
         self.pauseCollection=True
         self.insertion_thread=None
+        self.fetching_thread=None
 
     def insertDataPoint(self,dataPoint):
         dataPoint["timestamp"]=datetime.utcnow()
@@ -157,10 +159,22 @@ class TimeSeriesDatabaseMongo:
         for document in cursor:
             print(document)
 
+    def fetchRecentData_EXAMPLE(self):
+        now = datetime.utcnow()
+        #thirty_sec_ago = now - timedelta(seconds=30)
+        cursor = self.collection.find({
+            'orgId': "309930",
+            'testId': 123,
+        }) #.sort('timestamp', 1)  # Sort by timestamp in ascending order
+        _num=0
+        for document in cursor:
+            _num=_num+1
+        print(f'Fetched {_num} documents!')
+
     def continuousFetching(self):
         try:
             while True:
-                self.fetchRecentData()
+                self.fetchRecentData_EXAMPLE()
                 time.sleep(6)  # Fetch data every 10 seconds
         except KeyboardInterrupt:
             print("Stopped fetching data.")
@@ -178,25 +192,27 @@ class TimeSeriesDatabaseMongo:
         else:
             insertion_thread = threading.Thread(target=self.continuousInsertion)
 
-            #fetching_thread = threading.Thread(target=self.continuousFetching)
+            fetching_thread = threading.Thread(target=self.continuousFetching)
 
             insertion_thread.start()
-            #fetching_thread.start()
+            fetching_thread.start()
 
             #insertion_thread.join()
             #fetching_thread.join()
             
             self.insertion_thread=insertion_thread
+            self.fetching_thread=fetching_thread
             self.pauseCollection=False
-'''
+
 if __name__ == "__main__":
     host = "146.64.91.174"
     port = 27017
     database_name = "Pharma"
     collection_name = "pharma-data"
     
+    tsdm=TimeSeriesDatabaseMongo(host,port,database_name,collection_name,[])
+    
     dp1 = DataPointFDE(
-        experimentId="exp123",
         deviceName="flowsynmaxi2",
         data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
         metadata={"location": "Room 101"}
@@ -204,7 +220,6 @@ if __name__ == "__main__":
 
     dp2 = DataPointFDE(
         dataType=DataType("JUMP_THE_MOON"),
-        experimentId="exp123",
         deviceName="IRSCANNER",
         data={'irScan': [1.2, 3.4, 5.6, 7.8]},
         metadata={"location": "Room 101", "type": "IR"}
@@ -233,10 +248,15 @@ if __name__ == "__main__":
     ).toDict()
     
     dataSet=DataSetFDD(
-        [dp1,dp2,dp3,dp4,dp5]
+        [dp1,dp2,dp3,dp4,dp5,dp1,dp2,dp3,dp4,dp5]
     )
 
-    ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,dataSet.dataPoints)
-    ts_db.insertDataPoint(dp1)
+    ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,[])
+    ts_db.start()
+    _testNum=[123,321]
+    for _x in dataSet.dataPoints:
+        _x.testId=random.choice(_testNum)
+        ts_db.insertDataPoint(_x)
+        time.sleep(3)
+    ts_db.purgeAndPause()
     #ts_db.start()
-'''
