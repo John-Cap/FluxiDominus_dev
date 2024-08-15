@@ -51,8 +51,8 @@ metadata={"location": "Room 101", "type": "Demo_Data"}
 
 #Start
 tsDb = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,[])
-tsDb.start()
-tsDb.pause()
+#tsDb.start()
+#tsDb.pause()
 
 ###########################################################
 
