@@ -80,6 +80,7 @@ doIt=True
 #Signed in?
 while not updater.authenticator.signedIn:
     time.sleep(0.2)
+print("Signed in!")
 ################################
 
 # Main loop!

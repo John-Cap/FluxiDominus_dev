@@ -87,7 +87,7 @@ class MySQLDatabase:
         if self.connection:
             self.connection.close()
         print("Database connection closed.")
-'''
+
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
     db = MySQLDatabase(
@@ -101,8 +101,7 @@ if __name__ == "__main__":
     db.connect()
     
     records = [
-        ("309930",datetime.now(),"Wessel","Bonnet"),
-        ("170850",datetime.now(),"Mulder","Scully")
+        ("309930",datetime.now(),"Wessel","Bonnet")
     ]
     db.insertRecords("users", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
     
@@ -113,6 +112,7 @@ if __name__ == "__main__":
     print(db.fetchRecordByColumnValue("users","orgId","309930"))
         
     db.close()
+
 '''
 class TimeSeriesDatabaseMongo:
     def __init__(self, host, port, database_name, collection_name, dataPoints):
@@ -260,3 +260,4 @@ if __name__ == "__main__":
         time.sleep(3)
     ts_db.purgeAndPause()
     #ts_db.start()
+'''

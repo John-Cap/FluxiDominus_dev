@@ -1,102 +1,104 @@
-import mysql.connector
-from mysql.connector import Error
-from pymongo import MongoClient
-from datetime import datetime, timedelta
-import random
-import time
-import threading
 
-from Core.Data.data import DataPoint, DataPointFDE, DataSet, DataSetFDD, DataType
+#Handles signing in and passwords, etc
 
-class MySQLDatabase:
-    def __init__(self, host, port, user, password, database):
-        """Initialize the MySQLDatabase class with connection parameters."""
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        self.database = database
-        self.connection = None
-        self.cursor = None
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+import base64
+import binascii
+import uuid
 
-    def connect(self):
-        """Establish a connection to the MySQL database."""
-        try:
-            self.connection = mysql.connector.connect(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                database=self.database
-            )
-            if self.connection.is_connected():
-                self.cursor = self.connection.cursor()
-                print("Connected to the database.")
-        except Error as e:
-            print(f"Error: {e}")
-            self.connection = None
+from Core.Data.database import MySQLDatabase
 
-    def createTable(self, table_name, schema):
-        """Create a table with the given schema."""
-        if self.cursor:
-            create_table_query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name} (
-                {schema}
-            )
-            """
-            self.cursor.execute(create_table_query)
-            print(f"Table '{table_name}' created successfully.")
+class UserBase:
+    def __init__(self,user="",orgId="",role="") -> None:
+        self.user=user
+        self.orgId=orgId #Employee num
+        self.role=role #Admin/user, etc
+        self.sessionId=uuid.uuid4()
 
-    def insertRecords(self, table_name, columns, records):
-        """Insert multiple records into the specified table."""
-        if self.cursor:
-            insert_query = f"""
-            INSERT INTO {table_name} ({', '.join(columns)})
-            VALUES ({', '.join(['%s'] * len(columns))})
-            """
-            self.cursor.executemany(insert_query, records)
-            self.connection.commit()
-            print(f"Records inserted successfully into '{table_name}'.")
+class User(UserBase):
+    def __init__(self, user="", orgId="") -> None:
+        super().__init__(user, orgId, "user")
 
-    def fetchRecords(self, table_name):
-        """Fetch all records from the specified table."""
-        if self.cursor:
-            fetch_query = f"SELECT * FROM {table_name}"
-            self.cursor.execute(fetch_query)
-            results = self.cursor.fetchall()
-            return results
+class Administrator(UserBase):
+    def __init__(self, user="", orgId="") -> None:
+        super().__init__(user, orgId, "admin")
+        
+class AuthenticatorBase:
+    def __init__(self,user=None) -> None:
+        self.signedIn=False
+        self.lastSignInAt=None
+        self.sessionId=uuid.uuid4()
+        self.user=user
+        
+        #Encryption
+        self.key='6d7933326c656e67746873757065727365637265746e6f6f6e656b6e6f777331'
+        self.iv='313662797465736c6f6e676976313233'
+            
+        self.db=MySQLDatabase( #TODO - Hardcoded default
+            host="146.64.91.174",
+            port=3306,
+            user="pharma",
+            password="pharma",
+            database="pharma"
+        )
 
-    def close(self):
-        """Close the database connection."""
-        if self.cursor:
-            self.cursor.close()
-        if self.connection:
-            self.connection.close()
-        print("Database connection closed.")
+    def decryptString(self,encData):
+        keyBytes = binascii.unhexlify(self.key)  # Na hex
+        ivBytes = binascii.unhexlify(self.iv)    # Na hex
 
+        encBytes = base64.b64decode(encData)  # Decode Base64 data
 
-# Example usage //Kyk, camel vs snekcase
+        cipher = AES.new(keyBytes, AES.MODE_CBC, ivBytes)
+
+        decryptedData = unpad(cipher.decrypt(encBytes), AES.block_size)
+
+        return decryptedData.decode('utf-8')
+
+    def signIn(self,orgId,password):
+        det=self.loginDetFromDb(orgId)
+        if not self.signedIn and self.decryptString(det["password"]) == self.decryptString(password):
+            self.signedIn=True
+        else:
+            print("Wrong password!")
+                
+    def isAdmin(self):
+        if (self.user is None):
+            return False
+        return (self.user.role == "admin")
+    
+    def assignUser(self,user: User):
+        if (self.user is None):
+            self.user=user
+        else:
+            raise SystemExit(f"Error; Attempt to replace user {self.user.user} with {user.user}")
+
+    def loginDetFromDb(self,orgId):
+        if not self.db.connected:
+            self.db.connect()
+        return self.db.fetchRecordByColumnValue("users","orgId",orgId)
+
+class Authenticator(AuthenticatorBase):
+    def __init__(self, user=None) -> None:
+        super().__init__(user)
+        
 if __name__ == "__main__":
-    db = MySQLDatabase(
-        host="146.64.91.174",
-        port=3306,
-        user="pharma",
-        password="pharma",
-        database="pharma"
-    )
+    encData = 'DYWV/12CYFuKsHxa//eJ4g==' #Hello world
+    
+    decrypted_string = Authenticator().decryptString(encData)
+    print(f'Decrypted: {decrypted_string}')
 
-    db.connect()
-    db.createTable("sample_table", "id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, age INT NOT NULL")
+    userGuy=User(user="Wessel Bonnet",orgId="309930")
+    imposter=User(user="Mr Imposter")
+    adminGuy=Administrator(user="MR_Bones",orgId="309930")
     
-    records = [
-        ("Sam", 30),
-        ("Bob", 25),
-        ("Charlie", 35)
-    ]
-    db.insertRecords("sample_table", ["name", "age"], records)
+    auth_1=Authenticator(userGuy)
+    auth_2=Authenticator(user=adminGuy)
     
-    results = db.fetchRecords("sample_table")
-    for row in results:
-        print(row)
+    print(auth_1.isAdmin())
+    print(auth_2.isAdmin())
+
+    print(auth_1.sessionId)
+    print(auth_2.sessionId)
     
-    db.close()
+    print(auth_1.loginDetFromDb(adminGuy.orgId))

@@ -87,8 +87,8 @@ if __name__ == "__main__":
     
     decrypted_string = Authenticator().decryptString(encData)
     print(f'Decrypted: {decrypted_string}')
-    '''
-    userGuy=User(user="WJ_Bonnet")
+
+    userGuy=User(user="Wessel Bonnet",orgId="309930")
     imposter=User(user="Mr Imposter")
     adminGuy=Administrator(user="MR_Bones")
     
@@ -101,5 +101,4 @@ if __name__ == "__main__":
     print(auth_1.sessionId)
     print(auth_2.sessionId)
     
-    auth_1.assignUser(imposter)
-    '''
+    print(auth_1.loginDetFromDb(adminGuy.orgId))
