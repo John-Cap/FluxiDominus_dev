@@ -19,9 +19,6 @@ class MqttService:
         self.IR = []
         self.script = ""
         self.formPanelData={}
-        
-        #Authentication
-        self.authenticator=Authenticator()
 
         self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
         self.client.on_connect = self.onConnectTele #self.onConnect
@@ -39,6 +36,9 @@ class MqttService:
         self.logData=False
         
         self.automation=automation if automation else (FlowChemAutomation())
+        
+        #Authentication
+        self.authenticator=Authenticator()
         
     def addDataToQueue(self,device,data):
         self.dataQueue.append(DataPointFDE(
@@ -128,9 +128,12 @@ class MqttService:
             print(f"WJ - Received FormPanelData: {_msgContents}")
         elif "LoginPageWidget" in _msgContents:
             _msgContents=_msgContents["LoginPageWidget"]
-            print(f'WJ - Login page details: {_msgContents}')
-            #Authenticator.inDb()
-
+            if ("password" in _msgContents):
+                print(f'WJ - Login page details: {_msgContents}')
+                self.authenticator.mqttService=self
+                self.authenticator.signIn(orgId=_msgContents["orgId"],password=_msgContents["password"])
+            else:
+                print(_msgContents)
     def start(self):
         self.client.connect(self.broker_address, self.port)
         thread = threading.Thread(target=self.run)

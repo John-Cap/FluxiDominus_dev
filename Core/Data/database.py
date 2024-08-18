@@ -113,7 +113,7 @@ if __name__ == "__main__":
         
     db.close()
 
-'''
+
 class TimeSeriesDatabaseMongo:
     def __init__(self, host, port, database_name, collection_name, dataPoints):
         #self.client = MongoClient(f'mongodb://{host}:{port}/')
@@ -203,7 +203,7 @@ class TimeSeriesDatabaseMongo:
             self.insertion_thread=insertion_thread
             self.fetching_thread=fetching_thread
             self.pauseCollection=False
-
+'''
 if __name__ == "__main__":
     host = "146.64.91.174"
     port = 27017

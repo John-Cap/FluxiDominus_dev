@@ -100,7 +100,7 @@ if __name__ == "__main__":
         print(row)
     
     db.close()
-'''
+
 class TimeSeriesDatabaseMongo:
     def __init__(self, host, port, database_name, collection_name, dataPoints):
         self.client = MongoClient(f'mongodb://{host}:{port}/')
@@ -203,3 +203,4 @@ if __name__ == "__main__":
     print(ts_db.client.server_info())
     time.sleep(10)
     ts_db.start()
+'''

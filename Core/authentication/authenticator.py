@@ -1,6 +1,7 @@
 
 #Handles signing in and passwords, etc
 
+import json
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 import base64
@@ -8,6 +9,7 @@ import binascii
 import uuid
 
 from Core.Data.database import MySQLDatabase
+from Core.UI.brokers_and_topics import MqttTopics
 
 class UserBase:
     def __init__(self,user="",orgId="",role="") -> None:
@@ -30,6 +32,7 @@ class AuthenticatorBase:
         self.lastSignInAt=None
         self.sessionId=uuid.uuid4()
         self.user=user
+        self.mqttService=None
         
         #Encryption
         self.key='6d7933326c656e67746873757065727365637265746e6f6f6e656b6e6f777331'
@@ -57,8 +60,14 @@ class AuthenticatorBase:
 
     def signIn(self,orgId,password):
         det=self.loginDetFromDb(orgId)
-        if not self.signedIn and self.decryptString(det["password"]) == self.decryptString(password):
+        passwordCorrect=det[7]
+        #decrypted=self.decryptString(passwordCorrect)
+        print(passwordCorrect + " " + password)
+        if not self.signedIn and passwordCorrect == password:
             self.signedIn=True
+            _report=json.dumps({"LoginPageWidget":{"authenticated":True}})
+            self.mqttService.client.publish(_report,MqttTopics.getUiTopic("LoginPageWidget"),qos=2)
+            print('Signed in report: '+str(_report))
         else:
             print("Wrong password!")
                 
