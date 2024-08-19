@@ -59,12 +59,17 @@ class DataType:
     def getType(self):
         return self.type
 
+orgId="309930"
+testId=123
+
 class DataPoint:
-    def __init__(self, data, metadata=None, dataType = DataType()):
+    def __init__(self, data, metadata=None, dataType = DataType(), orgId=orgId):
         self.timestamp = datetime.utcnow()
         self.data = data
         self.metadata = metadata if metadata else {}
         self.dataType = dataType
+        self.orgId = orgId
+        self.testId = testId
     
     def toDict(self):
         """Convert the DataPoint to a dictionary format."""
@@ -72,7 +77,9 @@ class DataPoint:
             'data': self.data,
             'dataType': self.dataType.getType(),
             'metadata': self.metadata,
-            'timestamp': self.timestamp
+            'timestamp': self.timestamp,
+            'orgId': orgId,
+            'testId': self.testId
         }
     
     def __repr__(self):
@@ -92,7 +99,9 @@ class DataPointFDE(DataPoint): #Fluxidominus default database obj
             'timestamp': self.timestamp,
             'data': self.data,
             'dataType': self.dataType.getType(),
-            'metadata': self.metadata
+            'metadata': self.metadata,
+            'orgId':self.orgId,
+            'testId':self.testId
         }
     
     def __repr__(self):

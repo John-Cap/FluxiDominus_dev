@@ -1,3 +1,4 @@
+import random
 import mysql.connector
 from mysql.connector import Error
 from pymongo import MongoClient
@@ -16,7 +17,12 @@ class MySQLDatabase:
         self.password = password
         self.database = database
         self.connection = None
+        self.connected = False
         self.cursor = None
+        
+        self.tableVar={
+            "users":['orgId', 'lastLogin', 'firstName', 'lastName']
+        } #hardcoded
 
     def connect(self):
         """Establish a connection to the MySQL database."""
@@ -35,36 +41,45 @@ class MySQLDatabase:
             print(f"Error: {e}")
             self.connection = None
 
-    def createTable(self, table_name, schema):
+    def createTable(self, tableName, schema):
         """Create a table with the given schema."""
         if self.cursor:
-            create_table_query = f"""
-            CREATE TABLE IF NOT EXISTS {table_name} (
+            createTableQuery = f"""
+            CREATE TABLE IF NOT EXISTS {tableName} (
                 {schema}
             )
             """
-            self.cursor.execute(create_table_query)
-            print(f"Table '{table_name}' created successfully.")
+            self.cursor.execute(createTableQuery)
+            print(f"Table '{tableName}' created successfully.")
 
-    def insertRecords(self, table_name, columns, records):
+    def insertRecords(self, tableName, records):
         """Insert multiple records into the specified table."""
         if self.cursor:
-            insert_query = f"""
-            INSERT INTO {table_name} ({', '.join(columns)})
+            columns=self.tableVar[tableName]
+            insertQuery = f"""
+            INSERT INTO {tableName} ({', '.join(columns)})
             VALUES ({', '.join(['%s'] * len(columns))})
             """
-            self.cursor.executemany(insert_query, records)
+            self.cursor.executemany(insertQuery, records)
             self.connection.commit()
-            print(f"Records inserted successfully into '{table_name}'.")
+            print(f"Records inserted successfully into '{tableName}'.")
 
-    def fetchRecords(self, table_name):
+    def fetchRecords(self, tableName):
         """Fetch all records from the specified table."""
         if self.cursor:
-            fetch_query = f"SELECT * FROM {table_name}"
-            self.cursor.execute(fetch_query)
+            fetchQuery = f"SELECT * FROM {tableName}"
+            self.cursor.execute(fetchQuery)
             results = self.cursor.fetchall()
             return results
 
+    def fetchRecordByColumnValue(self, tableName, columnName, value):
+        """Fetch a single record from the specified table where the column matches the given value."""
+        if self.cursor:
+            fetch_query = f"SELECT * FROM {tableName} WHERE {columnName} = %s"
+            self.cursor.execute(fetch_query, (value,))
+            result = self.cursor.fetchone()  # fetchone returns a single matching row
+            return result
+        
     def close(self):
         """Close the database connection."""
         if self.cursor:
@@ -73,7 +88,6 @@ class MySQLDatabase:
             self.connection.close()
         print("Database connection closed.")
 
-'''
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
     db = MySQLDatabase(
@@ -85,21 +99,21 @@ if __name__ == "__main__":
     )
 
     db.connect()
-    db.create_table("sample_table", "id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, age INT NOT NULL")
     
     records = [
-        ("Alice", 30),
-        ("Bob", 25),
-        ("Charlie", 35)
+        ("309930",datetime.now(),"Wessel","Bonnet")
     ]
-    db.insert_records("sample_table", ["name", "age"], records)
+    db.insertRecords("users", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
     
-    results = db.fetch_records("sample_table")
+    results = db.fetchRecords("users")
     for row in results:
         print(row)
-    
+        
+    print(db.fetchRecordByColumnValue("users","orgId","309930"))
+        
     db.close()
-'''
+
+
 class TimeSeriesDatabaseMongo:
     def __init__(self, host, port, database_name, collection_name, dataPoints):
         #self.client = MongoClient(f'mongodb://{host}:{port}/')
@@ -110,6 +124,7 @@ class TimeSeriesDatabaseMongo:
         self.insertionInterval=10
         self.pauseCollection=True
         self.insertion_thread=None
+        self.fetching_thread=None
 
     def insertDataPoint(self,dataPoint):
         dataPoint["timestamp"]=datetime.utcnow()
@@ -129,7 +144,6 @@ class TimeSeriesDatabaseMongo:
                 self.dataPoints=[]
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval)
-            
 
     def fetchRecentData(self):
         now = datetime.utcnow()
@@ -145,10 +159,22 @@ class TimeSeriesDatabaseMongo:
         for document in cursor:
             print(document)
 
+    def fetchRecentData_EXAMPLE(self):
+        now = datetime.utcnow()
+        #thirty_sec_ago = now - timedelta(seconds=30)
+        cursor = self.collection.find({
+            'orgId': "309930",
+            'testId': 123,
+        }) #.sort('timestamp', 1)  # Sort by timestamp in ascending order
+        _num=0
+        for document in cursor:
+            _num=_num+1
+        print(f'Fetched {_num} documents!')
+
     def continuousFetching(self):
         try:
             while True:
-                self.fetchRecentData()
+                self.fetchRecentData_EXAMPLE()
                 time.sleep(6)  # Fetch data every 10 seconds
         except KeyboardInterrupt:
             print("Stopped fetching data.")
@@ -156,31 +182,37 @@ class TimeSeriesDatabaseMongo:
     def pause(self):
         self.pauseCollection=True
 
+    def purgeAndPause(self):
+        self.dataPoints=[] #What happens if updater still wants to add some datapoints?
+        self.pause()
+
     def start(self):
         if not (self.insertion_thread is None):
             self.pauseCollection=False
         else:
             insertion_thread = threading.Thread(target=self.continuousInsertion)
 
-            #fetching_thread = threading.Thread(target=self.continuousFetching)
+            fetching_thread = threading.Thread(target=self.continuousFetching)
 
             insertion_thread.start()
-            #fetching_thread.start()
+            fetching_thread.start()
 
             #insertion_thread.join()
             #fetching_thread.join()
             
             self.insertion_thread=insertion_thread
+            self.fetching_thread=fetching_thread
             self.pauseCollection=False
-            
+'''
 if __name__ == "__main__":
     host = "146.64.91.174"
     port = 27017
     database_name = "Pharma"
     collection_name = "pharma-data"
     
+    tsdm=TimeSeriesDatabaseMongo(host,port,database_name,collection_name,[])
+    
     dp1 = DataPointFDE(
-        experimentId="exp123",
         deviceName="flowsynmaxi2",
         data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
         metadata={"location": "Room 101"}
@@ -188,7 +220,6 @@ if __name__ == "__main__":
 
     dp2 = DataPointFDE(
         dataType=DataType("JUMP_THE_MOON"),
-        experimentId="exp123",
         deviceName="IRSCANNER",
         data={'irScan': [1.2, 3.4, 5.6, 7.8]},
         metadata={"location": "Room 101", "type": "IR"}
@@ -217,9 +248,16 @@ if __name__ == "__main__":
     ).toDict()
     
     dataSet=DataSetFDD(
-        [dp1,dp2,dp3,dp4,dp5]
+        [dp1,dp2,dp3,dp4,dp5,dp1,dp2,dp3,dp4,dp5]
     )
 
-    ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,dataSet.dataPoints)
-    ts_db.insertDataPoint(dp1)
+    ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,[])
+    ts_db.start()
+    _testNum=[123,321]
+    for _x in dataSet.dataPoints:
+        _x.testId=random.choice(_testNum)
+        ts_db.insertDataPoint(_x)
+        time.sleep(3)
+    ts_db.purgeAndPause()
     #ts_db.start()
+'''

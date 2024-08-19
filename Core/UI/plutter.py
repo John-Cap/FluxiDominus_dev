@@ -6,6 +6,7 @@ import json
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
 from Core.UI.brokers_and_topics import MqttTopics
+from Core.authentication.authenticator import Authenticator
 
 class MqttService:
     def __init__(self, broker_address="localhost", port=1883, client = None, allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
@@ -35,6 +36,9 @@ class MqttService:
         self.logData=False
         
         self.automation=automation if automation else (FlowChemAutomation())
+        
+        #Authentication
+        self.authenticator=Authenticator()
         
     def addDataToQueue(self,device,data):
         self.dataQueue.append(DataPointFDE(
@@ -122,7 +126,13 @@ class MqttService:
             _msgContents=_msgContents["FormPanelWidget"]
             self.formPanelData=_msgContents
             print(f"WJ - Received FormPanelData: {_msgContents}")
-
+        elif "LoginPageWidget" in _msgContents:
+            _msgContents=_msgContents["LoginPageWidget"]
+            if ("password" in _msgContents):
+                print(f'WJ - Login page details: {_msgContents}')
+                self.authenticator.signIn(orgId=_msgContents["orgId"],password=_msgContents["password"])
+            else:
+                print(_msgContents)
     def start(self):
         self.client.connect(self.broker_address, self.port)
         thread = threading.Thread(target=self.run)

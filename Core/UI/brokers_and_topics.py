@@ -23,7 +23,8 @@ class MqttTopics:
         #"FlowSketcher": "chemistry/cmnd",
         "ScriptGeneratorWidget": "chemistry/cmnd",
         #"TestListWidget":"ui/TestListWidget",
-        "FormPanelWidget":"ui/FormPanelWidget"
+        "FormPanelWidget":"ui/FormPanelWidget",
+        "LoginPageWidget": "ui/LoginPageWidget"
     }
 
     topicsTests={
