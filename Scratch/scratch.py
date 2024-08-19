@@ -96,25 +96,28 @@ class IRPlotter:
         finally:
             consumerTask.cancel()
 
-    def startServer(self, host='localhost', port=9003):
+    def startServer(self, host='146.64.91.174', port=9003):
         startServer = websockets.serve(self.handler, host, port)
         asyncio.get_event_loop().run_until_complete(startServer)
         asyncio.get_event_loop().run_forever()
 
     def injectDataThread(self, data):
-        def injectData():
+        orig=copy.deepcopy(data)
+        def injectData(data):
             for irScan in data:
                 self.addIrData(irScan)
+                print('WJ - Published IR graph')
                 time.sleep(1)
+            data=copy.deepcopy(orig)
         
-        threading.Thread(target=injectData, daemon=True).start()
+        threading.Thread(target=injectData, daemon=True, kwargs={"data":data}).start()
 
 if __name__ == "__main__":
 
     _IRscanner = IRScanner()
     _IRscanner.parseIrData()
     _yData = copy.deepcopy(_IRscanner.arraysListHeatedReaction)
-    print(_yData)
+    #print(_yData)
     
     plotter = IRPlotter()
     plotter.injectDataThread(_yData)

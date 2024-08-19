@@ -1,8 +1,6 @@
 import ast
 import threading
-import time
 import paho.mqtt.client as mqtt
-import json
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
 from Core.UI.brokers_and_topics import MqttTopics

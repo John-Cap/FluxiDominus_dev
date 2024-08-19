@@ -1,13 +1,5 @@
 import mysql.connector
 from mysql.connector import Error
-from pymongo import MongoClient
-from datetime import datetime, timedelta
-import random
-import time
-import threading
-
-from Core.Data.data import DataPoint, DataPointFDE, DataSet, DataSetFDD, DataType
-
 class MySQLDatabase:
     def __init__(self, host, port, user, password, database):
         """Initialize the MySQLDatabase class with connection parameters."""

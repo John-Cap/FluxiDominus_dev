@@ -1,12 +1,9 @@
-import random
+
 import mysql.connector
-from mysql.connector import Error
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 import time
 import threading
-
-from Core.Data.data import DataPoint, DataPointFDE, DataSet, DataSetFDD, DataType
 
 class MySQLDatabase:
     def __init__(self, host, port, user, password, database):
@@ -37,7 +34,7 @@ class MySQLDatabase:
             if self.connection.is_connected():
                 self.cursor = self.connection.cursor()
                 print("Connected to the database.")
-        except Error as e:
+        except OSError as e:
             print(f"Error: {e}")
             self.connection = None
 
