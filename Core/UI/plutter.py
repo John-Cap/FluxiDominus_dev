@@ -130,7 +130,6 @@ class MqttService:
             _msgContents=_msgContents["LoginPageWidget"]
             if ("password" in _msgContents):
                 print(f'WJ - Login page details: {_msgContents}')
-                self.authenticator.mqttService=self
                 self.authenticator.signIn(orgId=_msgContents["orgId"],password=_msgContents["password"])
             else:
                 print(_msgContents)

@@ -27,12 +27,12 @@ class Administrator(UserBase):
         super().__init__(user, orgId, "admin")
         
 class AuthenticatorBase:
-    def __init__(self,user=None) -> None:
+    def __init__(self,mqttService,user=None) -> None:
         self.signedIn=False
         self.lastSignInAt=None
         self.sessionId=uuid.uuid4()
         self.user=user
-        self.mqttService=None
+        self.mqttService=mqttService
         
         #Encryption
         self.key='6d7933326c656e67746873757065727365637265746e6f6f6e656b6e6f777331'
@@ -66,7 +66,7 @@ class AuthenticatorBase:
         if not self.signedIn and passwordCorrect == password:
             self.signedIn=True
             _report=json.dumps({"LoginPageWidget":{"authenticated":True}})
-            self.mqttService.client.publish(_report,MqttTopics.getUiTopic("LoginPageWidget"),qos=2)
+            self.mqttService.client.publish(MqttTopics.getUiTopic("LoginPageWidget"),_report,qos=2)
             print('Signed in report: '+str(_report))
         else:
             print("Wrong password!")

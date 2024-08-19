@@ -4,10 +4,8 @@ import time
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
-from Core.Data.data import DataPointFDE
 from Core.Data.database import TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
-from Core.Utils.Utils import DataLogger, TimestampGenerator
 
 # Create an instance of MQTTTemperatureUpdater
 updater = MqttService(broker_address="localhost")
@@ -78,6 +76,7 @@ doIt=True
 
 ################################
 #Signed in?
+updater.authenticator.mqttService=updater
 while not updater.authenticator.signedIn:
     time.sleep(0.2)
 print("Signed in!")
