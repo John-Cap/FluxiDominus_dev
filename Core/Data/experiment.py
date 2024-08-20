@@ -3,9 +3,9 @@ from datetime import datetime
 from Core.Data.data import DataObj_TEMP
 from Core.Data.database import MySQLDatabase
 
-class Experiment_TEMP:
+class Experiment:
     def __init__(self, db, tables):
-        """Initialize the Experiment_TEMP with a MySQLDatabase instance."""
+        """Initialize the Experiment with a MySQLDatabase instance."""
         self.db = db
         self.tables=tables
         self.table=tables[0]
@@ -20,31 +20,33 @@ class Experiment_TEMP:
                 updateQuery = f"""
                 UPDATE {table}
                 SET nameTest=%s, description=%s, nameTester=%s, fumehoodId=%s, testScript=%s,
-                    lockScript=%s, flowScript=%s, datetimeCreate=%s
+                    lockScript=%s, flowScript=%s, datetimeCreate=%s, labNotebookRef=%s
                 WHERE id=%s
                 """
                 values = (
                     dataObj.nameTest, dataObj.description, dataObj.nameTester, dataObj.fumehoodId,
                     dataObj.testScript, dataObj.lockScript, dataObj.flowScript, dataObj.datetimeCreate,
+                    dataObj.labNotebookRef,
                     dataObj.id
                 )
                 self.db.cursor.execute(updateQuery, values)
             else:
                 # Insert new record
                 insertQuery = f"""
-                INSERT INTO {table} (nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO {table} (nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate, labNotebookRef)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 values = (
                     dataObj.nameTest, dataObj.description, dataObj.nameTester, dataObj.fumehoodId,
-                    dataObj.testScript, dataObj.lockScript, dataObj.flowScript, dataObj.datetimeCreate
+                    dataObj.testScript, dataObj.lockScript, dataObj.flowScript, dataObj.datetimeCreate,
+                    dataObj.labNotebookRef
                 )
                 self.db.cursor.execute(insertQuery, values)
                 dataObj.id = self.db.cursor.lastrowid
             self.db.connection.commit()
             print("Data inserted/updated successfully.")
 
-    def fromDB(self, id, table=None):
+    def fromDbById(self, id, table=None):
         if not table:
             table=self.table
         """Fetch a DataObj_TEMP instance from the database by ID."""
@@ -62,18 +64,45 @@ class Experiment_TEMP:
                     testScript=result[5],
                     lockScript=result[6],
                     flowScript=result[7],
-                    datetimeCreate=result[8]
+                    datetimeCreate=result[8],
+                    labNotebookRef=result[9]
                 )
             else:
                 print(f"No record found with ID {id}.")
                 return None
-            
-class StandardExperiment_TEMP(Experiment_TEMP):
+
+    def fromDbByLabNotebookRef(self, labNotebookRef, table=None):
+        if not table:
+            table=self.table
+        """Fetch a DataObj_TEMP instance from the database by labNotebookRef."""
+        if self.db.cursor:
+            fetchQuery = f"SELECT * FROM {table} WHERE labNotebookRef=%s"
+            self.db.cursor.execute(fetchQuery, (labNotebookRef,))
+            result = self.db.cursor.fetchone()
+            if result:
+                print('WJ - Fetched query: ',result)
+                return DataObj_TEMP(
+                    id=result[0],
+                    nameTest=result[1],
+                    description=result[2],
+                    nameTester=result[3],
+                    fumehoodId=result[4],
+                    testScript=result[5],
+                    lockScript=result[6],
+                    flowScript=result[7],
+                    datetimeCreate=result[8],
+                    labNotebookRef=result[9]
+                )
+            else:
+                print(f"No record found with lab notebook ref {labNotebookRef}.")
+                return None
+''''''   
+class StandardExperiment(Experiment):
     def __init__(self, db, tables):
         super().__init__(db, tables)
 
     def createExperiment(self, nameTest, description, nameTester, fumehoodId, testScript,
-                         lockScript, flowScript, datetimeCreate):
+                         lockScript, flowScript, datetimeCreate, labNotebookRef):
         """Create a new experiment and save it to the database."""
         dataObj = DataObj_TEMP(
             nameTest=nameTest,
@@ -83,14 +112,19 @@ class StandardExperiment_TEMP(Experiment_TEMP):
             testScript=testScript,
             lockScript=lockScript,
             flowScript=flowScript,
-            datetimeCreate=datetimeCreate
+            datetimeCreate=datetimeCreate,
+            labNotebookRef=labNotebookRef
         )
         self.toDB(dataObj)
         return dataObj
 
-    def getExperiment(self, id):
+    def getExperimentBylabNotebookRef(self, labNotebookRef):
+        """Fetch an experiment by labNotebookRef."""
+        return self.fromDbByLabNotebookRef(labNotebookRef)
+    
+    def getExperimentById(self, id):
         """Fetch an experiment by ID."""
-        return self.fromDB(id)
+        return self.fromDbById(id)
 
 # Example usage
 if __name__ == "__main__":
@@ -104,7 +138,7 @@ if __name__ == "__main__":
 
     db.connect()
 
-    exp = StandardExperiment_TEMP(db,tables=["testlist"])
+    exp = StandardExperiment(db,tables=["testlist"])
     newExperiment = exp.createExperiment(
         nameTest="MrTest",
         description="Description of Test1",
@@ -113,13 +147,13 @@ if __name__ == "__main__":
         testScript=b"script_content",
         lockScript=1,
         flowScript=b"flow_content",
-        datetimeCreate=datetime.now()
+        datetimeCreate=datetime.now(),
+        labNotebookRef="MOUSE_BABY_MOUSE_12"
     )
-    print("Created experiment ID:", newExperiment.id)
-    '''
-    fetchedExperiment = str(exp.fromDB(182).toDict())
+    print("Created experiment ID, ref: ", newExperiment.id, newExperiment.labNotebookRef)
+
+    fetchedExperiment = exp.fromDbByLabNotebookRef("MOUSE_BABY_MOUSE_12").toDict()
     if fetchedExperiment:
         print(fetchedExperiment)
 
     db.close()
-    '''

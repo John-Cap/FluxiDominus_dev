@@ -1,4 +1,4 @@
-
+'''
 import copy
 import threading
 import time
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     plotter = IRPlotter()
     plotter.injectDataThread(_yData)
     plotter.startServer()
-
+'''
 '''
 class IRPlotter:
     def __init__(self, maxSlices=50, elev=30, azim=45, zoom=1):
