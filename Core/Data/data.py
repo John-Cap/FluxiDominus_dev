@@ -3,7 +3,7 @@ from Core.Utils.Utils import Utils
 
 class DataObj_TEMP:
     def __init__(self, id=None, nameTest=None, description=None, nameTester=None, fumehoodId=None,
-                 testScript=None, lockScript=None, flowScript=None, datetimeCreate=None, labNotebookRef=None):
+                 testScript=None, lockScript=None, flowScript=None, datetimeCreate=None, labNotebookRef=None, orgId=None):
         self.id = id
         self.nameTest = nameTest
         self.description = description
@@ -14,6 +14,7 @@ class DataObj_TEMP:
         self.flowScript = flowScript
         self.datetimeCreate = datetimeCreate
         self.labNotebookRef= labNotebookRef
+        self.orgId = orgId
 
     def toDict(self):
         """Convert DataObj to a dictionary."""
@@ -28,7 +29,8 @@ class DataObj_TEMP:
             "lockScript": self.lockScript,
             "flowScript": self.flowScript,
             "datetimeCreate": self.datetimeCreate,
-            "labNotebookRef": self.labNotebookRef
+            "labNotebookRef": self.labNotebookRef,
+            "orgId": self.orgId
         }
 
 class DataObj(DataObj_TEMP):

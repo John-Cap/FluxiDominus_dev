@@ -21,7 +21,8 @@ class MySQLDatabase:
         self.cursor = None
         
         self.tableVar={
-            "users":['orgId', 'lastLogin', 'firstName', 'lastName']
+            "users":['orgId', 'lastLogin', 'firstName', 'lastName'],
+            "testlist":['nameTest', 'description', 'nameTester', 'fumehoodId', 'testScript', 'lockScript', 'flowScript', 'datetimeCreate', 'labNotebookRef', 'orgId']
         } #hardcoded
 
     def connect(self):
@@ -64,7 +65,7 @@ class MySQLDatabase:
             self.connection.commit()
             print(f"Records inserted successfully into '{tableName}'.")
 
-    def fetchRecords(self, tableName):
+    def fetchRecords(self, tableName):# WHERE id=%s
         """Fetch all records from the specified table."""
         if self.cursor:
             fetchQuery = f"SELECT * FROM {tableName}"
@@ -79,7 +80,15 @@ class MySQLDatabase:
             self.cursor.execute(fetch_query, (value,))
             result = self.cursor.fetchone()  # fetchone returns a single matching row
             return result
-        
+
+    def fetchRecordsByColumnValue(self, tableName, columnName, value):
+        """Fetch a single record from the specified table where the column matches the given value."""
+        if self.cursor:
+            fetch_query = f"SELECT * FROM {tableName} WHERE {columnName} = %s"
+            self.cursor.execute(fetch_query, (value,))
+            result = self.cursor.fetchall()
+            return result
+                
     def close(self):
         """Close the database connection."""
         if self.cursor:
@@ -214,20 +223,24 @@ if __name__ == "__main__":
     )
 
     db.connect()
-    
+    ## id, nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate, labNotebookRef
+    ##'146', 'asd', 'asd', 'asd', 'd8:3a:dd:55:99:09', ?, '0', ?, '2024-03-22 08:14:12', NULL
+
     records = [
-        ("309930",datetime.now(),"Wessel","Bonnet")
+        ("Mr_Test","Just_a_test","MRS_TEST","MAC MAC",b"Hi there!",0,b"NO VAL",datetime.now(),"THIS_REF_1","309930"),
+        ("Mr_Test2","Just_a_test","MRS_TEST","MAC MAC",b"Hi there!",0,b"NO VAL",datetime.now(),"THIS_REF_2","309930"),
+        ("Mr_Test3","Just_a_test","MRS_TEST","MAC MAC",b"Hi there!",0,b"NO VAL",datetime.now(),"THIS_REF_3","309930"),
     ]
-    db.insertRecords("users", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
+    db.insertRecords("testlist", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
     
-    results = db.fetchRecords("users")
+    results = db.fetchRecordsByColumnValue("testlist","orgId","309930")
     for row in results:
         print(row)
         
     print(db.fetchRecordByColumnValue("users","orgId","309930"))
         
     db.close()
-    
+    '''
     ################################################
     #Mongo
     host = "146.64.91.174"
@@ -286,3 +299,4 @@ if __name__ == "__main__":
     print(ts_db.fetchTimeSeriesData(orgId="309930",labNotebookRef="MY_REF_2"))
     ts_db.kill()
     #ts_db.start()
+    '''
