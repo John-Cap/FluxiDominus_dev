@@ -1,126 +1,112 @@
-from datetime import datetime
+
+#Handles signing in and passwords, etc
+
 import json
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+import base64
+import binascii
+import uuid
 
-from Core.Data.data import DataObj_TEMP
 from Core.Data.database import MySQLDatabase
+from Core.UI.brokers_and_topics import MqttTopics
 
-class Experiment_TEMP:
-    def __init__(self, db, tables):
-        """Initialize the Experiment_TEMP with a MySQLDatabase instance."""
-        self.db = db
-        self.tables=tables
-        self.table=tables[0]
+class UserBase:
+    def __init__(self,user="",orgId="",role="") -> None:
+        self.user=user
+        self.orgId=orgId #Employee num
+        self.role=role #Admin/user, etc
+        self.sessionId=uuid.uuid4()
 
-    def toDB(self, dataObj, table=None):
-        if not table:
-            table=self.table
-        """Insert or update a DataObj_TEMP instance in the database."""
-        if self.db.cursor:
-            if dataObj.id:
-                # Update existing record
-                updateQuery = f"""
-                UPDATE {table}
-                SET nameTest=%s, description=%s, nameTester=%s, fumehoodId=%s, testScript=%s,
-                    lockScript=%s, flowScript=%s, datetimeCreate=%s
-                WHERE id=%s
-                """
-                values = (
-                    dataObj.nameTest, dataObj.description, dataObj.nameTester, dataObj.fumehoodId,
-                    dataObj.testScript, dataObj.lockScript, dataObj.flowScript, dataObj.datetimeCreate,
-                    dataObj.id
-                )
-                self.db.cursor.execute(updateQuery, values)
-            else:
-                # Insert new record
-                insertQuery = f"""
-                INSERT INTO {table} (nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """
-                values = (
-                    dataObj.nameTest, dataObj.description, dataObj.nameTester, dataObj.fumehoodId,
-                    dataObj.testScript, dataObj.lockScript, dataObj.flowScript, dataObj.datetimeCreate
-                )
-                self.db.cursor.execute(insertQuery, values)
-                dataObj.id = self.db.cursor.lastrowid
-            self.db.connection.commit()
-            print("Data inserted/updated successfully.")
+class User(UserBase):
+    def __init__(self, user="", orgId="") -> None:
+        super().__init__(user, orgId, "user")
 
-    def fromDB(self, id, table=None):
-        if not table:
-            table=self.table
-        """Fetch a DataObj_TEMP instance from the database by ID."""
-        if self.db.cursor:
-            fetchQuery = f"SELECT * FROM {table} WHERE id=%s"
-            self.db.cursor.execute(fetchQuery, (id,))
-            result = self.db.cursor.fetchone()
-            if result:
-                return DataObj_TEMP(
-                    id=result[0],
-                    nameTest=result[1],
-                    description=result[2],
-                    nameTester=result[3],
-                    fumehoodId=result[4],
-                    testScript=result[5],
-                    lockScript=result[6],
-                    flowScript=result[7],
-                    datetimeCreate=result[8]
-                )
-            else:
-                print(f"No record found with ID {id}.")
-                return None
+class Administrator(UserBase):
+    def __init__(self, user="", orgId="") -> None:
+        super().__init__(user, orgId, "admin")
+        
+class AuthenticatorBase:
+    def __init__(self,mqttService,user=None) -> None:
+        self.signedIn=False
+        self.lastSignInAt=None
+        self.sessionId=uuid.uuid4()
+        self.user=user
+        self.mqttService=mqttService
+        
+        #Encryption
+        self.key='6d7933326c656e67746873757065727365637265746e6f6f6e656b6e6f777331'
+        self.iv='313662797465736c6f6e676976313233'
             
-class StandardExperiment_TEMP(Experiment_TEMP):
-    def __init__(self, db, tables):
-        super().__init__(db, tables)
-
-    def createExperiment(self, nameTest, description, nameTester, fumehoodId, testScript,
-                         lockScript, flowScript, datetimeCreate):
-        """Create a new experiment and save it to the database."""
-        dataObj = DataObj_TEMP(
-            nameTest=nameTest,
-            description=description,
-            nameTester=nameTester,
-            fumehoodId=fumehoodId,
-            testScript=testScript,
-            lockScript=lockScript,
-            flowScript=flowScript,
-            datetimeCreate=datetimeCreate
+        self.db=MySQLDatabase( #TODO - Hardcoded default
+            host="146.64.91.174",
+            port=3306,
+            user="pharma",
+            password="pharma",
+            database="pharma"
         )
-        self.toDB(dataObj)
-        return dataObj
 
-    def getExperiment(self, id):
-        """Fetch an experiment by ID."""
-        return self.fromDB(id)
+    def decryptString(self,encData):
+        keyBytes = binascii.unhexlify(self.key)  # Na hex
+        ivBytes = binascii.unhexlify(self.iv)    # Na hex
 
-# Example usage
+        encBytes = base64.b64decode(encData)  # Decode Base64 data
+
+        cipher = AES.new(keyBytes, AES.MODE_CBC, ivBytes)
+
+        decryptedData = unpad(cipher.decrypt(encBytes), AES.block_size)
+
+        return decryptedData.decode('utf-8')
+
+    def signIn(self,orgId,password):
+        det=self.loginDetFromDb(orgId)
+        passwordCorrect=det[7]
+        #decrypted=self.decryptString(passwordCorrect)
+        if not self.signedIn and passwordCorrect == password:
+            self.signedIn=True
+            _report=json.dumps({"LoginPageWidget":{"authenticated":True}})
+            self.mqttService.client.publish(MqttTopics.getUiTopic("LoginPageWidget"),_report,qos=2)
+            print('Signed in report: '+str(_report))
+        else:
+            print("Wrong password!")
+                
+    def isAdmin(self):
+        if (self.user is None):
+            return False
+        return (self.user.role == "admin")
+    
+    def assignUser(self,user: User):
+        if (self.user is None):
+            self.user=user
+        else:
+            raise SystemExit(f"Error; Attempt to replace user profile {self.user.user} with {user.user}")
+
+    def loginDetFromDb(self,orgId):
+        if not self.db.connected:
+            self.db.connect()
+        return self.db.fetchRecordByColumnValue("users","orgId",orgId)
+
+class Authenticator(AuthenticatorBase):
+    def __init__(self, user=None) -> None:
+        super().__init__(user)
+        
 if __name__ == "__main__":
-    db = MySQLDatabase(
-        host="146.64.91.174",
-        port=3306,
-        user="pharma",
-        password="pharma",
-        database="pharma"
-    )
+    encData = 'DYWV/12CYFuKsHxa//eJ4g==' #Hello world
+    
+    decrypted_string = Authenticator().decryptString(encData)
+    print(f'Decrypted: {decrypted_string}')
 
-    db.connect()
+    userGuy=User(user="Wessel Bonnet",orgId="309930")
+    imposter=User(user="Mr Imposter")
+    adminGuy=Administrator(user="MR_Bones")
+    
+    auth_1=Authenticator(userGuy)
+    auth_2=Authenticator(user=adminGuy)
+    
+    print(auth_1.isAdmin())
+    print(auth_2.isAdmin())
 
-    exp = StandardExperiment_TEMP(db,tables=["testlist"])
-    '''
-    newExperiment = exp.createExperiment(
-        nameTest="MrTest",
-        description="Description of Test1",
-        nameTester="Tester1",
-        fumehoodId="Fumehood1",
-        testScript=b"script_content",
-        lockScript=1,
-        flowScript=b"flow_content",
-        datetimeCreate=datetime.now()
-    )
-    print("Created experiment ID:", newExperiment.id)
-    '''
-    fetchedExperiment = str(exp.fromDB(182).toDict())
-    if fetchedExperiment:
-        print(fetchedExperiment)
-
-    db.close()
+    print(auth_1.sessionId)
+    print(auth_2.sessionId)
+    
+    print(auth_1.loginDetFromDb(userGuy.orgId))

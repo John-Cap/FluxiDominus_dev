@@ -1,104 +1,64 @@
 
-#Handles signing in and passwords, etc
+import time
+from Core.Data.data import DataPointFDE, DataSetFDD, DataType
+from Core.Data.database import TimeSeriesDatabaseMongo
 
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import unpad
-import base64
-import binascii
-import uuid
 
-from Core.Data.database import MySQLDatabase
+host = "146.64.91.174"
+port = 27017
+database_name = "Pharma"
+collection_name = "pharma-data"
 
-class UserBase:
-    def __init__(self,user="",orgId="",role="") -> None:
-        self.user=user
-        self.orgId=orgId #Employee num
-        self.role=role #Admin/user, etc
-        self.sessionId=uuid.uuid4()
+tsdm=TimeSeriesDatabaseMongo(host,port,database_name,collection_name,[])
 
-class User(UserBase):
-    def __init__(self, user="", orgId="") -> None:
-        super().__init__(user, orgId, "user")
+dp1 = DataPointFDE(
+    labNotebookRef="MY_REF_1",
+    deviceName="flowsynmaxi2",
+    data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
+    metadata={"location": "Room 101"}
+).toDict()
 
-class Administrator(UserBase):
-    def __init__(self, user="", orgId="") -> None:
-        super().__init__(user, orgId, "admin")
-        
-class AuthenticatorBase:
-    def __init__(self,user=None) -> None:
-        self.signedIn=False
-        self.lastSignInAt=None
-        self.sessionId=uuid.uuid4()
-        self.user=user
-        
-        #Encryption
-        self.key='6d7933326c656e67746873757065727365637265746e6f6f6e656b6e6f777331'
-        self.iv='313662797465736c6f6e676976313233'
-            
-        self.db=MySQLDatabase( #TODO - Hardcoded default
-            host="146.64.91.174",
-            port=3306,
-            user="pharma",
-            password="pharma",
-            database="pharma"
-        )
+dp2 = DataPointFDE(
+    labNotebookRef="MY_REF_2",
+    dataType=DataType("JUMP_THE_MOON"),
+    deviceName="IRSCANNER",
+    data={'irScan': [1.2, 3.4, 5.6, 7.8]},
+    metadata={"location": "Room 101", "type": "IR"}
+).toDict()
 
-    def decryptString(self,encData):
-        keyBytes = binascii.unhexlify(self.key)  # Na hex
-        ivBytes = binascii.unhexlify(self.iv)    # Na hex
+dp3 = DataPointFDE(
+    labNotebookRef="MY_REF_1",
+    deviceName="FIZZBANG",
+    data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
+    metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
+).toDict()
 
-        encBytes = base64.b64decode(encData)  # Decode Base64 data
+dp4 = DataPointFDE(
+    labNotebookRef="MY_REF_1",
+    dataType=DataType("IR_SCAN"),
+    data={'irScan': [1.2, 3.4, 5.6, 7.8]},
+    metadata={"location": "Room 101", "type": "IR"}
+).toDict()
 
-        cipher = AES.new(keyBytes, AES.MODE_CBC, ivBytes)
+dp5 = DataPointFDE(
+    labNotebookRef="MY_REF_2",
+    deviceName="FIZZBANG",
+    data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
+    metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
+).toDict()
 
-        decryptedData = unpad(cipher.decrypt(encBytes), AES.block_size)
+dataSet=DataSetFDD(
+    [dp1,dp2,dp3,dp4,dp5,dp1,dp2,dp3,dp4,dp5]
+)
 
-        return decryptedData.decode('utf-8')
-
-    def signIn(self,orgId,password):
-        det=self.loginDetFromDb(orgId)
-        if not self.signedIn and self.decryptString(det["password"]) == self.decryptString(password):
-            self.signedIn=True
-        else:
-            print("Wrong password!")
-                
-    def isAdmin(self):
-        if (self.user is None):
-            return False
-        return (self.user.role == "admin")
-    
-    def assignUser(self,user: User):
-        if (self.user is None):
-            self.user=user
-        else:
-            raise SystemExit(f"Error; Attempt to replace user {self.user.user} with {user.user}")
-
-    def loginDetFromDb(self,orgId):
-        if not self.db.connected:
-            self.db.connect()
-        return self.db.fetchRecordByColumnValue("users","orgId",orgId)
-
-class Authenticator(AuthenticatorBase):
-    def __init__(self, user=None) -> None:
-        super().__init__(user)
-        
-if __name__ == "__main__":
-    encData = 'DYWV/12CYFuKsHxa//eJ4g==' #Hello world
-    
-    decrypted_string = Authenticator().decryptString(encData)
-    print(f'Decrypted: {decrypted_string}')
-
-    userGuy=User(user="Wessel Bonnet",orgId="309930")
-    imposter=User(user="Mr Imposter")
-    adminGuy=Administrator(user="MR_Bones",orgId="309930")
-    
-    auth_1=Authenticator(userGuy)
-    auth_2=Authenticator(user=adminGuy)
-    
-    print(auth_1.isAdmin())
-    print(auth_2.isAdmin())
-
-    print(auth_1.sessionId)
-    print(auth_2.sessionId)
-    
-    print(auth_1.loginDetFromDb(adminGuy.orgId))
+ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,[])
+ts_db.start(orgId="309930",labNotebookRef="MY_REF_2")
+_testNum=["MY_REF_2","MY_REF_1"]
+for _x in dataSet.dataPoints:
+    #_x.labNotebookRef=random.choice(_testNum)
+    ts_db.insertDataPoint(_x)
+    time.sleep(3)
+ts_db.pauseInsertion=True
+print(ts_db.fetchTimeSeriesData(orgId="309930",labNotebookRef="MY_REF_2"))
+ts_db.kill()
+#ts_db.start()

@@ -1,1 +1,27 @@
-Hmm...in my case the MySQL database contains basic information about an experiment (id, description, script, etc). When a user wants to retrieve a previously run experiment to run it again or inspect the data, the applicable MySQL entry is what encapsulates everything associated with that experiment (including references to where the data is in Mongo). As for the data, it will be an irregular stream of telemetry from various sources (for example-> IR scans, pressure readings, temperatures...). Data sources are associated with a 'deviceName', and each 'deviceName' can have multiple values (for example, the instrument flowsynmaxi2 streams, amongst others, system pressure, pump pressure, temperature, etc.). What do you think?
+class SomeClass:
+    def __init__(self,...):
+        ...
+
+    def continuousFetching(self):
+    *How to access orgId and labNotebookRef??
+        try:
+            while not self.pauseFetching:
+                self.fetchRecentData_EXAMPLE(*orgID and labNotebookRef as arguments*)
+                time.sleep(6)  # Fetch data every 10 seconds
+        except KeyboardInterrupt:
+            print("Stopped fetching data.")
+
+    def pause(self):
+        self.pauseInsertion=True
+
+    def purgeAndPause(self):
+        self.dataPoints=[]
+        self.pause()
+
+    def start(self,orgId: str,labNotebookRef: str):
+        if not (self.insertionThread is None):
+            self.pauseInsertion=False
+        else:
+            
+            insertion_thread = threading.Thread(target=self.continuousInsertion)
+            fetching_thread = threading.Thread(target=self.continuousFetching,kwargs={"orgId":orgId,"labNotebookRef":labNotebookRef})

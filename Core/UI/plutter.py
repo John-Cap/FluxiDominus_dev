@@ -1,8 +1,6 @@
 import ast
 import threading
-import time
 import paho.mqtt.client as mqtt
-import json
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
 from Core.UI.brokers_and_topics import MqttTopics
@@ -21,7 +19,7 @@ class MqttService:
         self.formPanelData={}
 
         self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
-        self.client.on_connect = self.onConnectTele #self.onConnect
+        self.client.on_connect = self.onConnect
         self.client.on_message = self.onMessage
         self.client.on_subscribe = self.onSubscribe
         #self.client.on_publish=self.onPublish
@@ -51,7 +49,7 @@ class MqttService:
     def onSubscribe(self, client, userdata, mid, granted_qos):
         if mid in self.topicIDs:
             print("WJ - Subscribed to topic " + self.topicIDs[mid] + " with Qos " + str(granted_qos[0]) + "!")
-    '''
+    
     def onConnect(self, client, userdata, flags, rc):
         print("WJ - Connected!")
         if rc == 0:
@@ -64,7 +62,7 @@ class MqttService:
                         print("WJ - could not subscribe to topic "+tpc+"!")
         else:
             print("Connection failed with error code " + str(rc))
-    '''
+    
     def onConnectTele(self, client, userdata, flags, rc):
         print("WJ - Connected!")
         if rc == 0:
@@ -95,6 +93,8 @@ class MqttService:
         topic=msg.topic
         #print("WJ - topic: "+topic)
         _msgContents = _msgContents.replace("true", "True").replace("false", "False")
+        _msgContents=_msgContents.replace("null","None")
+        #print("WJ - Message received:",_msgContents)
         _msgContents = ast.literal_eval(_msgContents)
         #print("Message received: " + str(_msgContents))
         self.lastMsgFromTopic[topic]=_msgContents

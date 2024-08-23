@@ -76,6 +76,7 @@ doIt=True
 
 ################################
 #Signed in?
+print("WJ - Awaiting sign-in")
 updater.authenticator.mqttService=updater
 while not updater.authenticator.signedIn:
     time.sleep(0.2)

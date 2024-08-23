@@ -62,7 +62,6 @@ class AuthenticatorBase:
         det=self.loginDetFromDb(orgId)
         passwordCorrect=det[7]
         #decrypted=self.decryptString(passwordCorrect)
-        print(passwordCorrect + " " + password)
         if not self.signedIn and passwordCorrect == password:
             self.signedIn=True
             _report=json.dumps({"LoginPageWidget":{"authenticated":True}})
@@ -80,7 +79,7 @@ class AuthenticatorBase:
         if (self.user is None):
             self.user=user
         else:
-            raise SystemExit(f"Error; Attempt to replace user {self.user.user} with {user.user}")
+            raise SystemExit(f"Error; Attempt to replace user profile {self.user.user} with {user.user}")
 
     def loginDetFromDb(self,orgId):
         if not self.db.connected:
