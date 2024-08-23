@@ -1,372 +1,112 @@
-'''
-import copy
-import threading
-import time
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
-import io
-import asyncio
-import websockets
-import base64
+
+#Handles signing in and passwords, etc
+
 import json
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
-import io
-import asyncio
-import websockets
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
 import base64
-import json
+import binascii
+import uuid
 
-from Core.Control.IR import IRScanner
+from Core.Data.database import MySQLDatabase
+from Core.UI.brokers_and_topics import MqttTopics
 
-class IRPlotter:
-    def __init__(self, maxSlices=50, elev=30, azim=45, zoom=1):
-        self.maxSlices = maxSlices
-        self.elev = elev
-        self.azim = azim
-        self.zoom = zoom
+class UserBase:
+    def __init__(self,user="",orgId="",role="") -> None:
+        self.user=user
+        self.orgId=orgId #Employee num
+        self.role=role #Admin/user, etc
+        self.sessionId=uuid.uuid4()
 
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
-        self.ax.set_xlabel('Steps')
-        self.ax.set_ylabel('Time')
-        self.ax.set_zlabel('Absorbance')
+class User(UserBase):
+    def __init__(self, user="", orgId="") -> None:
+        super().__init__(user, orgId, "user")
 
-        self.data = []
-
-    def addIrData(self, irData):
-        self.data.append(irData)
-        if len(self.data) > self.maxSlices:
-            self.data.pop(0)
-
-    def initPlot(self):
-        if not self.data:
-            raise ValueError("No data to initialize plot")
-        dataArray = np.array(self.data)
-        x = np.arange(dataArray.shape[1])
-        y = np.arange(dataArray.shape[0])
-        x, y = np.meshgrid(x, y)
-        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
-        return surface,
-
-    def updatePlot(self):
-        if not self.data:
-            raise ValueError("No data to update plot")
-        self.ax.clear()
-        self.ax.set_xlabel('Steps')
-        self.ax.set_ylabel('Time')
-        self.ax.set_zlabel('Absorbance')
-        self.ax.view_init(elev=self.elev, azim=self.azim)
-        self.ax.dist = self.zoom  # Apply zoom
-        dataArray = np.array(self.data)
-        x = np.arange(dataArray.shape[1])
-        y = np.arange(dataArray.shape[0])
-        x, y = np.meshgrid(x, y)
-        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
-
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        return buf
-
-    async def sendPlot(self, websocket):
-        while True:
-            imgBuf = self.updatePlot()
-            imgBase64 = base64.b64encode(imgBuf.read()).decode('utf-8')
-            await websocket.send(imgBase64)
-            await asyncio.sleep(1)
-
-    async def handler(self, websocket, path):
-        consumerTask = asyncio.create_task(self.sendPlot(websocket))
-
-        try:
-            async for message in websocket:
-                command = json.loads(message)
-                if command['action'] == 'zoom':
-                    self.zoom += command['value']
-                elif command['action'] == 'tilt_left_right':
-                    self.azim += command['value']
-                elif command['action'] == 'tilt_up_down':
-                    self.elev += command['value']
-                elif command['action'] == 'add_data':
-                    irData = command['data']
-                    self.addIrData(irData)
-        finally:
-            consumerTask.cancel()
-
-    def startServer(self, host='146.64.91.174', port=9003):
-        startServer = websockets.serve(self.handler, host, port)
-        asyncio.get_event_loop().run_until_complete(startServer)
-        asyncio.get_event_loop().run_forever()
-
-    def injectDataThread(self, data):
-        orig=copy.deepcopy(data)
-        def injectData(data):
-            for irScan in data:
-                self.addIrData(irScan)
-                print('WJ - Published IR graph')
-                time.sleep(1)
-            data=copy.deepcopy(orig)
+class Administrator(UserBase):
+    def __init__(self, user="", orgId="") -> None:
+        super().__init__(user, orgId, "admin")
         
-        threading.Thread(target=injectData, daemon=True, kwargs={"data":data}).start()
+class AuthenticatorBase:
+    def __init__(self,mqttService,user=None) -> None:
+        self.signedIn=False
+        self.lastSignInAt=None
+        self.sessionId=uuid.uuid4()
+        self.user=user
+        self.mqttService=mqttService
+        
+        #Encryption
+        self.key='6d7933326c656e67746873757065727365637265746e6f6f6e656b6e6f777331'
+        self.iv='313662797465736c6f6e676976313233'
+            
+        self.db=MySQLDatabase( #TODO - Hardcoded default
+            host="146.64.91.174",
+            port=3306,
+            user="pharma",
+            password="pharma",
+            database="pharma"
+        )
 
-if __name__ == "__main__":
+    def decryptString(self,encData):
+        keyBytes = binascii.unhexlify(self.key)  # Na hex
+        ivBytes = binascii.unhexlify(self.iv)    # Na hex
 
-    _IRscanner = IRScanner()
-    _IRscanner.parseIrData()
-    _yData = copy.deepcopy(_IRscanner.arraysListHeatedReaction)
-    #print(_yData)
+        encBytes = base64.b64decode(encData)  # Decode Base64 data
+
+        cipher = AES.new(keyBytes, AES.MODE_CBC, ivBytes)
+
+        decryptedData = unpad(cipher.decrypt(encBytes), AES.block_size)
+
+        return decryptedData.decode('utf-8')
+
+    def signIn(self,orgId,password):
+        det=self.loginDetFromDb(orgId)
+        passwordCorrect=det[7]
+        #decrypted=self.decryptString(passwordCorrect)
+        if not self.signedIn and passwordCorrect == password:
+            self.signedIn=True
+            _report=json.dumps({"LoginPageWidget":{"authenticated":True}})
+            self.mqttService.client.publish(MqttTopics.getUiTopic("LoginPageWidget"),_report,qos=2)
+            print('Signed in report: '+str(_report))
+        else:
+            print("Wrong password!")
+                
+    def isAdmin(self):
+        if (self.user is None):
+            return False
+        return (self.user.role == "admin")
     
-    plotter = IRPlotter()
-    plotter.injectDataThread(_yData)
-    plotter.startServer()
-'''
-'''
-class IRPlotter:
-    def __init__(self, maxSlices=50, elev=30, azim=45, zoom=1):
-        self.maxSlices = maxSlices
-        self.elev = elev
-        self.azim = azim
-        self.zoom = zoom
+    def assignUser(self,user: User):
+        if (self.user is None):
+            self.user=user
+        else:
+            raise SystemExit(f"Error; Attempt to replace user profile {self.user.user} with {user.user}")
 
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111, projection='3d')
-        self.ax.set_xlabel('Wavelength')
-        self.ax.set_ylabel('Time')
-        self.ax.set_zlabel('Absorbance')
+    def loginDetFromDb(self,orgId):
+        if not self.db.connected:
+            self.db.connect()
+        return self.db.fetchRecordByColumnValue("users","orgId",orgId)
 
-        self.data = []
-
-    def addIrData(self, irData):
-        self.data.append(irData)
-        if len(self.data) > self.maxSlices:
-            self.data.pop(0)
-
-    def initPlot(self):
-        if not self.data:
-            raise ValueError("No data to initialize plot")
-        dataArray = np.array(self.data)
-        x = np.arange(dataArray.shape[1])
-        y = np.arange(dataArray.shape[0])
-        x, y = np.meshgrid(x, y)
-        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
-        return surface,
-
-    def updatePlot(self):
-        if not self.data:
-            raise ValueError("No data to update plot")
-        self.ax.clear()
-        self.ax.set_xlabel('Steps')
-        self.ax.set_ylabel('Time')
-        self.ax.set_zlabel('Absorbance')
-        self.ax.view_init(elev=self.elev, azim=self.azim)
-        self.ax.dist = self.zoom  # Apply zoom
-        dataArray = np.array(self.data)
-        x = np.arange(dataArray.shape[1])
-        y = np.arange(dataArray.shape[0])
-        x, y = np.meshgrid(x, y)
-        surface = self.ax.plot_surface(x, y, dataArray, cmap='viridis')
-
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        buf.seek(0)
-        return buf
-
-    async def sendPlot(self, websocket):
-        while True:
-            imgBuf = self.updatePlot()
-            imgBase64 = base64.b64encode(imgBuf.read()).decode('utf-8') #Hoekom encode en dan decode hy dit weer?!
-            await websocket.send(imgBase64)
-            await asyncio.sleep(1)
-
-    async def handler(self, websocket, path):
-        consumerTask = asyncio.create_task(self.sendPlot(websocket))
-
-        try:
-            async for message in websocket:
-                command = json.loads(message)
-                if command['action'] == 'zoom':
-                    self.zoom += command['value']
-                elif command['action'] == 'tilt_left_right':
-                    self.azim += command['value']
-                elif command['action'] == 'tilt_up_down':
-                    self.elev += command['value']
-                elif command['action'] == 'add_data':
-                    irData = command['data']
-                    self.addIrData(irData)
-        finally:
-            consumerTask.cancel()
-
-    def startServer(self, host='localhost', port=9003):
-        startServer = websockets.serve(self.handler, host, port)
-        asyncio.get_event_loop().run_until_complete(startServer)
-        asyncio.get_event_loop().run_forever()
-
+class Authenticator(AuthenticatorBase):
+    def __init__(self, user=None) -> None:
+        super().__init__(user)
+        
 if __name__ == "__main__":
-    _IRscanner=IRScanner()
-    _IRscanner.parseIrData()
-    _yData=copy.deepcopy(_IRscanner.arraysListHeatedReaction)
+    encData = 'DYWV/12CYFuKsHxa//eJ4g==' #Hello world
     
-    plotter = IRPlotter()
-    plotter.startServer()
-'''
-'''
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
-import io
-import asyncio
-import websockets
-import base64
-import json
+    decrypted_string = Authenticator().decryptString(encData)
+    print(f'Decrypted: {decrypted_string}')
 
-MAX_SLICES = 50  # Define the maximum number of X-Y slices
+    userGuy=User(user="Wessel Bonnet",orgId="309930")
+    imposter=User(user="Mr Imposter")
+    adminGuy=Administrator(user="MR_Bones")
+    
+    auth_1=Authenticator(userGuy)
+    auth_2=Authenticator(user=adminGuy)
+    
+    print(auth_1.isAdmin())
+    print(auth_2.isAdmin())
 
-# Initialize view parameters
-elevation = 30
-azimuth = 45
-
-growCoeff=0.05
-
-# Generate some example data
-def generateIrData(step):
-    global growCoeff
-    absorbance = (np.sin(np.linspace(0, 2 * np.pi, 100)) + np.random.normal(0, 0.1, 100))*growCoeff
-    growCoeff=growCoeff+0.01
-    return absorbance
-
-# Generate a 3D surface plot from IR data
-def generateSurfacePlot(data):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    X = np.arange(data.shape[1])
-    Y = np.arange(data.shape[0])
-    X, Y = np.meshgrid(X, Y)
-    ax.plot_surface(X, Y, data, cmap='viridis')
-    ax.set_xlabel('Steps')
-    ax.set_ylabel('Time')
-    ax.set_zlabel('Absorbance')
-
-    ax.view_init(elev=elevation, azim=azimuth)  # Set the view parameters
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
-    plt.close(fig)
-    return buf
-
-async def sendPlot(websocket):
-    data = []
-    while True:
-        stepData = generateIrData(len(data))
-        data.append(stepData)
-        if len(data) > MAX_SLICES:  # Keep only the last MAX_SLICES steps
-            data.pop(0)
-        dataArray = np.array(data)
-
-        imgBuf = generateSurfacePlot(dataArray)
-        imgBase64 = base64.b64encode(imgBuf.read()).decode('utf-8')
-        await websocket.send(imgBase64)
-        await asyncio.sleep(1)  # Adjust the interval as needed
-
-async def handler(websocket, path):
-    global elevation, azimuth
-    consumerTask = asyncio.create_task(sendPlot(websocket))
-
-    try:
-        async for message in websocket:
-            command = json.loads(message)
-            if command['action'] == 'zoom':
-                elevation += command['value']
-            elif command['action'] == 'tilt_left_right':
-                azimuth += command['value']
-            elif command['action'] == 'tilt_up_down':
-                elevation += command['value']
-    finally:
-        consumerTask.cancel()
-
-startServer = websockets.serve(handler, 'localhost',9003)
-
-asyncio.get_event_loop().run_until_complete(startServer)
-asyncio.get_event_loop().run_forever()
-'''
-
-#Example 1
-'''
-_IRscanner = IRScanner()
-_IRscanner.parseIrData()
-_yData=copy.deepcopy(_IRscanner.arraysListHeatedReaction) #Array with ~35 arrays with ~840 elements each
-_MixAvg=copy.deepcopy(_IRscanner.arraysListMixAvg) #Array with ~35 arrays with ~840 elements each
-#_yData=[_yData[0],_MixAvg,_MixAvg,_yData[1],_MixAvg,_MixAvg,_yData[2],_MixAvg,_MixAvg,_yData[3],_MixAvg,_MixAvg,_yData[4],_MixAvg,_MixAvg,_yData[5],_MixAvg,_MixAvg]
-_processedData=_yData
-
-num_time_steps = len(_processedData)
-num_x_steps = len(_processedData[0])
-#data_series = [[np.sin(x / num_x_steps * np.pi) * np.cos(x / num_x_steps * np.pi * t) for x in range(num_x_steps)] for t in range(num_time_steps)]
-
-# Convert data to numpy array for easier manipulation
-data_array = np.array(_processedData)
-
-# Create x and t arrays
-x = np.arange(num_x_steps)
-t = np.arange(num_time_steps)
-
-# Create meshgrid from x and t
-T, X = np.meshgrid(x, t)
-
-# Plot
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-
-ax.plot_surface(X, T, data_array, cmap='viridis')
-
-ax.set_xlabel('X')
-ax.set_ylabel('Time Steps')
-ax.set_zlabel('Y')
-ax.set_title('Surface Map of Time Steps')
-
-plt.show()
-
-#Example 2
-import copy
-import numpy as np
-import matplotlib.pyplot as plt
-
-from Core.Control.IR import IRScanner
-
-_IRscanner = IRScanner()
-_IRscanner.parseIrData()
-_yData=copy.deepcopy(_IRscanner.arraysListHeatedReaction) #Array with ~35 arrays with ~840 elements each
-_MixAvg=copy.deepcopy(_IRscanner.arraysListMixAvg) #Array with ~35 arrays with ~840 elements each
-#_yData=[_yData[0],_MixAvg,_MixAvg,_yData[1],_MixAvg,_MixAvg,_yData[2],_MixAvg,_MixAvg,_yData[3],_MixAvg,_MixAvg,_yData[4],_MixAvg,_MixAvg,_yData[5],_MixAvg,_MixAvg]
-_processedData=_yData
-
-num_time_steps = len(_processedData)
-num_x_steps = len(_processedData[0])
-#data_series = [[np.sin(x / num_x_steps * np.pi) * np.cos(x / num_x_steps * np.pi * t) for x in range(num_x_steps)] for t in range(num_time_steps)]
-
-# Convert data to numpy array for easier manipulation
-data_array = np.array(_processedData)
-
-# Create x and t arrays
-x = np.arange(num_x_steps)
-t = np.arange(num_time_steps)
-
-# Create meshgrid from x and t
-T, X = np.meshgrid(x, t)
-
-# Plot
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-
-ax.plot_surface(X, T, data_array, cmap='viridis')
-
-ax.set_xlabel('X')
-ax.set_ylabel('Time Steps')
-ax.set_zlabel('Y')
-ax.set_title('Surface Map of Time Steps')
-
-plt.show()
-'''
+    print(auth_1.sessionId)
+    print(auth_2.sessionId)
+    
+    print(auth_1.loginDetFromDb(userGuy.orgId))
