@@ -33,14 +33,18 @@ class MqttService:
         self.dataQueue=[]
         self.logData=False
         
+        self.orgId=""
+        self.labNotebookRef=""
+        
         self.automation=automation if automation else (FlowChemAutomation())
         
         #Authentication
         self.authenticator=Authenticator()
         
-    def addDataToQueue(self,device,data):
+    def addDataToQueue(self,device,data,labNotebookRef,orgId):
         self.dataQueue.append(DataPointFDE(
-            experimentId="exp123",
+            labNotebookRef=labNotebookRef,
+            orgId=orgId,
             deviceName=device,
             data=data,
             metadata={"location": "Room 101", "type": "This particular type"}
@@ -88,31 +92,23 @@ class MqttService:
             print("Connection failed with error code " + str(rc))
 
     def onMessage(self, client, userdata, msg):
-        #print(msg)
         _msgContents = msg.payload.decode()
         topic=msg.topic
-        #print("WJ - topic: "+topic)
         _msgContents = _msgContents.replace("true", "True").replace("false", "False")
         _msgContents=_msgContents.replace("null","None")
-        #print("WJ - Message received:",_msgContents)
         _msgContents = ast.literal_eval(_msgContents)
-        #print("Message received: " + str(_msgContents))
         self.lastMsgFromTopic[topic]=_msgContents
         if "deviceName" in _msgContents:
             if (self.logData):
-                self.addDataToQueue(_msgContents["deviceName"],_msgContents)
-            #self.lastMsgFromTopic[_msgContents["deviceName"]]=_msgContents
+                self.addDataToQueue(_msgContents["deviceName"],_msgContents,self.labNotebookRef,self.orgId)
             if _msgContents["deviceName"]=="hotcoil1":
                 if 'state' in _msgContents:
                     self.temp = _msgContents['state']['temp']
-                    #print(self.temp)
             if _msgContents["deviceName"]=="reactIR702L1":
                 if 'state' in _msgContents:
                     self.IR = _msgContents['state']['data']
-                    #print(self.IR)
             else:
                 pass
-                #print("Message received: " + str(_msgContents))
         elif "script" in _msgContents:
             _msgContents=_msgContents["script"]
             print('############')
@@ -148,82 +144,3 @@ class MqttService:
         return self.temp
     def getIR(self):
         return self.IR
-'''
-class MqttService:
-    def __init__(self, broker_address='146.64.91.174', port=1883, automation=FlowChemAutomation(),topicSets=MqttTopics.getAllTopicSets(),topicsTele=MqttTopics.getTeleTopics()):
-        self.brokerAddress = broker_address
-        self.port = port
-        self.commands = {}
-        self.client = mqtt.Client()
-        self.client.on_message = self.onMessage
-        self.client.on_connect = self.onConnect
-        self.client.on_subscribe = self.onSubscribed
-        self.automation = automation
-        self.topicSets=topicSets
-        self.topicsTele=topicsTele
-        
-        #TODO - move to config
-        self.lastMsgFromTopic={}
-        
-    def updateLastMsg(self,topic,msg):
-        self.lastMsgFromTopic[topic]=msg
-
-    def registerCmnd(self, command, handler):
-        self.commands[command] = handler
-
-    def onConnect(self, client, userdata, flags, rc):
-        for val in set.values():
-            self.client.subscribe(val)
-
-        for set in self.topicSets:
-            for val in set.values():
-                self.client.subscribe(val)
-
-        print("Connected to MQTT broker")
-
-    def onSubscribed(self, client, userdata, mid, reason_code_list):
-        print('WJ - subscribed to topic ')
-
-    def onMessage(self, client, userdata, message):
-        payload = json.loads(message.payload.decode('utf-8'))
-        self.updateLastMsg(message.topic,payload)
-        print(self.lastMsgFromTopic)
-        device = payload.get('device')
-        command = payload.get('command')
-        value = payload.get('value')
-
-        #print('Received message: '+str(payload))
-
-        if device in self.commands:
-            self.commands[device](device, command, value)
-        else:
-            print(f"Unknown device: {device}")
-
-    def start(self):
-        self.client.connect(self.brokerAddress, self.port)
-        self.client.loop_start()
-
-    def stop(self):
-        self.client.loop_stop()
-        self.client.disconnect()
-
-def handle_command(command, value):
-    print(f"Handling command: {command} with value: {value}")
-    # Add logic to handle the command using FlowChemAutomation
-
-def main():
-    command_handler = MqttService()
-    command_handler.registerCmnd('Delay', handle_command)
-    # Register more commands as needed
-
-    command_handler.start()
-
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        command_handler.stop()
-
-if __name__ == "__main__":
-    main()
-'''

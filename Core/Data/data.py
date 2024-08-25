@@ -65,17 +65,13 @@ class DataType:
     def getType(self):
         return self.type
 
-orgId="309930"
-testId=123
-
 class DataPoint:
-    def __init__(self, data, labNotebookRef, metadata=None, dataType = DataType(), orgId=orgId, deviceName="UNKNOWN"):
+    def __init__(self, data, labNotebookRef, orgId,metadata=None, dataType = DataType(), deviceName="UNKNOWN"):
         self.timestamp = datetime.utcnow()
         self.data = data
         self.metadata = metadata if metadata else {}
         self.dataType = dataType
         self.orgId = orgId
-        self.testId = testId
         self.labNotebookRef = labNotebookRef
         self.deviceName = deviceName
     
@@ -96,8 +92,8 @@ class DataPoint:
         return f"<DataPoint(labNotebookRef={self.labNotebookRef}, deviceName={self.deviceName}, timestamp={self.timestamp})>"
 
 class DataPointFDE(DataPoint): #Fluxidominus default database obj
-    def __init__(self, data, labNotebookRef, metadata=None, dataType=DataType(), orgId=orgId, deviceName="UNKNOWN"):
-        super().__init__(data, labNotebookRef, metadata, dataType, orgId, deviceName)
+    def __init__(self, data, labNotebookRef, orgId, metadata=None, dataType=DataType(), deviceName="UNKNOWN"):
+        super().__init__(data, labNotebookRef, orgId, metadata, dataType, deviceName)
     def __repr__(self):
         return f"{self.toDict()}"
 
