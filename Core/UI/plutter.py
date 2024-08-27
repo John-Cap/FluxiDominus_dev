@@ -4,7 +4,7 @@ import paho.mqtt.client as mqtt
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
 from Core.UI.brokers_and_topics import MqttTopics
-from Core.authentication.authenticator import Authenticator
+#from Core.authentication.authenticator import Authenticator
 
 class MqttService:
     def __init__(self, broker_address="localhost", port=1883, client = None, allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
@@ -39,7 +39,7 @@ class MqttService:
         self.automation=automation if automation else (FlowChemAutomation())
         
         #Authentication
-        self.authenticator=Authenticator()
+        #self.authenticator=Authenticator(self)
         
     def addDataToQueue(self,device,data,labNotebookRef,orgId):
         self.dataQueue.append(DataPointFDE(
@@ -129,6 +129,7 @@ class MqttService:
                 self.authenticator.signIn(orgId=_msgContents["orgId"],password=_msgContents["password"])
             else:
                 print(_msgContents)
+                
     def start(self):
         self.client.connect(self.broker_address, self.port)
         thread = threading.Thread(target=self.run)

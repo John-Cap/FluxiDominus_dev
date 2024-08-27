@@ -87,8 +87,8 @@ class AuthenticatorBase:
         return self.db.fetchRecordByColumnValue("users","orgId",orgId)
 
 class Authenticator(AuthenticatorBase):
-    def __init__(self, user=None) -> None:
-        super().__init__(user)
+    def __init__(self, mqttService, user=None) -> None:
+        super().__init__(mqttService, user)
         
 if __name__ == "__main__":
     encData = 'DYWV/12CYFuKsHxa//eJ4g==' #Hello world

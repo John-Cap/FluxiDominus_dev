@@ -1,15 +1,14 @@
 
-import random
 import mysql.connector
 from pymongo import MongoClient
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 import threading
 
-from Core.Data.data import DataPointFDE, DataSetFDD, DataType
+from Core.UI.plutter import MqttService
 
 class MySQLDatabase:
-    def __init__(self, host, port, user, password, database):
+    def __init__(self, host='localhost',port=3306,user="pharma",password="pharma",database="pharma"):
         """Initialize the MySQLDatabase class with connection parameters."""
         self.host = host
         self.port = port
@@ -39,7 +38,7 @@ class MySQLDatabase:
                 self.cursor = self.connection.cursor()
                 print("Connected to the database.")
         except OSError as e:
-            print(f"Error: {e}")
+            print(f"WJ - Database connection error: {e}")
             self.connection = None
 
     def createTable(self, tableName, schema):
@@ -82,7 +81,7 @@ class MySQLDatabase:
             return result
 
     def fetchRecordsByColumnValue(self, tableName, columnName, value):
-        """Fetch a single record from the specified table where the column matches the given value."""
+        """Fetch all records from the specified table where the column matches the given value."""
         if self.cursor:
             fetch_query = f"SELECT * FROM {tableName} WHERE {columnName} = %s"
             self.cursor.execute(fetch_query, (value,))
@@ -98,12 +97,12 @@ class MySQLDatabase:
         print("Database connection closed.")
 
 class TimeSeriesDatabaseMongo:
-    def __init__(self, host, port, database_name, collection_name, dataPoints):
+    def __init__(self, host='localhost', port=27017, databaseName="Pharma", collectionName="pharma-data"):
         #self.client = MongoClient(f'mongodb://{host}:{port}/')
         self.client = MongoClient(host=host,port=port)
-        self.db = self.client[database_name]
-        self.collection = self.db[collection_name]
-        self.dataPoints=dataPoints
+        self.db = self.client[databaseName]
+        self.collection = self.db[collectionName]
+        self.dataPoints=[]
         self.insertionInterval=10
         self.pauseInsertion=True
         self.pauseFetching=True
@@ -183,6 +182,71 @@ class TimeSeriesDatabaseMongo:
             
             self.insertionThread=insertion_thread
             self.fetchingThread=fetching_thread
+                        
+#################################
+#Main class to interface with both db's
+
+class DatabaseOperations:
+    def __init__(self,mySqlDb=MySQLDatabase(),mongoDb=TimeSeriesDatabaseMongo(),mqttService=MqttService()) -> None:
+        self.mySqlDb=mySqlDb
+        self.mongoDb=mongoDb
+        
+        self.mqttService=mqttService
+        
+    def connect(self):
+        self.mySqlDb.connect()
+        self.mongoDb.purgeAndPause()
+        
+    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookRef'):
+        return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
+                
+    def getUserTests(self, tableName='testlist', columnName='orgId'):
+        return self.mySqlDb.fetchRecordsByColumnValue(tableName,columnName,self.mqttService.orgId)
+        
+    def searchForTest(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
+        return self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)
+
+    def getReplicateIds(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
+        testListId=self.getTestlistId(labNotebookRef,tableName,columnName)
+        replicates=self.mySqlDb.fetchRecordsByColumnValue('testruns','testlistId',testListId)
+        ret=[]
+        for _x in replicates:
+            ret.append(_x[0])
+        return ret
+
+#################################
+#Database operations example
+if __name__ == '__main__':
+    #Mqtt
+    thisThing=MqttService()
+    thisThing.start()
+    thisThing.orgId="309930"
+    #Instantiate
+    dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=thisThing)
+    dbOp.connect()
+    
+    #Get all testlist entries for user
+    tests=dbOp.getUserTests()
+    print(tests)
+    print("\n")
+    #Get unique id of testlist entry
+    thisTest=dbOp.getTestlistId("WJ_Disprin")
+    print(thisTest)
+    print("\n")
+    #Get id's of all thisTest's replicate runs
+    theseTests=dbOp.getReplicateIds("WJ_Disprin")
+    print(theseTests)
+#################################
+#Database operations example
+'''
+if __name__ == '__main__':
+    thisThing=MqttService()
+    thisThing.orgId="309930"
+    thisThing.start()
+    dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'))
+    print(dbOp.getUserTests())
+#################################
+'''
 '''
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
@@ -209,7 +273,6 @@ if __name__ == "__main__":
         
     db.close()
 
-'''
 if __name__ == "__main__":
     
     #################################################
@@ -240,13 +303,12 @@ if __name__ == "__main__":
     print(db.fetchRecordByColumnValue("users","orgId","309930"))
         
     db.close()
-    '''
     ################################################
     #Mongo
     host = "146.64.91.174"
     port = 27017
-    database_name = "Pharma"
-    collection_name = "pharma-data"
+    databaseName = "Pharma"
+    collectionName = "pharma-data"
 
     dp1 = DataPointFDE(
         labNotebookRef="MY_REF_1",
@@ -288,7 +350,7 @@ if __name__ == "__main__":
         [dp1,dp2,dp3,dp4,dp5,dp1,dp2,dp3,dp4,dp5]
     )
 
-    ts_db = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,[])
+    ts_db = TimeSeriesDatabaseMongo(host, port, databaseName, collectionName,[])
     ts_db.start(orgId="309930",labNotebookRef="MY_REF_2")
     _testNum=["MY_REF_2","MY_REF_1"]
     for _x in dataSet.dataPoints:
@@ -299,4 +361,4 @@ if __name__ == "__main__":
     print(ts_db.fetchTimeSeriesData(orgId="309930",labNotebookRef="MY_REF_2"))
     ts_db.kill()
     #ts_db.start()
-    '''
+'''
