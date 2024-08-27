@@ -38,17 +38,18 @@ if __name__ == '__main__':
     #Mongo
 
     testId=thisTest
-    runId=dbOp.createReplicate("WJ_Disprin")
+    dbOp.createReplicate("WJ_Disprin")
+    runNrs=dbOp.getRunNrs("WJ_Disprin")
     labNotebookRefs=["MY_REF_2","WJ_Disprin","ANOTHER_ONE"]
     devices=["FLOWSYNMAXI","OHM_DEVICE","A_BICYCLE_BUILT_FOR_TWO"]
     dataSet=[]
-    print([testId,runId])
-    _i=100
+    print([testId,runNrs])
+    _i=200
     while _i > 0:
         dataSet.append(DataPointFDE(
             orgId="309930",
             testId=testId,
-            replicateId=runId,
+            runNr=random.choice(runNrs),
             labNotebookRef=(random.choice(labNotebookRefs)),
             deviceName=(random.choice(devices)),
             data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
@@ -60,9 +61,17 @@ if __name__ == '__main__':
     dbOp.mongoDb.start("309930","WJ_Disprin")
     for _x in thisData.dataPoints:
         dbOp.mongoDb.insertDataPoint(_x)
-        time.sleep(3)
+        time.sleep(random.choice([3,2,1,5]))
     dbOp.mongoDb.pauseInsertion=True
-    print(dbOp.mongoDb.fetchTimeSeriesData(orgId="309930",labNotebookRef="MY_REF_2"))
+
+    for _x in runNrs:
+        
+        print('\n')
+        print('\n')
+        print(dbOp.mongoDb.fetchTimeSeriesData(orgId="309930",labNotebookRef="WJ_Disprin",runNr=_x))
+        print('\n')
+        print('\n')
+
     dbOp.mongoDb.kill()
 ######################################
 '''

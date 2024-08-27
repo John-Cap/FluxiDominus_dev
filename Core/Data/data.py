@@ -66,7 +66,7 @@ class DataType:
         return self.type
 
 class DataPoint:
-    def __init__(self,data,labNotebookRef,orgId,testId,replicateId,metadata=None,dataType = DataType(),deviceName="UNKNOWN",timestamp = datetime.now()):
+    def __init__(self,data,labNotebookRef,orgId,testId,runNr,metadata=None,dataType = DataType(),deviceName="UNKNOWN",timestamp = datetime.now()):
         self.timestamp = timestamp
         self.data = data
         self.metadata = metadata if metadata else {}
@@ -74,7 +74,7 @@ class DataPoint:
         self.orgId = orgId
         self.labNotebookRef = labNotebookRef
         self.deviceName = deviceName
-        self.replicateId=replicateId
+        self.runNr=runNr
         self.testId=testId
     
     def toDict(self):
@@ -88,12 +88,12 @@ class DataPoint:
             'metadata': self.metadata,
             'orgId':self.orgId, #dalk uithaal
             'testId':self.testId,
-            'replicateId':self.replicateId
+            'runNr':self.runNr
         }
 
 class DataPointFDE(DataPoint): #Fluxidominus default database obj
-    def __init__(self, data, labNotebookRef, orgId, testId, replicateId, metadata=None, dataType=DataType(), deviceName="UNKNOWN", timestamp = datetime.now()):
-        super().__init__(data, labNotebookRef, orgId, testId, replicateId, metadata, dataType, deviceName, timestamp)
+    def __init__(self, data, labNotebookRef, orgId, testId, runNr, metadata=None, dataType=DataType(), deviceName="UNKNOWN", timestamp = datetime.now()):
+        super().__init__(data, labNotebookRef, orgId, testId, runNr, metadata, dataType, deviceName, timestamp)
 
 class DataSet:
     def __init__(self, dataPoints = []):

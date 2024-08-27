@@ -129,17 +129,18 @@ class TimeSeriesDatabaseMongo:
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval) #Kannie so lank hier wag nie
 
-    def fetchTimeSeriesData(self,orgId: str,labNotebookRef: str):
+    def fetchTimeSeriesData(self,orgId: str,labNotebookRef: str,runNr=0):
         cursor = self.collection.find({
             'orgId': orgId,
-            'labNotebookRef':labNotebookRef
+            'labNotebookRef':labNotebookRef,
+            'runNr':runNr
         }).sort('timestamp', 1)  # Sort by timestamp in ascending order
         _ret=[]
         _num=0
         for document in cursor:
             _ret.append(document)
             _num=_num+1
-        print(f'Fetched {_num} documents!')
+        print(f'Fetched {_num} documents for experiment {labNotebookRef}!')
         return _ret
 
     def continuousFetching(self, **kwargs):
@@ -164,8 +165,8 @@ class TimeSeriesDatabaseMongo:
         self.dataPoints=[] #What happens if updater still wants to add some datapoints?
         self.pause()
 
-    def start(self,orgId: str,labNotebookRef: str):
-        kwargs={"orgId":orgId,"labNotebookRef":labNotebookRef}
+    def start(self,orgId: str,labNotebookRef: str,runId=0):
+        kwargs={"orgId":orgId,"labNotebookRef":labNotebookRef,"runId":runId}
         if not (self.insertionThread is None):
             self.pauseInsertion=False
         else:
@@ -196,7 +197,7 @@ class DatabaseOperations:
         
     def connect(self):
         self.mySqlDb.connect()
-        self.mongoDb.purgeAndPause()
+        self.mongoDb.purgeAndPause() #Good idea? :/
         
     def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookRef'):
         return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
@@ -215,9 +216,16 @@ class DatabaseOperations:
             ret.append(_x[0])
         return ret
 
+    def getRunNrs(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
+        replicates=self.getReplicateIds(labNotebookRef,tableName,columnName)
+        ret=[]
+        for _x in replicates:
+            ret.append(self.mySqlDb.fetchRecordByColumnValue('testruns','id',_x)[-1])
+        return ret
+
     def createReplicate(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
         testListId=self.getTestlistId(labNotebookRef,tableName,columnName)
-        replicates=self.getReplicateIds(labNotebookRef) #Error handling!
+        replicates=self.getRunNrs(labNotebookRef) #Error handling!
         idNext=-1
         if (len(replicates)==0):
             idNext=0
@@ -270,7 +278,7 @@ if __name__ == '__main__':
         dataSet.append(DataPointFDE(
             orgId="309930",
             testId=testId,
-            replicateId=runId,
+            runNr=runId,
             labNotebookRef=(random.choice(labNotebookRefs)),
             deviceName=(random.choice(devices)),
             data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
