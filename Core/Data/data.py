@@ -66,14 +66,16 @@ class DataType:
         return self.type
 
 class DataPoint:
-    def __init__(self, data, labNotebookRef, orgId,metadata=None, dataType = DataType(), deviceName="UNKNOWN"):
-        self.timestamp = datetime.utcnow()
+    def __init__(self,data,labNotebookRef,orgId,testId,replicateId,metadata=None,dataType = DataType(),deviceName="UNKNOWN",timestamp = datetime.now()):
+        self.timestamp = timestamp
         self.data = data
         self.metadata = metadata if metadata else {}
         self.dataType = dataType
         self.orgId = orgId
         self.labNotebookRef = labNotebookRef
         self.deviceName = deviceName
+        self.replicateId=replicateId
+        self.testId=testId
     
     def toDict(self):
         """Convert the DataPoint to a dictionary format."""
@@ -84,18 +86,14 @@ class DataPoint:
             'data': self.data,
             'dataType': self.dataType.getType(),
             'metadata': self.metadata,
-            'orgId':self.orgId,
-            'testId':self.testId
+            'orgId':self.orgId, #dalk uithaal
+            'testId':self.testId,
+            'replicateId':self.replicateId
         }
-    
-    def __repr__(self):
-        return f"<DataPoint(labNotebookRef={self.labNotebookRef}, deviceName={self.deviceName}, timestamp={self.timestamp})>"
 
 class DataPointFDE(DataPoint): #Fluxidominus default database obj
-    def __init__(self, data, labNotebookRef, orgId, metadata=None, dataType=DataType(), deviceName="UNKNOWN"):
-        super().__init__(data, labNotebookRef, orgId, metadata, dataType, deviceName)
-    def __repr__(self):
-        return f"{self.toDict()}"
+    def __init__(self, data, labNotebookRef, orgId, testId, replicateId, metadata=None, dataType=DataType(), deviceName="UNKNOWN", timestamp = datetime.now()):
+        super().__init__(data, labNotebookRef, orgId, testId, replicateId, metadata, dataType, deviceName, timestamp)
 
 class DataSet:
     def __init__(self, dataPoints = []):

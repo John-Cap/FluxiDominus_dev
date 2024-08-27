@@ -21,7 +21,8 @@ class MySQLDatabase:
         
         self.tableVar={
             "users":['orgId', 'lastLogin', 'firstName', 'lastName'],
-            "testlist":['nameTest', 'description', 'nameTester', 'fumehoodId', 'testScript', 'lockScript', 'flowScript', 'datetimeCreate', 'labNotebookRef', 'orgId']
+            "testlist":['nameTest', 'description', 'nameTester', 'fumehoodId', 'testScript', 'lockScript', 'flowScript', 'datetimeCreate', 'labNotebookRef', 'orgId'],
+            "testruns":['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
         } #hardcoded
 
     def connect(self):
@@ -214,18 +215,32 @@ class DatabaseOperations:
             ret.append(_x[0])
         return ret
 
+    def createReplicate(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
+        testListId=self.getTestlistId(labNotebookRef,tableName,columnName)
+        replicates=self.getReplicateIds(labNotebookRef) #Error handling!
+        idNext=-1
+        if (len(replicates)==0):
+            idNext=0
+        else:
+            idNext=replicates[-1] + 1
+        insert=[(testListId,datetime.now(),datetime.now(),datetime.now(),0,labNotebookRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
+        self.mySqlDb.insertRecords('testruns',insert)
+        return idNext
+
 #################################
 #Database operations example
+'''
 if __name__ == '__main__':
     #Mqtt
     thisThing=MqttService()
     thisThing.start()
     thisThing.orgId="309930"
     #Instantiate
-    dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=thisThing)
+    dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
     
-    #Get all testlist entries for user
+    ##################################
+    #MySql
     tests=dbOp.getUserTests()
     print(tests)
     print("\n")
@@ -236,129 +251,39 @@ if __name__ == '__main__':
     #Get id's of all thisTest's replicate runs
     theseTests=dbOp.getReplicateIds("WJ_Disprin")
     print(theseTests)
-#################################
-#Database operations example
-'''
-if __name__ == '__main__':
-    thisThing=MqttService()
-    thisThing.orgId="309930"
-    thisThing.start()
-    dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'))
-    print(dbOp.getUserTests())
-#################################
-'''
-'''
-# Example usage //Kyk, camel vs snekcase
-if __name__ == "__main__":
-    db = MySQLDatabase(
-        host="146.64.91.174",
-        port=3306,
-        user="pharma",
-        password="pharma",
-        database="pharma"
-    )
-
-    db.connect()
-    
-    records = [
-        ("309930",datetime.now(),"Wessel","Bonnet")
-    ]
-    db.insertRecords("users", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
-    
-    results = db.fetchRecords("users")
-    for row in results:
-        print(row)
-        
-    print(db.fetchRecordByColumnValue("users","orgId","309930"))
-        
-    db.close()
-
-if __name__ == "__main__":
-    
-    #################################################
-    #MySQL
-    db = MySQLDatabase(
-        host="146.64.91.174",
-        port=3306,
-        user="pharma",
-        password="pharma",
-        database="pharma"
-    )
-
-    db.connect()
-    ## id, nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate, labNotebookRef
-    ##'146', 'asd', 'asd', 'asd', 'd8:3a:dd:55:99:09', ?, '0', ?, '2024-03-22 08:14:12', NULL
-
-    records = [
-        ("Mr_Test","Just_a_test","MRS_TEST","MAC MAC",b"Hi there!",0,b"NO VAL",datetime.now(),"THIS_REF_1","309930"),
-        ("Mr_Test2","Just_a_test","MRS_TEST","MAC MAC",b"Hi there!",0,b"NO VAL",datetime.now(),"THIS_REF_2","309930"),
-        ("Mr_Test3","Just_a_test","MRS_TEST","MAC MAC",b"Hi there!",0,b"NO VAL",datetime.now(),"THIS_REF_3","309930"),
-    ]
-    db.insertRecords("testlist", records) #['orgId', 'lastLogin', 'firstName', 'lastName']
-    
-    results = db.fetchRecordsByColumnValue("testlist","orgId","309930")
-    for row in results:
-        print(row)
-        
-    print(db.fetchRecordByColumnValue("users","orgId","309930"))
-        
-    db.close()
-    ################################################
+    print('\n')
+    dbOp.createReplicate("WJ_Disprin")
+    theseTests=dbOp.getReplicateIds("WJ_Disprin")
+    print(theseTests)
+    print('\n')
+    ##################################
     #Mongo
-    host = "146.64.91.174"
-    port = 27017
-    databaseName = "Pharma"
-    collectionName = "pharma-data"
 
-    dp1 = DataPointFDE(
-        labNotebookRef="MY_REF_1",
-        deviceName="flowsynmaxi2",
-        data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
-        metadata={"location": "Room 101"}
-    ).toDict()
-
-    dp2 = DataPointFDE(
-        labNotebookRef="MY_REF_2",
-        dataType=DataType("JUMP_THE_MOON"),
-        deviceName="IRSCANNER",
-        data={'irScan': [1.2, 3.4, 5.6, 7.8]},
-        metadata={"location": "Room 101", "type": "IR"}
-    ).toDict()
-
-    dp3 = DataPointFDE(
-        labNotebookRef="MY_REF_1",
-        deviceName="FIZZBANG",
-        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
-        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
-    ).toDict()
-
-    dp4 = DataPointFDE(
-        labNotebookRef="MY_REF_1",
-        dataType=DataType("IR_SCAN"),
-        data={'irScan': [1.2, 3.4, 5.6, 7.8]},
-        metadata={"location": "Room 101", "type": "IR"}
-    ).toDict()
-
-    dp5 = DataPointFDE(
-        labNotebookRef="MY_REF_2",
-        deviceName="FIZZBANG",
-        data={'numOfFloff': [1.2, 3.4, 5.6, 0.8, 0]},
-        metadata={"location": "Room 101", "type": "U_N_K_N_O_W_N"}
-    ).toDict()
+    testId=thisTest
+    runId=dbOp.createReplicate("WJ_Disprin")
+    labNotebookRefs=["MY_REF_2","WJ_Disprin","ANOTHER_ONE"]
+    devices=["FLOWSYNMAXI","OHM_DEVICE","A_BICYCLE_BUILT_FOR_TWO"]
+    dataSet=[]
+    print([testId,runId])
+    _i=100
+    while _i > 0:
+        dataSet.append(DataPointFDE(
+            orgId="309930",
+            testId=testId,
+            replicateId=runId,
+            labNotebookRef=(random.choice(labNotebookRefs)),
+            deviceName=(random.choice(devices)),
+            data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
+            metadata={"location": "Room 101"}
+        ).toDict())
+        _i-=1
     
-    dataSet=DataSetFDD(
-        [dp1,dp2,dp3,dp4,dp5,dp1,dp2,dp3,dp4,dp5]
-    )
-
-    ts_db = TimeSeriesDatabaseMongo(host, port, databaseName, collectionName,[])
-    ts_db.start(orgId="309930",labNotebookRef="MY_REF_2")
-    _testNum=["MY_REF_2","MY_REF_1"]
-    for _x in dataSet.dataPoints:
-        #_x.labNotebookRef=random.choice(_testNum)
-        ts_db.insertDataPoint(_x)
+    thisData=DataSetFDD(dataSet)
+    dbOp.mongoDb.start("309930","WJ_Disprin")
+    for _x in thisData.dataPoints:
+        dbOp.mongoDb.insertDataPoint(_x)
         time.sleep(3)
-    ts_db.pauseInsertion=True
-    print(ts_db.fetchTimeSeriesData(orgId="309930",labNotebookRef="MY_REF_2"))
-    ts_db.kill()
-    #ts_db.start()
+    dbOp.mongoDb.pauseInsertion=True
+    print(dbOp.mongoDb.fetchTimeSeriesData(orgId="309930",labNotebookRef="MY_REF_2"))
+    dbOp.mongoDb.kill()
 '''
