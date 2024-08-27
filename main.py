@@ -67,13 +67,11 @@ automation = FlowChemAutomation()
 doIt = True
 _reportSleep=5
 _reportDelay=Delay(_reportSleep)
-#logger = DataLogger('time_degrees_IR_1.txt')
-#logger.logData(-1,[-1])
 
 parser=None
 procedure=None
 doIt=True
-
+'''
 ################################
 #Signed in?
 print("WJ - Awaiting sign-in")
@@ -82,7 +80,9 @@ while not updater.authenticator.signedIn:
     time.sleep(0.2)
 print("Signed in!")
 ################################
-
+'''
+updater.orgId="309930"
+updater.labNotebookRef="EAZY_LEMON_SQUEEZY_1"
 # Main loop!
 while True:
     #Script posted?
@@ -110,7 +110,7 @@ while True:
 
     updater.script=""
     updater.logData=True
-    tsDb.start()
+    tsDb.start('309930','TEST_REF_GG46')
     while doIt:
         if _reportDelay.elapsed():
             #print(updater.dataQueue)
