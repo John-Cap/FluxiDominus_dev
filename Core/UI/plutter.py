@@ -3,8 +3,9 @@ import threading
 import paho.mqtt.client as mqtt
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
+from Core.Data.database import DatabaseOperations
 from Core.UI.brokers_and_topics import MqttTopics
-#from Core.authentication.authenticator import Authenticator
+from Core.authentication.authenticator import Authenticator
 
 class MqttService:
     def __init__(self, broker_address="localhost", port=1883, client = None, allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
@@ -39,9 +40,13 @@ class MqttService:
         self.automation=automation if automation else (FlowChemAutomation())
         
         #Authentication
-        #self.authenticator=Authenticator(self)
+        self.authenticator=Authenticator()
         
-    def addDataToQueue(self,device,data,labNotebookRef,orgId):
+        self.zeroTime=None
+        
+        self.databaseOperations=None
+        
+    def addDataToQueue(self,device,data,labNotebookRef,orgId): #Replace with the new class
         self.dataQueue.append(DataPointFDE(
             labNotebookRef=labNotebookRef,
             orgId=orgId,
@@ -131,6 +136,8 @@ class MqttService:
                 print(_msgContents)
                 
     def start(self):
+        self.authenticator.initPlutter(mqttService=self)
+        self.databaseOperations=DatabaseOperations(mqttService=self)
         self.client.connect(self.broker_address, self.port)
         thread = threading.Thread(target=self.run)
         thread.start()
@@ -138,8 +145,6 @@ class MqttService:
 
     def run(self):
         self.client.loop_start()
-        #while True:
-            #time.sleep(1)
 
     def getTemp(self):
         return self.temp

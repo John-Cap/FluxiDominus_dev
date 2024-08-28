@@ -1,4 +1,5 @@
 
+from datetime import datetime
 import time
 
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
@@ -111,6 +112,9 @@ while True:
     updater.script=""
     updater.logData=True
     tsDb.start('309930','TEST_REF_GG46')
+    
+    updater.zeroTime=datetime.now() #Start experiment time
+    
     while doIt:
         if _reportDelay.elapsed():
             #print(updater.dataQueue)

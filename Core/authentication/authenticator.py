@@ -27,12 +27,12 @@ class Administrator(UserBase):
         super().__init__(user, orgId, "admin")
         
 class AuthenticatorBase:
-    def __init__(self,mqttService,user=None) -> None:
+    def __init__(self,user=None) -> None:
         self.signedIn=False
         self.lastSignInAt=None
         self.sessionId=uuid.uuid4()
         self.user=user
-        self.mqttService=mqttService
+        self.mqttService=None
         
         #Encryption
         self.key='6d7933326c656e67746873757065727365637265746e6f6f6e656b6e6f777331'
@@ -87,8 +87,10 @@ class AuthenticatorBase:
         return self.db.fetchRecordByColumnValue("users","orgId",orgId)
 
 class Authenticator(AuthenticatorBase):
-    def __init__(self, mqttService, user=None) -> None:
-        super().__init__(mqttService, user)
+    def __init__(self, user=None) -> None:
+        super().__init__(user)
+    def initPlutter(self,mqttService):
+        self.mqttService=mqttService
         
 if __name__ == "__main__":
     encData = 'DYWV/12CYFuKsHxa//eJ4g==' #Hello world

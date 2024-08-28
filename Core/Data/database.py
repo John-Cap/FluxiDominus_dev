@@ -1,11 +1,15 @@
 
 import mysql.connector
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import threading
 
-from Core.UI.plutter import MqttService
+from Core.Data.experiment import StandardExperiment
+
+class Database:
+    def __init__(self) -> None:
+        pass
 
 class MySQLDatabase:
     def __init__(self, host='localhost',port=3306,user="pharma",password="pharma",database="pharma"):
@@ -16,7 +20,6 @@ class MySQLDatabase:
         self.password = password
         self.database = database
         self.connection = None
-        self.connected = False
         self.cursor = None
         
         self.tableVar={
@@ -109,9 +112,11 @@ class TimeSeriesDatabaseMongo:
         self.pauseFetching=True
         self.insertionThread=None
         self.fetchingThread=None
+        
+        self.currZeroTime=None
 
     def insertDataPoint(self,dataPoint):
-        dataPoint["timestamp"]=datetime.utcnow()
+        dataPoint["timestamp"]=datetime.now()
         self.collection.insert_one(dataPoint)
         #print(f"Inserted data point: {dataPoint}")
 
@@ -129,19 +134,59 @@ class TimeSeriesDatabaseMongo:
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval) #Kannie so lank hier wag nie
 
-    def fetchTimeSeriesData(self,orgId: str,labNotebookRef: str,runNr=0):
-        cursor = self.collection.find({
-            'orgId': orgId,
-            'labNotebookRef':labNotebookRef,
-            'runNr':runNr
-        }).sort('timestamp', 1)  # Sort by timestamp in ascending order
-        _ret=[]
-        _num=0
+    def fetchTimeSeriesData(self, testId, runNr=0, startTime: datetime = None, endTime: datetime = None):
+        # Prepare the query with required filters
+        query = {
+            'testId': testId,
+            'runNr': runNr
+        }
+
+        # Add time filtering to the query if provided
+        if startTime and endTime:
+            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
+
+        # Fetch and sort the data
+        cursor = self.collection.find(query).sort('timestamp', 1)
+        _ret = []
+        _num = 0
         for document in cursor:
             _ret.append(document)
-            _num=_num+1
-        print(f'Fetched {_num} documents for experiment {labNotebookRef}!')
+            _num += 1
+
+        print(f'Fetched {_num} documents for experiment {testId} from {startTime} to {endTime}!')
         return _ret
+
+    def streamData(self, timeWindowInSeconds, testId, runNr=0, now=None):
+        if now is None:
+            now = datetime.now()
+
+        if timeWindowInSeconds < 0:  # into past
+            endTime = now
+            startTime = max(now - timedelta(seconds=abs(timeWindowInSeconds)), self.currZeroTime)
+        else:  # into future
+            startTime = now
+            endTime = now + timedelta(seconds=timeWindowInSeconds)
+
+        return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=startTime, endTime=endTime)
+
+    def streamComparisonData(self, currentTestId, previousTestId, timeWindowInSeconds, currentRunNr=0, previousRunNr=0, now=None):
+        if now is None:
+            now = datetime.now()
+
+        # Calculate elapsed time since the start of the current experiment
+        elapsedTime = (now - self.currZeroTime).total_seconds()
+
+        # Calculate the corresponding start and end times for the previous experiment
+        prevStartTime = self.prevZeroTime + timedelta(seconds=elapsedTime)
+        prevEndTime = prevStartTime + timedelta(seconds=timeWindowInSeconds)
+
+        # Fetch data for the current experiment
+        currentData = self.streamData(timeWindowInSeconds, currentTestId, runNr=currentRunNr, now=now)
+
+        # Fetch data for the previous experiment using the mapped times
+        previousData = self.fetchTimeSeriesData(testId=previousTestId, runNr=previousRunNr, startTime=prevStartTime, endTime=prevEndTime)
+
+        return currentData, previousData
 
     def continuousFetching(self, **kwargs):
         orgId = kwargs.get('orgId')
@@ -189,12 +234,25 @@ class TimeSeriesDatabaseMongo:
 #Main class to interface with both db's
 
 class DatabaseOperations:
-    def __init__(self,mySqlDb=MySQLDatabase(),mongoDb=TimeSeriesDatabaseMongo(),mqttService=MqttService()) -> None:
+    def __init__(self,mySqlDb=MySQLDatabase(),mongoDb=TimeSeriesDatabaseMongo(),mqttService=None) -> None:
         self.mySqlDb=mySqlDb
         self.mongoDb=mongoDb
         
         self.mqttService=mqttService
-        
+
+    def createStdExp(self,labNotebookRef,nameTest="Short description",description="Long description",flowScript={},testScript=b"script_content"):
+        return (StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
+            nameTest=nameTest,
+            nameTester="",
+            lockScript=0,
+            flowScript=flowScript,
+            description=description,
+            testScript=testScript,
+            datetimeCreate=datetime.now(),
+            labNotebookRef=labNotebookRef,
+            orgId=self.mqttService.orgId
+        )
+
     def connect(self):
         self.mySqlDb.connect()
         self.mongoDb.purgeAndPause() #Good idea? :/

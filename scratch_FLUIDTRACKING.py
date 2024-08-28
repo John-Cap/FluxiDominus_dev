@@ -1,12 +1,13 @@
 
 #################################
 #Database operations example
+from datetime import datetime, timedelta
 import random
 import time
-from Core.Data.data import DataPointFDE, DataSetFDD, DataType
+
+from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
-
 
 if __name__ == '__main__':
     #Mqtt
@@ -37,6 +38,7 @@ if __name__ == '__main__':
     ##################################
     #Mongo
 
+    thisThing.zeroTime=datetime.now()
     testId=thisTest
     dbOp.createReplicate("WJ_Disprin")
     runNrs=dbOp.getRunNrs("WJ_Disprin")
@@ -44,33 +46,36 @@ if __name__ == '__main__':
     devices=["FLOWSYNMAXI","OHM_DEVICE","A_BICYCLE_BUILT_FOR_TWO"]
     dataSet=[]
     print([testId,runNrs])
-    _i=200
+    lastRun=runNrs[-1]
+    _i=100
+    dbOp.mongoDb.currZeroTime=datetime.now()
     while _i > 0:
         dataSet.append(DataPointFDE(
             orgId="309930",
             testId=testId,
-            runNr=random.choice(runNrs),
-            labNotebookRef=(random.choice(labNotebookRefs)),
+            runNr=lastRun,
+            labNotebookRef=(random.choice(runNrs)),
             deviceName=(random.choice(devices)),
             data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
-            metadata={"location": "Room 101"}
+            metadata={"location": "Room 101"},
+            zeroTime=thisThing.zeroTime
         ).toDict())
         _i-=1
     
     thisData=DataSetFDD(dataSet)
     dbOp.mongoDb.start("309930","WJ_Disprin")
+    dbOp.mongoDb.pauseFetching=True
     for _x in thisData.dataPoints:
         dbOp.mongoDb.insertDataPoint(_x)
-        time.sleep(random.choice([3,2,1,5]))
+        time.sleep(0.25)
     dbOp.mongoDb.pauseInsertion=True
 
-    for _x in runNrs:
-        
-        print('\n')
-        print('\n')
-        print(dbOp.mongoDb.fetchTimeSeriesData(orgId="309930",labNotebookRef="WJ_Disprin",runNr=_x))
-        print('\n')
-        print('\n')
+    thisInput=0
+    while True:
+        thisInput=eval(input('Input timeWindowInSeconds: '))
+        if thisInput == -1:
+            break
+        print(dbOp.mongoDb.streamData(runNr=lastRun,testId=testId,timeWindowInSeconds=thisInput))
 
     dbOp.mongoDb.kill()
 ######################################

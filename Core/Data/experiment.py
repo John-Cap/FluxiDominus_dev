@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from getmac import get_mac_address as gma
 from Core.Data.data import DataObj_TEMP
 from Core.Data.database import MySQLDatabase
 
@@ -10,7 +10,7 @@ class Experiment:
         self.tables=tables
         self.table=tables[0]
 
-    def toDB(self, dataObj, table=None):
+    def toDB(self, dataObj, table=None): #Handle case where duplicate unique entries throw errors
         if not table:
             table=self.table
         """Insert or update a DataObj_TEMP instance in the database."""
@@ -102,14 +102,14 @@ class StandardExperiment(Experiment):
     def __init__(self, db, tables):
         super().__init__(db, tables)
 
-    def createExperiment(self, nameTest, description, nameTester, fumehoodId, testScript,
+    def createExperiment(self, nameTest, description, nameTester, testScript,
                          lockScript, flowScript, datetimeCreate, labNotebookRef, orgId):
         """Create a new experiment and save it to the database."""
         dataObj = DataObj_TEMP(
             nameTest=nameTest,
             description=description,
             nameTester=nameTester,
-            fumehoodId=fumehoodId,
+            fumehoodId=gma(), #Erm, goeie idee? :/
             testScript=testScript,
             lockScript=lockScript,
             flowScript=flowScript,
@@ -143,16 +143,18 @@ if __name__ == "__main__":
     exp = StandardExperiment(db,tables=["testlist"])
     newExperiment = exp.createExperiment(
         nameTest="MrTest",
+        nameTester="MrTester",
+        lockScript=0,
+        flowScript=b"R",
         description="Description of Test1",
-        fumehoodId="Fumehood1",
         testScript=b"script_content",
         datetimeCreate=datetime.now(),
-        labNotebookRef="MOUSE_BABY_MOUSE_15",
+        labNotebookRef="MOUSE_BABY_MOUSE_59",
         orgId="309930"
     )
     print("Created experiment ID, ref: ", newExperiment.id, newExperiment.labNotebookRef)
 
-    fetchedExperiment = exp.fromDbByLabNotebookRef("MOUSE_BABY_MOUSE_15").toDict()
+    fetchedExperiment = exp.fromDbByLabNotebookRef("MOUSE_BABY_MOUSE_59").toDict()
     if fetchedExperiment:
         print(fetchedExperiment)
 
@@ -160,10 +162,9 @@ if __name__ == "__main__":
 '''
 Connected to the database.
 Data inserted/updated successfully.
-Created experiment ID, ref:  245 MOUSE_BABY_MOUSE_15
-WJ - Fetched query:  (245, 'MrTest', 'Description of Test1', 'Tester1', 'Fumehood1', b'script_content', 1, b'flow_content', 
-datetime.datetime(2024, 8, 23, 7, 17, 27), 'MOUSE_BABY_MOUSE_15')
-WJ - Labbook ref: MOUSE_BABY_MOUSE_15
-{'id': 245, 'nameTest': 'MrTest', 'description': 'Description of Test1', 'nameTester': 'Tester1', 'fumehoodId': 'Fumehood1', 'testScript': b'script_content', 'lockScript': 1, 'flowScript': b'flow_content', 'datetimeCreate': datetime.datetime(2024, 
-8, 23, 7, 17, 27), 'labNotebookRef': 'MOUSE_BABY_MOUSE_15'}
+Created experiment ID, ref:  251 MOUSE_BABY_MOUSE_59
+WJ - Fetched query:  (251, 'MrTest', 'Description of Test1', 'MrTester', 'c0:e4:34:25:17:63', b'script_content', 0, b'R', datetime.datetime(2024, 8, 28, 8, 40, 55), 'MOUSE_BABY_MOUSE_59', '309930')
+WJ - Labbook ref: MOUSE_BABY_MOUSE_59
+{'id': 251, 'nameTest': 'MrTest', 'description': 'Description of Test1', 'nameTester': 'MrTester', 'fumehoodId': 'c0:e4:34:25:17:63', 'testScript': b'script_content', 'lockScript': 0, 'flowScript': b'R', 'datetimeCreate': datetime.datetime(2024, 8, 28, 8, 40, 55), 'labNotebookRef': 'MOUSE_BABY_MOUSE_59', 'orgId': '309930'}
+Database connection closed.
 '''
