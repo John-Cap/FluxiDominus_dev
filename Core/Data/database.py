@@ -67,6 +67,21 @@ class MySQLDatabase:
             self.cursor.executemany(insertQuery, records)
             self.connection.commit()
             print(f"Records inserted successfully into '{tableName}'.")
+    
+    def updateRecordById(self, tableName, uniqueId, columnName, newValue):
+        """Update a specific column's value in a row identified by a unique ID."""
+        if self.cursor:
+            # Prepare the SQL query to update the specific column in the table.
+            updateQuery = f"""
+            UPDATE {tableName}
+            SET {columnName} = %s
+            WHERE id = %s
+            """
+            # Execute the query with the provided newValue and uniqueId
+            self.cursor.execute(updateQuery, (newValue, uniqueId))
+            # Commit the transaction to the database
+            self.connection.commit()
+            print(f"Record with ID {uniqueId} updated successfully in '{tableName}'.")
 
     def fetchRecords(self, tableName):# WHERE id=%s
         """Fetch all records from the specified table."""
@@ -239,9 +254,11 @@ class DatabaseOperations:
         self.mongoDb=mongoDb
         
         self.mqttService=mqttService
+        
+        self.currReplicate=None
 
-    def createStdExp(self,labNotebookRef,nameTest="Short description",description="Long description",flowScript={},testScript=b"script_content"):
-        return (StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
+    def createStdExp(self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
+        ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
             nameTest=nameTest,
             nameTester="",
             lockScript=0,
@@ -252,6 +269,17 @@ class DatabaseOperations:
             labNotebookRef=labNotebookRef,
             orgId=self.mqttService.orgId
         )
+        self.createReplicate(labNotebookRef=labNotebookRef)
+        return ret
+
+    def setZeroTime(self, id, zeroTime=None):
+        if not zeroTime:
+            zeroTime=datetime.now()
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='startTime',newValue=zeroTime)
+    def setStopTime(self, id, stopTime=None):
+        if not stopTime:
+            stopTime=datetime.now()
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='stopTime',newValue=stopTime)
 
     def connect(self):
         self.mySqlDb.connect()
@@ -289,7 +317,7 @@ class DatabaseOperations:
             idNext=0
         else:
             idNext=replicates[-1] + 1
-        insert=[(testListId,datetime.now(),datetime.now(),datetime.now(),0,labNotebookRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
+        insert=[(testListId,datetime.now(),None,None,0,labNotebookRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
 

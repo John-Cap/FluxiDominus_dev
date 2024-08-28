@@ -7,6 +7,7 @@ import time
 
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
+from Core.Data.experiment import StandardExperiment
 from Core.UI.plutter import MqttService
 
 if __name__ == '__main__':
@@ -18,50 +19,54 @@ if __name__ == '__main__':
     dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
     
+    testNames = ["WJ_ANOTHER_14","WJ_SECOND"]
+    
+    ##################################
+    #Create exp
+    stdExp=dbOp.createStdExp(
+        labNotebookRef="WJ_ANOTHER_14"
+    )
+    id=stdExp.id
+    
     ##################################
     #MySql
-    tests=dbOp.getUserTests()
-    print(tests)
-    print("\n")
-    #Get unique id of testlist entry
-    thisTest=dbOp.getTestlistId("WJ_Disprin")
-    print(thisTest)
-    print("\n")
-    #Get id's of all thisTest's replicate runs
-    theseTests=dbOp.getReplicateIds("WJ_Disprin")
-    print(theseTests)
-    print('\n')
-    dbOp.createReplicate("WJ_Disprin")
-    theseTests=dbOp.getReplicateIds("WJ_Disprin")
+    theseTests=dbOp.getReplicateIds("WJ_ANOTHER_14")
     print(theseTests)
     print('\n')
     ##################################
     #Mongo
 
-    thisThing.zeroTime=datetime.now()
-    testId=thisTest
-    dbOp.createReplicate("WJ_Disprin")
-    runNrs=dbOp.getRunNrs("WJ_Disprin")
-    labNotebookRefs=["MY_REF_2","WJ_Disprin","ANOTHER_ONE"]
+    runNrs=dbOp.getRunNrs("WJ_ANOTHER_14")
+    labNotebookRefs=["WJ_ANOTHER_14"]
     devices=["FLOWSYNMAXI","OHM_DEVICE","A_BICYCLE_BUILT_FOR_TWO"]
     dataSet=[]
-    print([testId,runNrs])
-    lastRun=runNrs[-1]
+    print([id,runNrs])
     _i=100
-    dbOp.mongoDb.currZeroTime=datetime.now()
+    
+    time.sleep(5)
+    
+    dbOp.setZeroTime(id=theseTests[0])
+
     while _i > 0:
         dataSet.append(DataPointFDE(
             orgId="309930",
-            testId=testId,
-            runNr=lastRun,
-            labNotebookRef=(random.choice(runNrs)),
+            testId=id,
+            runNr=runNrs[0],
+            labNotebookRef=(random.choice(labNotebookRefs)),
             deviceName=(random.choice(devices)),
             data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
             metadata={"location": "Room 101"},
             zeroTime=thisThing.zeroTime
         ).toDict())
         _i-=1
+        time.sleep(0.2)
+
+    time.sleep(10);
     
+    dbOp.setStopTime(theseTests[0])
+        
+    print(dbOp.mySqlDb.fetchRecordsByColumnValue('testruns','id',theseTests[0]))
+'''
     thisData=DataSetFDD(dataSet)
     dbOp.mongoDb.start("309930","WJ_Disprin")
     dbOp.mongoDb.pauseFetching=True
@@ -75,10 +80,11 @@ if __name__ == '__main__':
         thisInput=eval(input('Input timeWindowInSeconds: '))
         if thisInput == -1:
             break
-        print(dbOp.mongoDb.streamData(runNr=lastRun,testId=testId,timeWindowInSeconds=thisInput))
+        #print(dbOp.mongoDb.streamData(runNr=lastRun,testId=testId,timeWindowInSeconds=thisInput))
 
     dbOp.mongoDb.kill()
 ######################################
+'''
 '''
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":
