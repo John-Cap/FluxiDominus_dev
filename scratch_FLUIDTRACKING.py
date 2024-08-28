@@ -18,55 +18,101 @@ if __name__ == '__main__':
     #Instantiate
     dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
-    
-    testNames = ["WJ_ANOTHER_14","WJ_SECOND"]
+    notebookRef='WJ_TEST_11'
+    testNames = [notebookRef,"WJ_SECOND"]
     
     ##################################
     #Create exp
     stdExp=dbOp.createStdExp(
-        labNotebookRef="WJ_ANOTHER_14"
+        labNotebookRef=notebookRef
     )
     id=stdExp.id
     
     ##################################
     #MySql
-    theseTests=dbOp.getReplicateIds("WJ_ANOTHER_14")
+    theseTests=dbOp.getReplicateIds(notebookRef)
     print(theseTests)
     print('\n')
     ##################################
     #Mongo
 
-    runNrs=dbOp.getRunNrs("WJ_ANOTHER_14")
-    labNotebookRefs=["WJ_ANOTHER_14"]
+    runNrs=dbOp.getRunNrs(notebookRef)
+    labNotebookRefs=[notebookRef]
     devices=["FLOWSYNMAXI","OHM_DEVICE","A_BICYCLE_BUILT_FOR_TWO"]
     dataSet=[]
+    
+    sillyVal=1
+    
     print([id,runNrs])
-    _i=100
+    _i=50
     
-    time.sleep(5)
-    
-    dbOp.setZeroTime(id=theseTests[0])
+    dbOp.setZeroTime(id=theseTests[-1])
+    dbOp.mongoDb.prevZeroTime=datetime.now()
 
     while _i > 0:
         dataSet.append(DataPointFDE(
             orgId="309930",
             testId=id,
-            runNr=runNrs[0],
+            runNr=runNrs[-1],
+            labNotebookRef=(random.choice(labNotebookRefs)),
+            deviceName=(random.choice(devices)),
+            data={'systemPressure': sillyVal, 'pumpPressure': 3.4, 'temperature': 22.5},
+            metadata={"location": "Room 101"},
+            zeroTime=thisThing.zeroTime
+        ).toDict())
+        sillyVal+=1
+        dbOp.mongoDb.insertDataPoint(dataSet[-1])
+        _i-=1
+        time.sleep(0.5)
+
+    dbOp.setStopTime(theseTests[-1])
+
+    print(dbOp.mySqlDb.fetchRecordsByColumnValue('testruns','id',theseTests[-1]))
+        
+    dbOp.createReplicate(notebookRef)
+    theseTests=dbOp.getReplicateIds(notebookRef)
+    
+    runNrs=dbOp.getRunNrs(notebookRef)
+    print([id,runNrs])
+    _i=50
+    
+    dbOp.setZeroTime(id=theseTests[-1])
+    dbOp.mongoDb.currZeroTime=datetime.now()
+
+    sillyVal=1
+
+    start=time.time()
+    streamEvery=2
+    meh=False  
+    while _i > 0:
+        if not meh or (time.time()-start>streamEvery):
+            start=time.time()
+            if not meh:
+                meh=True
+            print('\n')
+            print('###########################')
+            print(f"Corresponding data from {streamEvery} seconds ahead in previous experiment:")
+            print(dbOp.mongoDb.streamComparisonData(currentTestId=id,previousTestId=id,timeWindowInSeconds=streamEvery,currentRunNr=1,previousRunNr=0))
+        dataSet.append(DataPointFDE(
+            orgId="309930",
+            testId=id,
+            runNr=runNrs[-1],
             labNotebookRef=(random.choice(labNotebookRefs)),
             deviceName=(random.choice(devices)),
             data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
             metadata={"location": "Room 101"},
             zeroTime=thisThing.zeroTime
         ).toDict())
+        sillyVal+=1
+        dbOp.mongoDb.insertDataPoint(dataSet[-1])
         _i-=1
-        time.sleep(0.2)
+        time.sleep(0.5)
 
-    time.sleep(10);
-    
-    dbOp.setStopTime(theseTests[0])
+    dbOp.setStopTime(theseTests[-1])
+
+    print(dbOp.mySqlDb.fetchRecordsByColumnValue('testruns','id',theseTests[-1]))
         
-    print(dbOp.mySqlDb.fetchRecordsByColumnValue('testruns','id',theseTests[0]))
-'''
+    '''
     thisData=DataSetFDD(dataSet)
     dbOp.mongoDb.start("309930","WJ_Disprin")
     dbOp.mongoDb.pauseFetching=True

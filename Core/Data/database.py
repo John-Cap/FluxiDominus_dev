@@ -129,6 +129,7 @@ class TimeSeriesDatabaseMongo:
         self.fetchingThread=None
         
         self.currZeroTime=None
+        self.prevZeroTime=None
 
     def insertDataPoint(self,dataPoint):
         dataPoint["timestamp"]=datetime.now()
@@ -168,7 +169,7 @@ class TimeSeriesDatabaseMongo:
             _ret.append(document)
             _num += 1
 
-        print(f'Fetched {_num} documents for experiment {testId} from {startTime} to {endTime}!')
+        #print(f'Fetched {_num} documents for experiment {testId} from {startTime} to {endTime}!')
         return _ret
 
     def streamData(self, timeWindowInSeconds, testId, runNr=0, now=None):
