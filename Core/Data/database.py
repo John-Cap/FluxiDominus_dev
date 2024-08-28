@@ -98,6 +98,24 @@ class MySQLDatabase:
             self.cursor.execute(fetch_query, (value,))
             result = self.cursor.fetchone()  # fetchone returns a single matching row
             return result
+        
+    def fetchRecordByColumnValues(self, tableName, column1Name, value1, column2Name, value2):
+        """Fetch a single record from the specified table where two columns match the given values."""
+        if self.cursor:
+            fetch_query = f"SELECT * FROM {tableName} WHERE {column1Name} = %s AND {column2Name} = %s"
+            self.cursor.execute(fetch_query, (value1, value2))
+            result = self.cursor.fetchone()  # fetchone returns a single matching row
+            return result
+        
+    def fetchSpecifiedColumnsByValues(self, tableName, columnNames, column1Name, value1, column2Name, value2):
+        """Fetch specified columns from a table where two columns match the given values."""
+        if self.cursor:
+            # Join the list of column names into a single string separated by commas
+            columns = ", ".join(columnNames)
+            fetch_query = f"SELECT {columns} FROM {tableName} WHERE {column1Name} = %s AND {column2Name} = %s"
+            self.cursor.execute(fetch_query, (value1, value2))
+            result = self.cursor.fetchone()  # fetchone returns a single matching row
+            return result
 
     def fetchRecordsByColumnValue(self, tableName, columnName, value):
         """Fetch all records from the specified table where the column matches the given value."""
@@ -185,7 +203,7 @@ class TimeSeriesDatabaseMongo:
 
         return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=startTime, endTime=endTime)
 
-    def streamComparisonData(self, currentTestId, previousTestId, timeWindowInSeconds, currentRunNr=0, previousRunNr=0, now=None):
+    def streamTimeBracket(self, testId, timeWindowInSeconds=0, runNr=0, now=None):
         if now is None:
             now = datetime.now()
 
@@ -196,13 +214,7 @@ class TimeSeriesDatabaseMongo:
         prevStartTime = self.prevZeroTime + timedelta(seconds=elapsedTime)
         prevEndTime = prevStartTime + timedelta(seconds=timeWindowInSeconds)
 
-        # Fetch data for the current experiment
-        currentData = self.streamData(timeWindowInSeconds, currentTestId, runNr=currentRunNr, now=now)
-
-        # Fetch data for the previous experiment using the mapped times
-        previousData = self.fetchTimeSeriesData(testId=previousTestId, runNr=previousRunNr, startTime=prevStartTime, endTime=prevEndTime)
-
-        return currentData, previousData
+        return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=prevStartTime, endTime=prevEndTime)
 
     def continuousFetching(self, **kwargs):
         orgId = kwargs.get('orgId')
@@ -249,6 +261,7 @@ class TimeSeriesDatabaseMongo:
 #################################
 #Main class to interface with both db's
 
+#Main
 class DatabaseOperations:
     def __init__(self,mySqlDb=MySQLDatabase(),mongoDb=TimeSeriesDatabaseMongo(),mqttService=None) -> None:
         self.mySqlDb=mySqlDb
@@ -322,6 +335,25 @@ class DatabaseOperations:
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
 
+    def fetchStreamingBracket(self,labNotebookRef,runNr): #Fetches previous experiment's start time and end time
+        _ret=self.mySqlDb.fetchSpecifiedColumnsByValues(tableName='testruns',columnNames=['startTime','stopTime'],column1Name='labNotebookRef',value1=labNotebookRef,column2Name='runNr',value2=runNr)
+        return [_ret[0],_ret[1]]
+
+class DatabaseStreamer(DatabaseOperations):
+    def __init__(self, mySqlDb=MySQLDatabase(), mongoDb=TimeSeriesDatabaseMongo(), mqttService=None) -> None:
+        super().__init__(mySqlDb, mongoDb, mqttService)
+        self.loopThread=None
+        self.dataQueue
+        
+    def _streamingLoop(self):
+        pass
+    
+    def streamFrom(self,labNotebookRef,runNr):
+        bracket=self.fetchStreamingBracket(labNotebookRef,runNr)
+        self.mongoDb.prevZeroTime=bracket[0]
+            
+    def _retrieve(self,labNotebookRef,runNr):
+        pass
 #################################
 #Database operations example
 '''

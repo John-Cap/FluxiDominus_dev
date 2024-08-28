@@ -24,7 +24,8 @@ class MqttTopics:
         "ScriptGeneratorWidget": "chemistry/cmnd",
         #"TestListWidget":"ui/TestListWidget",
         "FormPanelWidget":"ui/FormPanelWidget",
-        "LoginPageWidget": "ui/LoginPageWidget"
+        "LoginPageWidget": "ui/LoginPageWidget",
+        "dbStreaming":"ui/dbStreaming"
     }
 
     topicsTests={

@@ -18,7 +18,7 @@ if __name__ == '__main__':
     #Instantiate
     dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
-    notebookRef='WJ_TEST_11'
+    notebookRef='WJ_TEST_12'
     testNames = [notebookRef,"WJ_SECOND"]
     
     ##################################
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         sillyVal+=1
         dbOp.mongoDb.insertDataPoint(dataSet[-1])
         _i-=1
-        time.sleep(0.5)
+        time.sleep(random.choice([0.5,15]))
 
     dbOp.setStopTime(theseTests[-1])
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
             print('\n')
             print('###########################')
             print(f"Corresponding data from {streamEvery} seconds ahead in previous experiment:")
-            print(dbOp.mongoDb.streamComparisonData(currentTestId=id,previousTestId=id,timeWindowInSeconds=streamEvery,currentRunNr=1,previousRunNr=0))
+            print(dbOp.mongoDb.streamTimeBracket(currentTestId=id,previousTestId=id,timeWindowInSeconds=streamEvery,currentRunNr=1,previousRunNr=0))
         dataSet.append(DataPointFDE(
             orgId="309930",
             testId=id,
@@ -105,8 +105,9 @@ if __name__ == '__main__':
         ).toDict())
         sillyVal+=1
         dbOp.mongoDb.insertDataPoint(dataSet[-1])
+        
         _i-=1
-        time.sleep(0.5)
+        time.sleep(random.choice([0.5,15]))
 
     dbOp.setStopTime(theseTests[-1])
 
