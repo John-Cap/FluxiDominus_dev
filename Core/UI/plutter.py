@@ -139,11 +139,11 @@ class MqttService:
         self.authenticator.initPlutter(mqttService=self)
         self.databaseOperations=DatabaseOperations(mqttService=self)
         self.client.connect(self.broker_address, self.port)
-        thread = threading.Thread(target=self.run)
+        thread = threading.Thread(target=self._run)
         thread.start()
         return thread
 
-    def run(self):
+    def _run(self):
         self.client.loop_start()
 
     def getTemp(self):

@@ -25,7 +25,8 @@ class MqttTopics:
         #"TestListWidget":"ui/TestListWidget",
         "FormPanelWidget":"ui/FormPanelWidget",
         "LoginPageWidget": "ui/LoginPageWidget",
-        "dbStreaming":"ui/dbStreaming"
+        #"dbStreamingOut":"ui/dbStreaming/out",
+        "dbCmndIn":"ui/dbCmnd/in" #Ui posts here
     }
 
     topicsTests={

@@ -1,12 +1,28 @@
 
-from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
+from datetime import datetime
+from time import sleep
+import time
+from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
 
-mqttService=MqttService(broker_address='146.64.91.174')
+mqttService=MqttService()
 mqttService.start()
-dbOps=DatabaseOperations(mqttService=mqttService,mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'))
 
-dbOps.connect()
+sleep(2)
 
-print(dbOps.fetchStreamingBracket('WJ_TEST_11',0))
-print(dbOps.fetchStreamingBracket('WJ_TEST_10',1))
+dbStrmr=DatabaseStreamer(
+    mySqlDb=MySQLDatabase(host='146.64.91.174'),
+    mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),
+    mqttService=mqttService
+)
+
+dbStrmr.connect()
+
+sleep(1)
+
+dbStrmr.setStreamingBracket(labNotebookRef='WJ_TEST_11',runNr=0)
+dbStrmr.mongoDb.currZeroTime=datetime.now()
+
+#print(dbStrmr.mongoDb.prevZeroTime)
+
+print(dbStrmr.streamToMqtt(labNotebookRef='WJ_TEST_11',runNr=0,timeWindow=30))
