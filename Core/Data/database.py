@@ -422,7 +422,7 @@ class DatabaseStreamer(DatabaseOperations):
             self.dataQueues[id]=[]
         _rec=self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
         for _x in _rec:
-            _x=self._packageData(_x["data"],_x["data"]["deviceName"])
+            _x=self._packageData(_x["data"],_x["data"]["deviceName"],_x["data"]["setting"])
         self.dataQueues[id]=self.dataQueues[id] + self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
         _data={'dbStreaming':{id:self.dataQueues[id]}}
         self.mqttService.client.publish(

@@ -113,6 +113,19 @@ class HardcodedTeleAddresses:
             'pressSys': {
                 'address': ['settings', 'pressure']
             }
+        },
+        'sf10vapourtec2': { #TODO - hoekom is hierdie waardes nie in "state" nie?
+            'fr': {
+                'address': ['settings', 'flowrate']
+            },
+            'pressSys': {
+                'address': ['settings', 'pressure']
+            }
+        },
+        'a_bicycle_built_for_two':{
+            'exampleSetting':{
+                'address':['systemPressure']
+            }
         }
     };
 

@@ -5,6 +5,27 @@ from datetime import datetime, timedelta
 import random
 import time
 
+from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
+from Core.UI.plutter import MqttService
+
+mqttService=MqttService()
+mqttService.start()
+mqttService.orgId="309930"
+dbStream=DatabaseStreamer(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=mqttService)
+
+dbStream.handleStreamRequest(
+    {
+        "id":"anEvenCoolerId",
+        "labNotebookRef":"WJ_TEST_12",
+        "runNr":0,
+        "timeWindow":30,
+        "nestedField":"deviceName",
+        "nestedValue":"A_BICYCLE_BUILT_FOR_TWO",
+        "setting":"exampleSetting"
+    }
+)
+
+'''
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.Data.experiment import StandardExperiment
@@ -112,8 +133,7 @@ if __name__ == '__main__':
     dbOp.setStopTime(theseTests[-1])
 
     print(dbOp.mySqlDb.fetchRecordsByColumnValue('testruns','id',theseTests[-1]))
-        
-    '''
+
     thisData=DataSetFDD(dataSet)
     dbOp.mongoDb.start("309930","WJ_Disprin")
     dbOp.mongoDb.pauseFetching=True

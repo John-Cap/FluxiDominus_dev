@@ -5,3 +5,7 @@ self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
 self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
 self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
 self.streamRequestDetails[id]["setting"]=req["setting"]
+
+{
+    'dbStreaming'
+}
