@@ -1,6 +1,7 @@
 import ast
 import threading
 import paho.mqtt.client as mqtt
+from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
 from Core.Data.database import DatabaseOperations
@@ -64,7 +65,8 @@ class MqttService:
         if rc == 0:
             for _x in self.allTopics:
                 for tpc in _x.values():
-                    ret=self.client.subscribe(tpc)
+                    qos=MqttTopics.getTopicQos(tpc)
+                    ret=self.client.subscribe(tpc,qos=qos)
                     if ret[0]==0:
                         self.topicIDs[ret[1]]=tpc
                     else:

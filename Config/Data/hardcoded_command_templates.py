@@ -1,8 +1,7 @@
 
 class HardcodedTeleAddresses:
 
-    def __init__(self) -> None:
-        self.hardcodedTeleAddresses = {
+    hardcodedTeleAddresses = {
         'flowsynmaxi1': {
             'pafr': {
                 'address': ['state', 'flowRatePumpA']
@@ -117,10 +116,11 @@ class HardcodedTeleAddresses:
         }
     };
 
-    def getValueFromAddress(self,data,device,setting):
+    @staticmethod
+    def getValFromAddress(data,device,setting):
         device=device.lower()
         value = data
-        for key in (self.hardcodedTeleAddresses[device][setting]['address']):
+        for key in (HardcodedTeleAddresses.hardcodedTeleAddresses[device][setting]['address']):
             if isinstance(value, dict) and key in value:
                 value = value[key]
             else:
@@ -180,4 +180,4 @@ if __name__=="__main__":
     }
 
 
-    print(HardcodedTeleAddresses().getValueFromAddress(diz,'flowsynmaxi1','pressSys'))
+    print(HardcodedTeleAddresses.getValueFromAddress(diz,'flowsynmaxi1','pressSys'))

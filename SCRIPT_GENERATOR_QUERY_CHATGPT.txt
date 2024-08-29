@@ -1,49 +1,7 @@
-It works :)
-
-Next step: when an experiment is re-run, I must be able to stream back the data from the previous experiment to compare it with the data of the new experiment.
-Experiments are identical and will have equal run times. Seeing as the experiments will have differing 'datetime' stamps,
-how can I make it such that I can fetch data for comparison irrespective of differing datetimes?
-
-For example when running experiment 2, I want to be able to say:
-"Experiment 2 has been running for x seconds; I want all data from experiment 1 when it was
-at the same point
-
-code as it stands:
-
-    def fetchTimeSeriesData(self,testId,runNr=0,startTime: datetime = None, endTime: datetime = None):
-        # Prepare the query with required filters
-        query = {
-            'testId': testId,
-            'runNr': runNr
-        }
-
-        # Add time filtering to the query if provided
-        if startTime and endTime:
-            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
-
-        # Fetch and sort the data
-        cursor = self.collection.find(query).sort('timestamp', 1)
-        _ret = []
-        _num = 0
-        for document in cursor:
-            _ret.append(document)
-            _num += 1
-
-        print(f'Fetched {_num} documents for experiment {testId} from {startTime} to {endTime}!')
-        return _ret
-    
-    def streamData(self, timeWindowInSeconds, testId, runNr=0, now=None):
-        if now is None:
-            now = datetime.now()
-
-        if timeWindowInSeconds < 0:  # into past
-            endTime = now
-            # Calculate startTime, ensuring it doesn't go before zeroTime
-            startTime = max(now - timedelta(seconds=abs(timeWindowInSeconds)), self.currZeroTime)
-            #startTime = now - timedelta(seconds=abs(timeWindowInSeconds))
-        else:  # into future
-            startTime = now
-            endTime = now + timedelta(seconds=timeWindowInSeconds)
-
-        return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=startTime, endTime=endTime)
-    
+self.streamRequestDetails[id]["labNotebookRef"]=req["labNotebookRef"]
+self.streamRequestDetails[id]["runNr"]=req["runNr"]
+self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
+self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
+self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
+self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+self.streamRequestDetails[id]["setting"]=req["setting"]

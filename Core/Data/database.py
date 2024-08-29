@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import time
 import threading
 
+from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
 from Core.Data.experiment import StandardExperiment
 
 class Database:
@@ -367,21 +368,71 @@ class DatabaseStreamer(DatabaseOperations):
         super().__init__(mySqlDb, mongoDb, mqttService)
         self.loopThread=None
         self.dataQueues={} #Contains id:[...data], id tells Flutter where streamed data must go
+        self.streamRequestDetails={}
 
-    def _streamingLoop(self): #TODO
+    def handleStreamRequest(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
+        id=req["id"]
+        if not (id in self.streamRequestDetails):
+            self.streamRequestDetails[id]={}
+        self.streamRequestDetails[id]["labNotebookRef"]=req["labNotebookRef"]
+        self.streamRequestDetails[id]["runNr"]=req["runNr"]
+        self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
+        self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
+        self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
+        self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+        self.streamRequestDetails[id]["setting"]=req["setting"]
+        self._returnMqttStreamRequest(id)
+
+    def _streamingThread(self): #TODO
         pass
 
+    def _packageData(self,data,deviceName,setting):
+        _val=HardcodedTeleAddresses.getValFromAddress(data,device=deviceName,setting=setting)
+        _timestamp=data["timestamp"]
+        return [_timestamp,_val]
+
+    def _returnMqttStreamRequest(self,id):
+        if not (id in self.dataQueues):
+            self.dataQueues[id]=[]
+        _rec=self.streamFrom(
+            labNotebookRef=self.streamRequestDetails["labNotebookRef"],
+            runNr=self.streamRequestDetails["runNr"],
+            timeWindow=self.streamRequestDetails["timeWindow"],
+            nestedField=self.streamRequestDetails["nestedField"],
+            nestedValue=self.streamRequestDetails["nestedValue"]
+        )
+        for _x in _rec:
+            _x=self._packageData(
+                _x["data"],
+                _x["data"][self.streamRequestDetails["deviceName"]],
+                _x["data"][self.streamRequestDetails["setting"]]
+            )
+        self.dataQueues[id]=self.dataQueues[id] + _rec
+        _data={'dbStreaming':{id:self.dataQueues[id]}}
+        self.mqttService.client.publish(
+            topic="ui/dbStreaming/out",
+            payload=str(_data),
+            qos=2
+        )
+        self.streamRequestDetails[id]={}
+        self.dataQueues[id]=[]
+        
     def streamToMqtt(self,id,labNotebookRef,runNr,timeWindow,nestedField=None,nestedValue=None):
         if not (id in self.dataQueues):
             self.dataQueues[id]=[]
+        _rec=self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
+        for _x in _rec:
+            _x=self._packageData(_x["data"],_x["data"]["deviceName"])
         self.dataQueues[id]=self.dataQueues[id] + self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
         _data={'dbStreaming':{id:self.dataQueues[id]}}
         self.mqttService.client.publish(
             topic="ui/dbStreaming/out",
             payload=str(_data),
-            qos=1
+            qos=2
         )
-
+        self.streamRequestDetails[id]={}
+        self.dataQueues[id]=[]
+        
     def streamFrom(self,labNotebookRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
         return self._retrieve(labNotebookRef,runNr,timeWindow,nestedField,nestedValue)
                 

@@ -33,7 +33,18 @@ class MqttTopics:
         "testSettings":"test/settings"
     }
 
+    topicsQos={
+        "ui/dbCmnd/in":2
+    }
+
     allTopics=[topicsCnmd,topicsTele,topicsUI,topicsTests]
+
+    @staticmethod
+    def getTopicQos(topic):
+        if (topic in MqttTopics.topicsQos):
+            return MqttTopics.topicsQos[topic]
+        else:
+            return 0
 
     @staticmethod
     def getUiTopic(type):

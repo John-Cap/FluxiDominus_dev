@@ -20,9 +20,9 @@ dbStrmr.connect()
 
 sleep(1)
 
-dbStrmr.setStreamingBracket(labNotebookRef='WJ_TEST_11',runNr=0)
+dbStrmr.setStreamingBracket(labNotebookRef='WJ_TEST_11',runNr=1)
 dbStrmr.mongoDb.currZeroTime=datetime.now()
 
 #print(dbStrmr.mongoDb.prevZeroTime)
 
-print(dbStrmr.streamToMqtt(id="thisId123",labNotebookRef='WJ_TEST_11',runNr=0,timeWindow=30,nestedField='deviceName',nestedValue='A_BICYCLE_BUILT_FOR_TWO'))
+print(dbStrmr.streamToMqtt(id="thisId1234",labNotebookRef='WJ_TEST_11',runNr=1,timeWindow=10,nestedField='deviceName',nestedValue='A_BICYCLE_BUILT_FOR_TWO'))
