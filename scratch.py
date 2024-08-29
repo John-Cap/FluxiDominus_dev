@@ -25,4 +25,4 @@ dbStrmr.mongoDb.currZeroTime=datetime.now()
 
 #print(dbStrmr.mongoDb.prevZeroTime)
 
-print(dbStrmr.streamToMqtt(labNotebookRef='WJ_TEST_11',runNr=0,timeWindow=30))
+print(dbStrmr.streamToMqtt(id="thisId123",labNotebookRef='WJ_TEST_11',runNr=0,timeWindow=30,nestedField='deviceName',nestedValue='A_BICYCLE_BUILT_FOR_TWO'))

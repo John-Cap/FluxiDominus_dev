@@ -2,7 +2,7 @@
 class HardcodedTeleAddresses:
 
     def __init__(self) -> None:
-        self.hardcodedDeviceTemplates = {
+        self.hardcodedTeleAddresses = {
         'flowsynmaxi1': {
             'pafr': {
                 'address': ['state', 'flowRatePumpA']
@@ -117,9 +117,10 @@ class HardcodedTeleAddresses:
         }
     };
 
-    def getValueFromAddress(data, address):
+    def getValueFromAddress(self,data,device,setting):
+        device=device.lower()
         value = data
-        for key in address:
+        for key in (self.hardcodedTeleAddresses[device][setting]['address']):
             if isinstance(value, dict) and key in value:
                 value = value[key]
             else:
@@ -128,23 +129,55 @@ class HardcodedTeleAddresses:
     
 if __name__=="__main__":
     diz={
-        "deviceName": "sf10Vapourtec1",
-        "deviceType": "Pump",
-        "cmnd": "",
+        "deviceName": "flowsynmaxi1",
+        "deviceType": "PumpValveHeater",
         "settings": {
-            "mode": "",
-            "flowrate": 0,
-            "pressure": 0,
-            "dose": 0,
-            "gasflowrate": 0,
-            "rampStartRate": 0,
-            "rampStopRate": 0,
-            "rampTime": 0
+            "flowRatePumpA": 2500,
+            "flowRatePumpB": 2500,
+            "flowRatePumpC": 0,
+            "flowRatePumpD": 0,
+            "tempReactor1": 0,
+            "tempReactor2": 0,
+            "tempReactor3": 0,
+            "tempReactor4": 0,
+            "valveOpenA": False,
+            "valveOpenB": False,
+            "valveOpenC": False,
+            "valveOpenD": False,
+            "valveOpenCW": False,
+            "injValveOpenA": False,
+            "injValveOpenB": False,
+            "injValveOpenC": False,
+            "injValveOpenD": False,
+            "heaterON": False
         },
         "state": {
-            "status": "STOP",
-            "valve": "A",
-            "response": ""
+            "pressSystem": 2.06,
+            "pressFlowSynA": 9.12,
+            "pressFlowSynB": 1.65,
+            "pressBinaryC": 0,
+            "pressBinaryD": 0,
+            "tempReactor1": 20.35,
+            "tempReactor2": 19.12,
+            "tempReactor3": 999,
+            "tempReactor4": 999,
+            "valveOpenA": False,
+            "valveOpenB": False,
+            "valveOpenC": False,
+            "valveOpenD": False,
+            "valveOpenCW": False,
+            "valveInjOpenA": False,
+            "valveInjOpenB": False,
+            "valveInjOpenC": False,
+            "valveInjOpenD": False,
+            "flowRatePumpA": 3.5,
+            "flowRatePumpB": 0,
+            "flowRatePumpC": 0,
+            "flowRatePumpD": 0,
+            "chillerDetected": False
         },
-        "timestamp": "1721293412961"
+        "timestamp": "1721285147235"
     }
+
+
+    print(HardcodedTeleAddresses().getValueFromAddress(diz,'flowsynmaxi1','pressSys'))

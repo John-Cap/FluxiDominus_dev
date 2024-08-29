@@ -353,23 +353,29 @@ class DatabaseOperations:
         self.mongoDb.prevZeroTime=_ret[0]
         self.mongoDb.prevStopTime=_ret[1]
 
-class StreamedData: #Defines what exactly to send to Flutter
+class ParseStreamingData: #Defines what exactly to send to Flutter
     def __init__(self) -> None:
         self._protocols={
-            "hotcoil1":["state","temp"]
+            '''
+            Function pointers that parse data to be sent to UI
+            "hotcoil1":{'fr',function}
+            '''
         }
 
 class DatabaseStreamer(DatabaseOperations):
     def __init__(self, mySqlDb=MySQLDatabase(), mongoDb=TimeSeriesDatabaseMongo(), mqttService=None) -> None:
         super().__init__(mySqlDb, mongoDb, mqttService)
         self.loopThread=None
-        self.dataQueue=[]
+        self.dataQueues={} #Contains id:[...data], id tells Flutter where streamed data must go
 
-    def _streamingLoop(self):
+    def _streamingLoop(self): #TODO
         pass
 
-    def streamToMqtt(self,labNotebookRef,runNr,timeWindow,nestedField=None,nestedValue=None):
-        _data={'dbStreaming':self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)}
+    def streamToMqtt(self,id,labNotebookRef,runNr,timeWindow,nestedField=None,nestedValue=None):
+        if not (id in self.dataQueues):
+            self.dataQueues[id]=[]
+        self.dataQueues[id]=self.dataQueues[id] + self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
+        _data={'dbStreaming':{id:self.dataQueues[id]}}
         self.mqttService.client.publish(
             topic="ui/dbStreaming/out",
             payload=str(_data),
