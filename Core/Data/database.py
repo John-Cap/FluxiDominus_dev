@@ -381,34 +381,35 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
         self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
         self.streamRequestDetails[id]["setting"]=req["setting"]
+        print(self.streamRequestDetails)
         self._returnMqttStreamRequest(id)
 
     def _streamingThread(self): #TODO
         pass
 
-    def _packageData(self,data,deviceName,setting):
+    def _packageData(self,data,deviceName,setting,timestamp):
         _val=HardcodedTeleAddresses.getValFromAddress(data,device=deviceName,setting=setting)
-        _timestamp=data["timestamp"]
-        return [_timestamp,_val]
+        return [timestamp,_val]
 
     def _returnMqttStreamRequest(self,id):
         if not (id in self.dataQueues):
             self.dataQueues[id]=[]
         _rec=self.streamFrom(
-            labNotebookRef=self.streamRequestDetails["labNotebookRef"],
-            runNr=self.streamRequestDetails["runNr"],
-            timeWindow=self.streamRequestDetails["timeWindow"],
-            nestedField=self.streamRequestDetails["nestedField"],
-            nestedValue=self.streamRequestDetails["nestedValue"]
+            labNotebookRef=self.streamRequestDetails[id]["labNotebookRef"],
+            runNr=self.streamRequestDetails[id]["runNr"],
+            timeWindow=self.streamRequestDetails[id]["timeWindow"],
+            nestedField=self.streamRequestDetails[id]["nestedField"],
+            nestedValue=self.streamRequestDetails[id]["nestedValue"]
         )
+        _ret=[]
         for _x in _rec:
-            _x=self._packageData(
+            _ret.append(self._packageData(
                 _x["data"],
-                _x["data"][self.streamRequestDetails["deviceName"]],
-                _x["data"][self.streamRequestDetails["setting"]]
-            )
-        self.dataQueues[id]=self.dataQueues[id] + _rec
-        _data={'dbStreaming':{id:self.dataQueues[id]}}
+                self.streamRequestDetails[id]["deviceName"],
+                self.streamRequestDetails[id]["setting"],
+                _x["timestamp"]
+            ))
+        _data={'dbStreaming':{id:_ret}}
         self.mqttService.client.publish(
             topic="ui/dbStreaming/out",
             payload=str(_data),

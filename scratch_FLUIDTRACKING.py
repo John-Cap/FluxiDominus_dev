@@ -12,19 +12,24 @@ mqttService=MqttService()
 mqttService.start()
 mqttService.orgId="309930"
 dbStream=DatabaseStreamer(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=mqttService)
-
-dbStream.handleStreamRequest(
-    {
-        "id":"anEvenCoolerId",
-        "labNotebookRef":"WJ_TEST_12",
-        "runNr":0,
-        "timeWindow":30,
-        "nestedField":"deviceName",
-        "nestedValue":"A_BICYCLE_BUILT_FOR_TWO",
-        "setting":"exampleSetting"
-    }
-)
-
+dbStream.connect()
+dbStream.mongoDb.currZeroTime=datetime.now()
+_i=15
+while _i > 0:
+    dbStream.handleStreamRequest(
+        {
+            "id":"anEvenCoolerId",
+            "labNotebookRef":"WJ_TEST_11",
+            "runNr":0,
+            "deviceName":"A_BICYCLE_BUILT_FOR_TWO",
+            "timeWindow":30,
+            "nestedField":"deviceName",
+            "nestedValue":"A_BICYCLE_BUILT_FOR_TWO",
+            "setting":"exampleSetting"
+        }
+    )
+    _i-=1
+    time.sleep(5)
 '''
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
