@@ -381,7 +381,6 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
         self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
         self.streamRequestDetails[id]["setting"]=req["setting"]
-        print(self.streamRequestDetails)
         self._returnMqttStreamRequest(id)
 
     def _streamingThread(self): #TODO
@@ -389,8 +388,8 @@ class DatabaseStreamer(DatabaseOperations):
 
     def _packageData(self,data,deviceName,setting,timestamp):
         _val=HardcodedTeleAddresses.getValFromAddress(data,device=deviceName,setting=setting)
-        return [timestamp,_val]
-
+        return [timestamp.isoformat(),_val]
+    
     def _returnMqttStreamRequest(self,id):
         if not (id in self.dataQueues):
             self.dataQueues[id]=[]
@@ -409,10 +408,10 @@ class DatabaseStreamer(DatabaseOperations):
                 self.streamRequestDetails[id]["setting"],
                 _x["timestamp"]
             ))
-        _data={'dbStreaming':{id:_ret}}
+        _data={"dbStreaming":{id:_ret}}
         self.mqttService.client.publish(
             topic="ui/dbStreaming/out",
-            payload=str(_data),
+            payload=json.dumps(_data),
             qos=2
         )
         self.streamRequestDetails[id]={}

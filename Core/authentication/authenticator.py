@@ -82,7 +82,8 @@ class AuthenticatorBase:
             raise SystemExit(f"Error; Attempt to replace user profile {self.user.user} with {user.user}")
 
     def loginDetFromDb(self,orgId):
-        if not self.db.connected:
+        self.db.connect()
+        if not self.db.connection:
             self.db.connect()
         return self.db.fetchRecordByColumnValue("users","orgId",orgId)
 

@@ -1,20 +1,21 @@
 
 #################################
 #Database operations example
-from datetime import datetime, timedelta
-import random
+from datetime import datetime
 import time
 
 from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
 
-mqttService=MqttService()
+mqttService=MqttService(broker_address='146.64.91.174')
 mqttService.start()
+time.sleep(1)
 mqttService.orgId="309930"
 dbStream=DatabaseStreamer(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=mqttService)
 dbStream.connect()
+time.sleep(1)
 dbStream.mongoDb.currZeroTime=datetime.now()
-_i=15
+_i=5
 while _i > 0:
     dbStream.handleStreamRequest(
         {
