@@ -1,11 +1,17 @@
 
+import json
 import mysql.connector
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import threading
 
-from Core.UI.plutter import MqttService
+from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
+from Core.Data.experiment import StandardExperiment
+
+class Database:
+    def __init__(self) -> None:
+        pass
 
 class MySQLDatabase:
     def __init__(self, host='localhost',port=3306,user="pharma",password="pharma",database="pharma"):
@@ -16,7 +22,6 @@ class MySQLDatabase:
         self.password = password
         self.database = database
         self.connection = None
-        self.connected = False
         self.cursor = None
         
         self.tableVar={
@@ -64,6 +69,21 @@ class MySQLDatabase:
             self.cursor.executemany(insertQuery, records)
             self.connection.commit()
             print(f"Records inserted successfully into '{tableName}'.")
+    
+    def updateRecordById(self, tableName, uniqueId, columnName, newValue):
+        """Update a specific column's value in a row identified by a unique ID."""
+        if self.cursor:
+            # Prepare the SQL query to update the specific column in the table.
+            updateQuery = f"""
+            UPDATE {tableName}
+            SET {columnName} = %s
+            WHERE id = %s
+            """
+            # Execute the query with the provided newValue and uniqueId
+            self.cursor.execute(updateQuery, (newValue, uniqueId))
+            # Commit the transaction to the database
+            self.connection.commit()
+            print(f"Record with ID {uniqueId} updated successfully in '{tableName}'.")
 
     def fetchRecords(self, tableName):# WHERE id=%s
         """Fetch all records from the specified table."""
@@ -78,6 +98,24 @@ class MySQLDatabase:
         if self.cursor:
             fetch_query = f"SELECT * FROM {tableName} WHERE {columnName} = %s"
             self.cursor.execute(fetch_query, (value,))
+            result = self.cursor.fetchone()  # fetchone returns a single matching row
+            return result
+        
+    def fetchRecordByColumnValues(self, tableName, column1Name, value1, column2Name, value2):
+        """Fetch a single record from the specified table where two columns match the given values."""
+        if self.cursor:
+            fetch_query = f"SELECT * FROM {tableName} WHERE {column1Name} = %s AND {column2Name} = %s"
+            self.cursor.execute(fetch_query, (value1, value2))
+            result = self.cursor.fetchone()  # fetchone returns a single matching row
+            return result
+        
+    def fetchSpecifiedColumnsByValues(self, tableName, columnNames, column1Name, value1, column2Name, value2):
+        """Fetch specified columns from a table where two columns match the given values."""
+        if self.cursor:
+            # Join the list of column names into a single string separated by commas
+            columns = ", ".join(columnNames)
+            fetch_query = f"SELECT {columns} FROM {tableName} WHERE {column1Name} = %s AND {column2Name} = %s"
+            self.cursor.execute(fetch_query, (value1, value2))
             result = self.cursor.fetchone()  # fetchone returns a single matching row
             return result
 
@@ -109,9 +147,15 @@ class TimeSeriesDatabaseMongo:
         self.pauseFetching=True
         self.insertionThread=None
         self.fetchingThread=None
+        
+        self.currZeroTime=None
+        self.prevZeroTime=None
+        
+        self.currStopTime=None
+        self.prevStopTime=None
 
     def insertDataPoint(self,dataPoint):
-        dataPoint["timestamp"]=datetime.utcnow()
+        dataPoint["timestamp"]=datetime.now()
         self.collection.insert_one(dataPoint)
         #print(f"Inserted data point: {dataPoint}")
 
@@ -129,19 +173,59 @@ class TimeSeriesDatabaseMongo:
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval) #Kannie so lank hier wag nie
 
-    def fetchTimeSeriesData(self,orgId: str,labNotebookRef: str,runNr=0):
-        cursor = self.collection.find({
-            'orgId': orgId,
-            'labNotebookRef':labNotebookRef,
-            'runNr':runNr
-        }).sort('timestamp', 1)  # Sort by timestamp in ascending order
-        _ret=[]
-        _num=0
+    def fetchTimeSeriesData(self, testId, runNr=0, startTime: datetime = None, endTime: datetime = None, nestedField: str = None, nestedValue=None):
+        # Prepare the query with required filters
+        query = {
+            'testId': testId,
+            'runNr': runNr
+        }
+
+        # Add time filtering to the query if provided
+        if startTime and endTime:
+            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
+
+        # Add nested field filtering if provided
+        if (nestedField and nestedValue): #Include 'field':value requirement to search
+            query[nestedField] = nestedValue
+        elif nestedField:
+            query[nestedField] = {'$exists': True} #Fetch if nested field exists regardless of value
+        # Fetch and sort the data
+        cursor = self.collection.find(query).sort('timestamp', 1)
+        _ret = []
+        _num = 0
         for document in cursor:
             _ret.append(document)
-            _num=_num+1
-        print(f'Fetched {_num} documents for experiment {labNotebookRef}!')
+            _num += 1
+
+        # Uncomment the line below to print the number of fetched documents
+        print(f'Fetched {_num} documents for experiment {testId} from {startTime} to {endTime} with nested field {nestedField} = {nestedValue}!')
         return _ret
+    
+    def streamData(self, timeWindowInSeconds, testId, runNr=0, now=None, nestedField: str = None, nestedValue=None):
+        if now is None:
+            now = datetime.now()
+
+        if timeWindowInSeconds < 0:  # into past
+            endTime = now
+            startTime = max(now - timedelta(seconds=abs(timeWindowInSeconds)), self.currZeroTime)
+        else:  # into future
+            startTime = now
+            endTime = now + timedelta(seconds=timeWindowInSeconds)
+
+        return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=startTime, endTime=endTime, nestedField=nestedField, nestedValue=nestedValue)
+
+    def streamTimeBracket(self, testId, timeWindowInSeconds=0, runNr=0, now=None, nestedField=None, nestedValue=None):
+        if now is None:
+            now = datetime.now()
+
+        # Calculate elapsed time since the start of the current experiment
+        elapsedTime = (now - self.currZeroTime).total_seconds()
+
+        # Calculate the corresponding start and end times for the previous experiment
+        prevStartTime = self.prevZeroTime + timedelta(seconds=elapsedTime)
+        prevEndTime = prevStartTime + timedelta(seconds=timeWindowInSeconds)
+
+        return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=prevStartTime, endTime=prevEndTime, nestedField=nestedField, nestedValue=nestedValue)
 
     def continuousFetching(self, **kwargs):
         orgId = kwargs.get('orgId')
@@ -188,13 +272,40 @@ class TimeSeriesDatabaseMongo:
 #################################
 #Main class to interface with both db's
 
+#Main
 class DatabaseOperations:
-    def __init__(self,mySqlDb=MySQLDatabase(),mongoDb=TimeSeriesDatabaseMongo(),mqttService=MqttService()) -> None:
+    def __init__(self,mySqlDb=MySQLDatabase(),mongoDb=TimeSeriesDatabaseMongo(),mqttService=None) -> None:
         self.mySqlDb=mySqlDb
         self.mongoDb=mongoDb
         
         self.mqttService=mqttService
         
+        self.currReplicate=None
+
+    def createStdExp(self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
+        ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
+            nameTest=nameTest,
+            nameTester="",
+            lockScript=0,
+            flowScript=flowScript,
+            description=description,
+            testScript=testScript,
+            datetimeCreate=datetime.now(),
+            labNotebookRef=labNotebookRef,
+            orgId=self.mqttService.orgId
+        )
+        self.createReplicate(labNotebookRef=labNotebookRef)
+        return ret
+
+    def setZeroTime(self, id, zeroTime=None):
+        if not zeroTime:
+            zeroTime=datetime.now()
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='startTime',newValue=zeroTime)
+    def setStopTime(self, id, stopTime=None):
+        if not stopTime:
+            stopTime=datetime.now()
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='stopTime',newValue=stopTime)
+
     def connect(self):
         self.mySqlDb.connect()
         self.mongoDb.purgeAndPause() #Good idea? :/
@@ -231,10 +342,104 @@ class DatabaseOperations:
             idNext=0
         else:
             idNext=replicates[-1] + 1
-        insert=[(testListId,datetime.now(),datetime.now(),datetime.now(),0,labNotebookRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
+        insert=[(testListId,datetime.now(),None,None,0,labNotebookRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
 
+    def fetchStreamingBracket(self,labNotebookRef,runNr): #Fetches previous experiment's start time and end time
+        _ret=self.mySqlDb.fetchSpecifiedColumnsByValues(tableName='testruns',columnNames=['startTime','stopTime'],column1Name='labNotebookRef',value1=labNotebookRef,column2Name='runNr',value2=runNr)
+        return [_ret[0],_ret[1]]
+    def setStreamingBracket(self,labNotebookRef,runNr): #Fetches previous experiment's start time and end time
+        _ret=self.fetchStreamingBracket(labNotebookRef,runNr)
+        self.mongoDb.prevZeroTime=_ret[0]
+        self.mongoDb.prevStopTime=_ret[1]
+
+class ParseStreamingData: #Defines what exactly to send to Flutter
+    def __init__(self) -> None:
+        self._protocols={
+            '''
+            Function pointers that parse data to be sent to UI
+            "hotcoil1":{'fr',function}
+            '''
+        }
+
+class DatabaseStreamer(DatabaseOperations):
+    def __init__(self, mySqlDb=MySQLDatabase(), mongoDb=TimeSeriesDatabaseMongo(), mqttService=None) -> None:
+        super().__init__(mySqlDb, mongoDb, mqttService)
+        self.loopThread=None
+        self.dataQueues={} #Contains id:[...data], id tells Flutter where streamed data must go
+        self.streamRequestDetails={}
+
+    def handleStreamRequest(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
+        id=req["id"]
+        if not (id in self.streamRequestDetails):
+            self.streamRequestDetails[id]={}
+        self.streamRequestDetails[id]["labNotebookRef"]=req["labNotebookRef"]
+        self.streamRequestDetails[id]["runNr"]=req["runNr"]
+        self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
+        self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
+        self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
+        self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+        self.streamRequestDetails[id]["setting"]=req["setting"]
+        print(self.streamRequestDetails)
+        self._returnMqttStreamRequest(id)
+
+    def _streamingThread(self): #TODO
+        pass
+
+    def _packageData(self,data,deviceName,setting,timestamp):
+        _val=HardcodedTeleAddresses.getValFromAddress(data,device=deviceName,setting=setting)
+        return [timestamp,_val]
+
+    def _returnMqttStreamRequest(self,id):
+        if not (id in self.dataQueues):
+            self.dataQueues[id]=[]
+        _rec=self.streamFrom(
+            labNotebookRef=self.streamRequestDetails[id]["labNotebookRef"],
+            runNr=self.streamRequestDetails[id]["runNr"],
+            timeWindow=self.streamRequestDetails[id]["timeWindow"],
+            nestedField=self.streamRequestDetails[id]["nestedField"],
+            nestedValue=self.streamRequestDetails[id]["nestedValue"]
+        )
+        _ret=[]
+        for _x in _rec:
+            _ret.append(self._packageData(
+                _x["data"],
+                self.streamRequestDetails[id]["deviceName"],
+                self.streamRequestDetails[id]["setting"],
+                _x["timestamp"]
+            ))
+        _data={'dbStreaming':{id:_ret}}
+        self.mqttService.client.publish(
+            topic="ui/dbStreaming/out",
+            payload=str(_data),
+            qos=2
+        )
+        self.streamRequestDetails[id]={}
+        self.dataQueues[id]=[]
+        
+    def streamToMqtt(self,id,labNotebookRef,runNr,timeWindow,nestedField=None,nestedValue=None):
+        if not (id in self.dataQueues):
+            self.dataQueues[id]=[]
+        _rec=self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
+        for _x in _rec:
+            _x=self._packageData(_x["data"],_x["data"]["deviceName"],_x["data"]["setting"])
+        self.dataQueues[id]=self.dataQueues[id] + self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
+        _data={'dbStreaming':{id:self.dataQueues[id]}}
+        self.mqttService.client.publish(
+            topic="ui/dbStreaming/out",
+            payload=str(_data),
+            qos=2
+        )
+        self.streamRequestDetails[id]={}
+        self.dataQueues[id]=[]
+        
+    def streamFrom(self,labNotebookRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
+        return self._retrieve(labNotebookRef,runNr,timeWindow,nestedField,nestedValue)
+                
+    def _retrieve(self,labNotebookRef,runNr,timeWindow,nestedField: str = None,nestedValue=None):
+        self.setStreamingBracket(labNotebookRef,runNr)
+        return self.mongoDb.streamTimeBracket(testId=(self.getTestlistId(labNotebookRef)),timeWindowInSeconds=timeWindow,runNr=runNr,nestedField=nestedField,nestedValue=nestedValue)
 #################################
 #Database operations example
 '''

@@ -1,1 +1,11 @@
-['id', 'nameTest', 'description', 'nameTester', 'fumehoodId', 'testScript', 'lockScript', 'flowScript', 'datetimeCreate', 'labNotebookRef']
+self.streamRequestDetails[id]["labNotebookRef"]=req["labNotebookRef"]
+self.streamRequestDetails[id]["runNr"]=req["runNr"]
+self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
+self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
+self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
+self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+self.streamRequestDetails[id]["setting"]=req["setting"]
+
+{
+    'dbStreaming'
+}

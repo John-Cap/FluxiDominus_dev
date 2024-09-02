@@ -24,14 +24,27 @@ class MqttTopics:
         "ScriptGeneratorWidget": "chemistry/cmnd",
         #"TestListWidget":"ui/TestListWidget",
         "FormPanelWidget":"ui/FormPanelWidget",
-        "LoginPageWidget": "ui/LoginPageWidget"
+        "LoginPageWidget": "ui/LoginPageWidget",
+        #"dbStreamingOut":"ui/dbStreaming/out",
+        "dbCmndIn":"ui/dbCmnd/in" #Ui posts here
     }
 
     topicsTests={
         "testSettings":"test/settings"
     }
 
+    topicsQos={
+        "ui/dbCmnd/in":2
+    }
+
     allTopics=[topicsCnmd,topicsTele,topicsUI,topicsTests]
+
+    @staticmethod
+    def getTopicQos(topic):
+        if (topic in MqttTopics.topicsQos):
+            return MqttTopics.topicsQos[topic]
+        else:
+            return 0
 
     @staticmethod
     def getUiTopic(type):

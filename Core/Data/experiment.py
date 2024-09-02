@@ -1,7 +1,6 @@
 from datetime import datetime
-
+from getmac import get_mac_address as gma
 from Core.Data.data import DataObj_TEMP
-from Core.Data.database import MySQLDatabase
 
 class Experiment:
     def __init__(self, db, tables):
@@ -10,7 +9,7 @@ class Experiment:
         self.tables=tables
         self.table=tables[0]
 
-    def toDB(self, dataObj, table=None):
+    def toDB(self, dataObj, table=None): #Handle case where duplicate unique entries throw errors
         if not table:
             table=self.table
         """Insert or update a DataObj_TEMP instance in the database."""
@@ -102,14 +101,14 @@ class StandardExperiment(Experiment):
     def __init__(self, db, tables):
         super().__init__(db, tables)
 
-    def createExperiment(self, nameTest, description, nameTester, fumehoodId, testScript,
+    def createExperiment(self, nameTest, description, nameTester, testScript,
                          lockScript, flowScript, datetimeCreate, labNotebookRef, orgId):
         """Create a new experiment and save it to the database."""
         dataObj = DataObj_TEMP(
             nameTest=nameTest,
             description=description,
             nameTester=nameTester,
-            fumehoodId=fumehoodId,
+            fumehoodId=gma(), #Erm, goeie idee? :/
             testScript=testScript,
             lockScript=lockScript,
             flowScript=flowScript,
@@ -123,47 +122,11 @@ class StandardExperiment(Experiment):
     def getExperimentBylabNotebookRef(self, labNotebookRef):
         """Fetch an experiment by labNotebookRef."""
         return self.fromDbByLabNotebookRef(labNotebookRef)
-    
+
+    def getExperimentId(self, labNotebookRef):
+        """Fetch an experiment by labNotebookRef."""
+        return self.fromDbByLabNotebookRef(labNotebookRef)[0]
+        
     def getExperimentById(self, id):
         """Fetch an experiment by ID."""
         return self.fromDbById(id)
-
-# Example usage
-if __name__ == "__main__":
-    db = MySQLDatabase(
-        host="146.64.91.174",
-        port=3306,
-        user="pharma",
-        password="pharma",
-        database="pharma"
-    )
-
-    db.connect()
-
-    exp = StandardExperiment(db,tables=["testlist"])
-    newExperiment = exp.createExperiment(
-        nameTest="MrTest",
-        description="Description of Test1",
-        fumehoodId="Fumehood1",
-        testScript=b"script_content",
-        datetimeCreate=datetime.now(),
-        labNotebookRef="MOUSE_BABY_MOUSE_15",
-        orgId="309930"
-    )
-    print("Created experiment ID, ref: ", newExperiment.id, newExperiment.labNotebookRef)
-
-    fetchedExperiment = exp.fromDbByLabNotebookRef("MOUSE_BABY_MOUSE_15").toDict()
-    if fetchedExperiment:
-        print(fetchedExperiment)
-
-    db.close()
-'''
-Connected to the database.
-Data inserted/updated successfully.
-Created experiment ID, ref:  245 MOUSE_BABY_MOUSE_15
-WJ - Fetched query:  (245, 'MrTest', 'Description of Test1', 'Tester1', 'Fumehood1', b'script_content', 1, b'flow_content', 
-datetime.datetime(2024, 8, 23, 7, 17, 27), 'MOUSE_BABY_MOUSE_15')
-WJ - Labbook ref: MOUSE_BABY_MOUSE_15
-{'id': 245, 'nameTest': 'MrTest', 'description': 'Description of Test1', 'nameTester': 'Tester1', 'fumehoodId': 'Fumehood1', 'testScript': b'script_content', 'lockScript': 1, 'flowScript': b'flow_content', 'datetimeCreate': datetime.datetime(2024, 
-8, 23, 7, 17, 27), 'labNotebookRef': 'MOUSE_BABY_MOUSE_15'}
-'''

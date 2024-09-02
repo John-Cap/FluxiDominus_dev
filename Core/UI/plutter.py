@@ -1,10 +1,12 @@
 import ast
 import threading
 import paho.mqtt.client as mqtt
+from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
+from Core.Data.database import DatabaseOperations
 from Core.UI.brokers_and_topics import MqttTopics
-#from Core.authentication.authenticator import Authenticator
+from Core.authentication.authenticator import Authenticator
 
 class MqttService:
     def __init__(self, broker_address="localhost", port=1883, client = None, allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
@@ -39,9 +41,13 @@ class MqttService:
         self.automation=automation if automation else (FlowChemAutomation())
         
         #Authentication
-        #self.authenticator=Authenticator(self)
+        self.authenticator=Authenticator()
         
-    def addDataToQueue(self,device,data,labNotebookRef,orgId):
+        self.zeroTime=None
+        
+        self.databaseOperations=None
+        
+    def addDataToQueue(self,device,data,labNotebookRef,orgId): #Replace with the new class
         self.dataQueue.append(DataPointFDE(
             labNotebookRef=labNotebookRef,
             orgId=orgId,
@@ -59,7 +65,8 @@ class MqttService:
         if rc == 0:
             for _x in self.allTopics:
                 for tpc in _x.values():
-                    ret=self.client.subscribe(tpc)
+                    qos=MqttTopics.getTopicQos(tpc)
+                    ret=self.client.subscribe(tpc,qos=qos)
                     if ret[0]==0:
                         self.topicIDs[ret[1]]=tpc
                     else:
@@ -131,15 +138,15 @@ class MqttService:
                 print(_msgContents)
                 
     def start(self):
+        self.authenticator.initPlutter(mqttService=self)
+        self.databaseOperations=DatabaseOperations(mqttService=self)
         self.client.connect(self.broker_address, self.port)
-        thread = threading.Thread(target=self.run)
+        thread = threading.Thread(target=self._run)
         thread.start()
         return thread
 
-    def run(self):
+    def _run(self):
         self.client.loop_start()
-        #while True:
-            #time.sleep(1)
 
     def getTemp(self):
         return self.temp
