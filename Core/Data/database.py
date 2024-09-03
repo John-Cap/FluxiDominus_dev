@@ -369,6 +369,7 @@ class DatabaseStreamer(DatabaseOperations):
         self.loopThread=None
         self.dataQueues={} #Contains id:[...data], id tells Flutter where streamed data must go
         self.streamRequestDetails={}
+        self.zeroTimes={}
 
     def handleStreamRequest(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
         id=req["id"]
@@ -386,9 +387,9 @@ class DatabaseStreamer(DatabaseOperations):
     def _streamingThread(self): #TODO
         pass
 
-    def _packageData(self,data,deviceName,setting,timestamp):
+    def _packageData(self,data,deviceName,setting,timestamp,zeroTime):
         _val=HardcodedTeleAddresses.getValFromAddress(data,device=deviceName,setting=setting)
-        return [timestamp.isoformat(),_val]
+        return [(timestamp - zeroTime).total_seconds(),_val]
     
     def _returnMqttStreamRequest(self,id):
         if not (id in self.dataQueues):
@@ -401,12 +402,17 @@ class DatabaseStreamer(DatabaseOperations):
             nestedValue=self.streamRequestDetails[id]["nestedValue"]
         )
         _ret=[]
+        _zT=(self.fetchStreamingBracket(
+            labNotebookRef=self.streamRequestDetails[id]["labNotebookRef"],
+            runNr=self.streamRequestDetails[id]["runNr"]
+        ))[0]
         for _x in _rec:
             _ret.append(self._packageData(
                 _x["data"],
                 self.streamRequestDetails[id]["deviceName"],
                 self.streamRequestDetails[id]["setting"],
-                _x["timestamp"]
+                _x["timestamp"],
+                _zT
             ))
         _data={"dbStreaming":{id:_ret}}
         self.mqttService.client.publish(
@@ -416,7 +422,7 @@ class DatabaseStreamer(DatabaseOperations):
         )
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]
-        
+    '''
     def streamToMqtt(self,id,labNotebookRef,runNr,timeWindow,nestedField=None,nestedValue=None):
         if not (id in self.dataQueues):
             self.dataQueues[id]=[]
@@ -432,7 +438,7 @@ class DatabaseStreamer(DatabaseOperations):
         )
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]
-        
+    '''    
     def streamFrom(self,labNotebookRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
         return self._retrieve(labNotebookRef,runNr,timeWindow,nestedField,nestedValue)
                 
