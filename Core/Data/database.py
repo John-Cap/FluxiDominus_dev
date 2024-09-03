@@ -181,7 +181,7 @@ class TimeSeriesDatabaseMongo:
         }
 
         # Add time filtering to the query if provided
-        if startTime and endTime:
+        if startTime and endTime: 
             query['timestamp'] = {'$gte': startTime, '$lte': endTime}
 
         # Add nested field filtering if provided
@@ -210,7 +210,7 @@ class TimeSeriesDatabaseMongo:
             startTime = max(now - timedelta(seconds=abs(timeWindowInSeconds)), self.currZeroTime)
         else:  # into future
             startTime = now
-            endTime = now + timedelta(seconds=timeWindowInSeconds)
+            endTime = now + timedelta(seconds=timeWindowInSeconds) #Must also check if 'endTime' is within time bracket
 
         return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=startTime, endTime=endTime, nestedField=nestedField, nestedValue=nestedValue)
 

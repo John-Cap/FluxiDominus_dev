@@ -15,20 +15,22 @@ dbStream=DatabaseStreamer(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=Ti
 dbStream.connect()
 time.sleep(1)
 dbStream.mongoDb.currZeroTime=datetime.now()
-
-dbStream.handleStreamRequest(
-    {
-        "id":"anEvenCoolerId",
-        "labNotebookRef":"WJ_TEST_11",
-        "runNr":0,
-        "deviceName":"A_BICYCLE_BUILT_FOR_TWO",
-        "timeWindow":2000,
-        "nestedField":"deviceName",
-        "nestedValue":"A_BICYCLE_BUILT_FOR_TWO",
-        "setting":"exampleSetting"
-    }
-)
-
+_i=15
+while _i > 0:
+    dbStream.handleStreamRequest(
+        {
+            "id":"anEvenCoolerId",
+            "labNotebookRef":"WJ_TEST_11",
+            "runNr":0,
+            "deviceName":"A_BICYCLE_BUILT_FOR_TWO",
+            "timeWindow":10,
+            "nestedField":"deviceName",
+            "nestedValue":"A_BICYCLE_BUILT_FOR_TWO",
+            "setting":"exampleSetting"
+        }
+    )
+    _i-=1
+    time.sleep(5)
 '''
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
