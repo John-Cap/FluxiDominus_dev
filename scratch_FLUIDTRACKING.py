@@ -2,11 +2,12 @@
 #################################
 #Database operations example
 from datetime import datetime
+import random
 import time
 
 from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
-
+'''
 mqttService=MqttService(broker_address='146.64.91.174')
 mqttService.start()
 time.sleep(1)
@@ -157,7 +158,7 @@ if __name__ == '__main__':
 
     dbOp.mongoDb.kill()
 ######################################
-'''
+
 '''
 # Example usage //Kyk, camel vs snekcase
 if __name__ == "__main__":

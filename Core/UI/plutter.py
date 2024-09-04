@@ -46,7 +46,7 @@ class MqttService:
         self.zeroTime=None
         
         self.databaseOperations=None
-        
+    '''
     def addDataToQueue(self,device,data,labNotebookRef,orgId): #Replace with the new class
         self.dataQueue.append(DataPointFDE(
             labNotebookRef=labNotebookRef,
@@ -55,7 +55,7 @@ class MqttService:
             data=data,
             metadata={"location": "Room 101", "type": "This particular type"}
         ).toDict())
-        
+    '''    
     def onSubscribe(self, client, userdata, mid, granted_qos):
         if mid in self.topicIDs:
             print("WJ - Subscribed to topic " + self.topicIDs[mid] + " with Qos " + str(granted_qos[0]) + "!")
@@ -106,8 +106,10 @@ class MqttService:
         _msgContents = ast.literal_eval(_msgContents)
         self.lastMsgFromTopic[topic]=_msgContents
         if "deviceName" in _msgContents:
+            '''
             if (self.logData):
                 self.addDataToQueue(_msgContents["deviceName"],_msgContents,self.labNotebookRef,self.orgId)
+            '''
             if _msgContents["deviceName"]=="hotcoil1":
                 if 'state' in _msgContents:
                     self.temp = _msgContents['state']['temp']
