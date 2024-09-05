@@ -81,16 +81,17 @@ class DataPoint:
     def toDict(self):
         """Convert the DataPoint to a dictionary format."""
         return {
-            'labNotebookRef': self.labNotebookRef,
-            'deviceName': self.deviceName,
+            'labNotebookRef': self.labNotebookRef, #Remove
+            'deviceName': self.deviceName, #Remove
             'timestamp': self.timestamp,
             'data': self.data,
-            'dataType': self.dataType.getType(),
-            'metadata': self.metadata,
-            'orgId':self.orgId, #dalk uithaal
-            'testId':self.testId,
-            'runNr':self.runNr,
-            'zeroTime':self.zeroTime
+            'dataType': self.dataType.getType(), #Remove
+            'metadata': self.metadata, #Now contains -> 'TestLISTid','runNr','testRunId'
+            'orgId':self.orgId, #Remove
+            'testId':self.testId, #'TestLISTid'
+            #'testId':self.testId, #Voeg by
+            'runNr':self.runNr, #Remove
+            'zeroTime':self.zeroTime #Remove
         }
 
 class DataPointFDE(DataPoint): #Fluxidominus default database obj

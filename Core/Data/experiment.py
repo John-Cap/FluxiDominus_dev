@@ -102,17 +102,17 @@ class StandardExperiment(Experiment):
         super().__init__(db, tables)
 
     def createExperiment(self, nameTest, description, nameTester, testScript,
-                         lockScript, flowScript, datetimeCreate, labNotebookRef, orgId):
+                         lockScript, flowScript, labNotebookRef, orgId):
         """Create a new experiment and save it to the database."""
         dataObj = DataObj_TEMP(
-            nameTest=nameTest,
+            nameTest=nameTest, #Display name
             description=description,
             nameTester=nameTester,
             fumehoodId=gma(), #Erm, goeie idee? :/
             testScript=testScript,
             lockScript=lockScript,
             flowScript=flowScript,
-            datetimeCreate=datetimeCreate,
+            datetimeCreate=datetime.now(),
             labNotebookRef=labNotebookRef,
             orgId=orgId
         )

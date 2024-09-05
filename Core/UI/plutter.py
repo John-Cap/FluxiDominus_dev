@@ -5,6 +5,7 @@ from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
 from Core.Data.database import DatabaseOperations
+from Core.Data.experiment import StandardExperiment
 from Core.UI.brokers_and_topics import MqttTopics
 from Core.authentication.authenticator import Authenticator
 
@@ -46,6 +47,8 @@ class MqttService:
         self.zeroTime=None
         
         self.databaseOperations=None
+        
+        self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
     '''
     def addDataToQueue(self,device,data,labNotebookRef,orgId): #Replace with the new class
         self.dataQueue.append(DataPointFDE(
@@ -138,7 +141,29 @@ class MqttService:
                 self.authenticator.signIn(orgId=_msgContents["orgId"],password=_msgContents["password"])
             else:
                 print(_msgContents)
+        elif topic=="ui/dbCmnd/in":
+            _msgContents=_msgContents["instructions"]
+            _func=_msgContents["function"]
+            _params=_msgContents["params"]
+            if (_func=="createStdExp"):
+                '''
+                (self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content")
+                '''
+                nameTest=_params["nameTest"] #Short description
+                description=_params["description"] #Long description
+                testScript=self.script #Generated in UI, check if received and parsed!!
+                lockScript=0
+                flowScript="TODO" #Generated in UI
+                labNotebookRef=_params["labNotebookRef"] #Needs to be built up automatically
+                _ret=_func(nameTest=nameTest,description=description,testScript=testScript,lockScript=lockScript,flowScript=flowScript,labNotebookRef=labNotebookRef,orgId=self.orgId)
+                #Then what?
+            if (_func=="createExperiment"):
+                '''
+                (self, nameTest, description, nameTester, testScript,
+                         lockScript, flowScript, labNotebookRef, orgId):
+                '''
                 
+                            
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.databaseOperations=DatabaseOperations(mqttService=self)
