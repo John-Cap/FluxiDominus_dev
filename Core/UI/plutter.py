@@ -4,13 +4,13 @@ import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE
-from Core.Data.database import DatabaseOperations
+from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.Data.experiment import StandardExperiment
 from Core.UI.brokers_and_topics import MqttTopics
 from Core.authentication.authenticator import Authenticator
 
 class MqttService:
-    def __init__(self, broker_address="localhost", port=1883, client = None, allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
+    def __init__(self, broker_address="localhost", port=1883, client = None, orgId="NONE",allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
         self.broker_address = broker_address
         self.port = port
         self.allTopics = allTopics
@@ -36,7 +36,7 @@ class MqttService:
         self.dataQueue=[]
         self.logData=False
         
-        self.orgId=""
+        self.orgId=orgId
         self.labNotebookRef=""
         
         self.automation=automation if automation else (FlowChemAutomation())
@@ -146,6 +146,7 @@ class MqttService:
             _func=_msgContents["function"]
             _params=_msgContents["params"]
             if (_func=="createStdExp"):
+                _func=self.dbInstructions[_func]
                 '''
                 (self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content")
                 '''
@@ -155,9 +156,9 @@ class MqttService:
                 lockScript=0
                 flowScript="TODO" #Generated in UI
                 labNotebookRef=_params["labNotebookRef"] #Needs to be built up automatically
-                _ret=_func(nameTest=nameTest,description=description,testScript=testScript,lockScript=lockScript,flowScript=flowScript,labNotebookRef=labNotebookRef,orgId=self.orgId)
+                self.databaseOperations.createStdExp(nameTest=nameTest,description=description,testScript=testScript,flowScript=flowScript,labNotebookRef=labNotebookRef)
                 #Then what?
-            if (_func=="createExperiment"):
+            if (_func=="getUserTests"):
                 '''
                 (self, nameTest, description, nameTester, testScript,
                          lockScript, flowScript, labNotebookRef, orgId):
@@ -166,8 +167,9 @@ class MqttService:
                             
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
-        self.databaseOperations=DatabaseOperations(mqttService=self)
         self.client.connect(self.broker_address, self.port)
+        self.databaseOperations=DatabaseOperations(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
+        self.databaseOperations.connect()
         thread = threading.Thread(target=self._run)
         thread.start()
         return thread

@@ -290,7 +290,6 @@ class DatabaseOperations:
             flowScript=flowScript,
             description=description,
             testScript=testScript,
-            datetimeCreate=datetime.now(),
             labNotebookRef=labNotebookRef,
             orgId=self.mqttService.orgId
         )
