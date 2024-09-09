@@ -306,7 +306,7 @@ class DatabaseOperations:
             ret.append(self.mySqlDb.fetchRecordByColumnValue('testruns','id',_x)[-1])
         return ret
 
-    def createReplicate(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
+    def createReplicate(self, labNotebookRef, tableName='testlist', columnName='labNotebookBaseRef'):
         testListId=self.getTestlistId(labNotebookRef,tableName,columnName)
         replicates=self.getRunNrs(labNotebookRef) #Error handling!
         idNext=-1
@@ -318,7 +318,7 @@ class DatabaseOperations:
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
 
-    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookRef'):
+    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookBaseRef'):
         return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
 
     def getTestlistRow(self,labNotebookRef):
@@ -346,11 +346,35 @@ class DatabaseOperations:
         if not email:
            return (self.mySqlDb.fetchRecordByColumnValue('users','orgId',orgId))[7]
     
-    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookRef'):
+    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookBaseRef'):
         return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
                 
-    def getUserTests(self, tableName='testlist', columnName='orgId'):
-        return self.mySqlDb.fetchRecordsByColumnValue(tableName,columnName,self.mqttService.orgId)
+    def getUserTests(self,orgId=None,email=None):
+        _ret=[]
+        if not orgId and email:
+            _id=self.getUserId(email=email)
+            for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testlist',columnName='userId',value=_id):
+                _ret.append(_x[0])
+            return _ret
+        elif not email and orgId:
+            _id=self.getUserId(orgId=orgId)
+            for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testlist',columnName='userId',value=_id):
+                _ret.append(_x[0])
+            return _ret
+
+    def getTestRunIds(self,labNotebookRef):
+        _ret=[]
+        _id=self.getTestlistId(labNotebookRef)
+        for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testruns',columnName='testlistId',value=_id):
+            _ret.append(_x[0])
+        return _ret
+        
+    def getTestRuns(self,labNotebookRef):
+        _ret=[]
+        _id=self.getTestlistId(labNotebookRef=labNotebookRef)
+        for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testruns',columnName='testlistId',value=_id):
+            _ret.append(_x)
+        return _ret
         
     def createStdExp(self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
         ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(

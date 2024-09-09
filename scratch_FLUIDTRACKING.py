@@ -51,3 +51,16 @@ if __name__ == '__main__':
     #MySql
     tests=dbOp.getUserRow(email='jdtoit@csir.co.za')
     print(tests)
+    print("\n")
+    
+    tests=dbOp.getUserTests(email='jdtoit@csir.co.za')
+    print(tests)
+    print("\n")
+    
+    tests=dbOp.getTestRuns('50403_jdtoit_DSIP012A')
+    print(tests)
+    print("\n")
+    
+    tests=dbOp.getTestRuns('50403_jdtoit_PNDOS013A')
+    print(tests)
+    print("\n")
