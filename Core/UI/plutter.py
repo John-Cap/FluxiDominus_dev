@@ -1,4 +1,5 @@
 import ast
+import json
 import threading
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
@@ -158,7 +159,10 @@ class MqttService:
                 labNotebookRef=_params["labNotebookRef"] #Needs to be built up automatically
                 self.databaseOperations.createStdExp(nameTest=nameTest,description=description,testScript=testScript,flowScript=flowScript,labNotebookRef=labNotebookRef)
                 #Then what?
-            if (_func=="getUserTests"):
+            if (_func=="searchForTest"):
+                labNotebookRef=_params["labNotebookRef"]
+                _ret=self.databaseOperations.searchForTest(labNotebookRef=labNotebookRef)
+                self.client.publish("ui/dbCmnd/ret",json.dumps({"searchForTest":_ret}))
                 '''
                 (self, nameTest, description, nameTester, testScript,
                          lockScript, flowScript, labNotebookRef, orgId):

@@ -282,39 +282,12 @@ class DatabaseOperations:
         
         self.currReplicate=None
 
-    def createStdExp(self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
-        ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
-            nameTest=nameTest,
-            nameTester="",
-            lockScript=0,
-            flowScript=flowScript,
-            description=description,
-            testScript=testScript,
-            labNotebookRef=labNotebookRef,
-            orgId=self.mqttService.orgId
-        )
-        self.createReplicate(labNotebookRef=labNotebookRef)
-        return ret
+    '''
+    id	projId	userId	description	    labNotebookBaseRef	    datetimeCreate	    locked
+    296	1	    22	    Making Disprins	50403_jdtoit_DSIP012A	2024-09-08 11:42:28	0
 
-    def setZeroTime(self, id, zeroTime=None):
-        if not zeroTime:
-            zeroTime=datetime.now()
-        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='startTime',newValue=zeroTime)
-    def setStopTime(self, id, stopTime=None):
-        if not stopTime:
-            stopTime=datetime.now()
-        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='stopTime',newValue=stopTime)
+    '''
 
-    def connect(self):
-        self.mySqlDb.connect()
-        self.mongoDb.purgeAndPause() #Good idea? :/
-        
-    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookRef'):
-        return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
-                
-    def getUserTests(self, tableName='testlist', columnName='orgId'):
-        return self.mySqlDb.fetchRecordsByColumnValue(tableName,columnName,self.mqttService.orgId)
-        
     def searchForTest(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
         return self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)
 
@@ -344,6 +317,67 @@ class DatabaseOperations:
         insert=[(testListId,datetime.now(),None,None,0,labNotebookRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
+
+    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookRef'):
+        return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
+
+    def getTestlistRow(self,labNotebookRef):
+        return (self.mySqlDb.fetchRecordByColumnValue('testlist','labNotebookRef',labNotebookRef))
+                                
+    def getUserId(self,orgId=None,email=None):
+        '''
+        >id<	orgId	email	            cellphone	lastLogin	firstName	lastName	password	admin	active
+        22	    50403	jdtoit@csir.co.za	0824440997		        Jurie	    du Toit		            1	    1
+        '''
+        if not orgId:
+           return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))[0]
+        if not email:
+           return (self.mySqlDb.fetchRecordByColumnValue('users','orgId',orgId))[0]
+
+    def getUserRow(self,orgId=None,email=None):
+        if not orgId:
+           return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))
+        if not email:
+           return (self.mySqlDb.fetchRecordByColumnValue('users','orgId',orgId))
+    
+    def getPassword(self,orgId=None,email=None):
+        if not orgId:
+           return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))[7]
+        if not email:
+           return (self.mySqlDb.fetchRecordByColumnValue('users','orgId',orgId))[7]
+    
+    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookRef'):
+        return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
+                
+    def getUserTests(self, tableName='testlist', columnName='orgId'):
+        return self.mySqlDb.fetchRecordsByColumnValue(tableName,columnName,self.mqttService.orgId)
+        
+    def createStdExp(self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
+        ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
+            nameTest=nameTest,
+            nameTester="",
+            lockScript=0,
+            flowScript=flowScript,
+            description=description,
+            testScript=testScript,
+            labNotebookRef=labNotebookRef,
+            orgId=self.mqttService.orgId
+        )
+        self.createReplicate(labNotebookRef=labNotebookRef)
+        return ret
+
+    def setZeroTime(self, id, zeroTime=None):
+        if not zeroTime:
+            zeroTime=datetime.now()
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='startTime',newValue=zeroTime)
+    def setStopTime(self, id, stopTime=None):
+        if not stopTime:
+            stopTime=datetime.now()
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='stopTime',newValue=stopTime)
+
+    def connect(self):
+        self.mySqlDb.connect()
+        self.mongoDb.purgeAndPause() #Good idea? :/
 
     def fetchStreamingBracket(self,labNotebookRef,runNr): #Fetches previous experiment's start time and end time
         _ret=self.mySqlDb.fetchSpecifiedColumnsByValues(tableName='testruns',columnNames=['startTime','stopTime'],column1Name='labNotebookRef',value1=labNotebookRef,column2Name='runNr',value2=runNr)
@@ -473,6 +507,7 @@ if __name__ == '__main__':
     theseTests=dbOp.getReplicateIds("WJ_Disprin")
     print(theseTests)
     print('\n')
+
     ##################################
     #Mongo
 
