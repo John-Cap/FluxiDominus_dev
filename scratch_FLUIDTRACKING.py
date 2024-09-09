@@ -42,7 +42,7 @@ if __name__ == '__main__':
     #Mqtt
     thisThing=MqttService()
     thisThing.start()
-    thisThing.orgId="309930"
+    thisThing.orgId="50403"
     #Instantiate
     dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
@@ -77,10 +77,10 @@ if __name__ == '__main__':
     print(tests)
     print("\n")
         
-    tests=dbOp.getProjsDet(tests)
+    tests=dbOp.getProjCode(1)
     print(tests)
     print("\n")
         
-    tests=dbOp.getUserProjsDet(email='jdtoit@csir.co.za')
+    tests=dbOp.getAllExpWidgetInfo()
     print(tests)
     print("\n")

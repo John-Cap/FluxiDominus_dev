@@ -301,7 +301,6 @@ class DatabaseOperations:
     '''
     id	projId	userId	description	    labNotebookBaseRef	    datetimeCreate	    locked
     296	1	    22	    Making Disprins	50403_jdtoit_DSIP012A	2024-09-08 11:42:28	0
-
     '''
 
     def searchForTest(self, labNotebookBaseRef, tableName='testlist', columnName='labNotebookBaseRef'):
@@ -382,26 +381,21 @@ class DatabaseOperations:
 
     def getAllExpWidgetInfo(self):
         _ret={'ExpWidgetInfo':{}}
-        '''
-        *Get project codes and their descriptions
-        *For each project:
-            *Labnotebook prefix
-                *All testruns for each:
-                    *Run nr
-                    *Create time
-        '''
         _userId=self.getUserId(self.mqttService.orgId)
-        _userProj=self.getUserProjects(self.mqttService.orgId)
-        for _x in _userProj:
+        _userProj=self.getUserProjects(self.mqttService.orgId) #Get all project ids
+        if (isinstance(_userProj,str)):
+            _userProj=eval(_userProj)
+        for _x in _userProj: #For each project id, get its name, associated tests, and each test's testruns
             _projName=self.getProjCode(_x)
             _projTests=[]
-            for _y in self.mySqlDb.fetchRecordByColumnValues()
-                _projTests.append(_y)
-            _testListIds=[]
-            _ret['ExpWidgetInfo'][_x]=
-            
-        _userProjDet=self.getUserProjsDet(self.mqttService.orgId)
-        pass
+            for _y in self.mySqlDb.fetchRecordsByColumnValues(tableName='testlist',column1Name='projId',value1=_x,column2Name='userId',value2=_userId):
+                _projTests.append(_y[0])
+            for _y in _projTests: #Get runs, complete rows converted to lists
+                _ret['ExpWidgetInfo'][_x]={
+                    'projCode':_projName,
+                    _y:self.getTestrunsByTestId(_y)
+                }
+        return _ret
 
     def getUserProjsDet(self,orgId=None,email=None):
         _proj=self.getUserProjects(orgId=orgId,email=email)
@@ -479,6 +473,12 @@ class DatabaseOperations:
             _ret.append(_x)
         return _ret
         
+    def getTestrunsByTestId(self,id):
+        _ret=[]
+        for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testruns',columnName='testlistId',value=id):
+            _ret.append(list(_x))
+        return _ret
+                
     def createStdExp(self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
         ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
             nameTest=nameTest,
