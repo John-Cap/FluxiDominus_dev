@@ -38,7 +38,7 @@ class MqttService:
         self.logData=False
         
         self.orgId=orgId
-        self.labNotebookRef=""
+        self.labNotebookBaseRef=""
         
         self.automation=automation if automation else (FlowChemAutomation())
         
@@ -51,9 +51,9 @@ class MqttService:
         
         self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
     '''
-    def addDataToQueue(self,device,data,labNotebookRef,orgId): #Replace with the new class
+    def addDataToQueue(self,device,data,labNotebookBaseRef,orgId): #Replace with the new class
         self.dataQueue.append(DataPointFDE(
-            labNotebookRef=labNotebookRef,
+            labNotebookBaseRef=labNotebookBaseRef,
             orgId=orgId,
             deviceName=device,
             data=data,
@@ -112,7 +112,7 @@ class MqttService:
         if "deviceName" in _msgContents:
             '''
             if (self.logData):
-                self.addDataToQueue(_msgContents["deviceName"],_msgContents,self.labNotebookRef,self.orgId)
+                self.addDataToQueue(_msgContents["deviceName"],_msgContents,self.labNotebookBaseRef,self.orgId)
             '''
             if _msgContents["deviceName"]=="hotcoil1":
                 if 'state' in _msgContents:
@@ -149,23 +149,23 @@ class MqttService:
             if (_func=="createStdExp"):
                 _func=self.dbInstructions[_func]
                 '''
-                (self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content")
+                (self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content")
                 '''
                 nameTest=_params["nameTest"] #Short description
                 description=_params["description"] #Long description
                 testScript=self.script #Generated in UI, check if received and parsed!!
                 lockScript=0
                 flowScript="TODO" #Generated in UI
-                labNotebookRef=_params["labNotebookRef"] #Needs to be built up automatically
-                self.databaseOperations.createStdExp(nameTest=nameTest,description=description,testScript=testScript,flowScript=flowScript,labNotebookRef=labNotebookRef)
+                labNotebookBaseRef=_params["labNotebookBaseRef"] #Needs to be built up automatically
+                self.databaseOperations.createStdExp(nameTest=nameTest,description=description,testScript=testScript,flowScript=flowScript,labNotebookBaseRef=labNotebookBaseRef)
                 #Then what?
             if (_func=="searchForTest"):
-                labNotebookRef=_params["labNotebookRef"]
-                _ret=self.databaseOperations.searchForTest(labNotebookRef=labNotebookRef)
+                labNotebookBaseRef=_params["labNotebookBaseRef"]
+                _ret=self.databaseOperations.searchForTest(labNotebookBaseRef=labNotebookBaseRef)
                 self.client.publish("ui/dbCmnd/ret",json.dumps({"searchForTest":_ret}))
                 '''
                 (self, nameTest, description, nameTester, testScript,
-                         lockScript, flowScript, labNotebookRef, orgId):
+                         lockScript, flowScript, labNotebookBaseRef, orgId):
                 '''
                 
                             

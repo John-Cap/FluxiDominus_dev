@@ -1,5 +1,5 @@
 '''
-self.streamRequestDetails[id]["labNotebookRef"]=req["labNotebookRef"]
+self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
 self.streamRequestDetails[id]["runNr"]=req["runNr"]
 self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
 self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
@@ -11,7 +11,7 @@ self.streamRequestDetails[id]["setting"]=req["setting"]
     'dbStreaming':{
         'myCoolId':{
             "id":"anEvenCoolerId",
-            "labNotebookRef":"WJ_TEST_12",
+            "labNotebookBaseRef":"WJ_TEST_12",
             "runNr":0,
             "timeWindow":30,
             "nestedField":"deviceName",

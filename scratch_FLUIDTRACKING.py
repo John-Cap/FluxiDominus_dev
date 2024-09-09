@@ -21,7 +21,7 @@ while _i > 0:
     dbStream.handleStreamRequest(
         {
             "id":"anEvenCoolerId",
-            "labNotebookRef":"WJ_TEST_11",
+            "labNotebookBaseRef":"WJ_TEST_11",
             "runNr":0,
             "deviceName":"A_BICYCLE_BUILT_FOR_TWO",
             "timeWindow":10,
@@ -62,5 +62,25 @@ if __name__ == '__main__':
     print("\n")
     
     tests=dbOp.getTestRuns('50403_jdtoit_PNDOS013A')
+    print(tests)
+    print("\n")
+    
+    tests=dbOp.assignProject(1,orgId=50403)
+    print(tests)
+    print("\n")
+    
+    tests=dbOp.assignProject('PROJ-ED-7',email='jdtoit@csir.co.za')
+    print(tests)
+    print("\n")
+        
+    tests=dbOp.getUserProjects(orgId=50403)
+    print(tests)
+    print("\n")
+        
+    tests=dbOp.getProjsDet(tests)
+    print(tests)
+    print("\n")
+        
+    tests=dbOp.getUserProjsDet(email='jdtoit@csir.co.za')
     print(tests)
     print("\n")

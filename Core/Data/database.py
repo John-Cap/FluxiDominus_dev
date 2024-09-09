@@ -26,8 +26,8 @@ class MySQLDatabase:
         
         self.tableVar={
             "users":['orgId', 'lastLogin', 'firstName', 'lastName'],
-            "testlist":['nameTest', 'description', 'nameTester', 'fumehoodId', 'testScript', 'lockScript', 'flowScript', 'datetimeCreate', 'labNotebookRef', 'orgId'],
-            "testruns":['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
+            "testlist":['nameTest', 'description', 'nameTester', 'fumehoodId', 'testScript', 'lockScript', 'flowScript', 'datetimeCreate', 'labNotebookBaseRef', 'orgId'],
+            "testruns":['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookBaseRef','runNr']
         } #hardcoded
 
     def connect(self):
@@ -84,6 +84,14 @@ class MySQLDatabase:
             # Commit the transaction to the database
             self.connection.commit()
             print(f"Record with ID {uniqueId} updated successfully in '{tableName}'.")
+
+    def fetchRecordById(self, tableName, id):# WHERE id=%s
+        """Fetch all records from the specified table."""
+        if self.cursor:
+            fetchQuery = f"SELECT * FROM {tableName} WHERE id=%s"
+            self.cursor.execute(fetchQuery,[id])
+            results = self.cursor.fetchone()
+            return results
 
     def fetchRecords(self, tableName):# WHERE id=%s
         """Fetch all records from the specified table."""
@@ -229,10 +237,10 @@ class TimeSeriesDatabaseMongo:
 
     def continuousFetching(self, **kwargs):
         orgId = kwargs.get('orgId')
-        labNotebookRef = kwargs.get('labNotebookRef')
+        labNotebookBaseRef = kwargs.get('labNotebookBaseRef')
         try:
             while not self.pauseFetching:
-                self.fetchTimeSeriesData(orgId,labNotebookRef)
+                self.fetchTimeSeriesData(orgId,labNotebookBaseRef)
                 time.sleep(6)  # Fetch data every 10 seconds
         except KeyboardInterrupt:
             print("Stopped fetching data.")
@@ -249,8 +257,8 @@ class TimeSeriesDatabaseMongo:
         self.dataPoints=[] #What happens if updater still wants to add some datapoints?
         self.pause()
 
-    def start(self,orgId: str,labNotebookRef: str,runId=0):
-        kwargs={"orgId":orgId,"labNotebookRef":labNotebookRef,"runId":runId}
+    def start(self,orgId: str,labNotebookBaseRef: str,runId=0):
+        kwargs={"orgId":orgId,"labNotebookBaseRef":labNotebookBaseRef,"runId":runId}
         if not (self.insertionThread is None):
             self.pauseInsertion=False
         else:
@@ -288,41 +296,41 @@ class DatabaseOperations:
 
     '''
 
-    def searchForTest(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
-        return self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)
+    def searchForTest(self, labNotebookBaseRef, tableName='testlist', columnName='labNotebookBaseRef'):
+        return self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookBaseRef)
 
-    def getReplicateIds(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
-        testListId=self.getTestlistId(labNotebookRef,tableName,columnName)
+    def getReplicateIds(self, labNotebookBaseRef, tableName='testlist', columnName='labNotebookBaseRef'):
+        testListId=self.getTestlistId(labNotebookBaseRef,tableName,columnName)
         replicates=self.mySqlDb.fetchRecordsByColumnValue('testruns','testlistId',testListId)
         ret=[]
         for _x in replicates:
             ret.append(_x[0])
         return ret
 
-    def getRunNrs(self, labNotebookRef, tableName='testlist', columnName='labNotebookRef'):
-        replicates=self.getReplicateIds(labNotebookRef,tableName,columnName)
+    def getRunNrs(self, labNotebookBaseRef, tableName='testlist', columnName='labNotebookBaseRef'):
+        replicates=self.getReplicateIds(labNotebookBaseRef,tableName,columnName)
         ret=[]
         for _x in replicates:
             ret.append(self.mySqlDb.fetchRecordByColumnValue('testruns','id',_x)[-1])
         return ret
 
-    def createReplicate(self, labNotebookRef, tableName='testlist', columnName='labNotebookBaseRef'):
-        testListId=self.getTestlistId(labNotebookRef,tableName,columnName)
-        replicates=self.getRunNrs(labNotebookRef) #Error handling!
+    def createReplicate(self, labNotebookBaseRef, tableName='testlist', columnName='labNotebookBaseRef'):
+        testListId=self.getTestlistId(labNotebookBaseRef,tableName,columnName)
+        replicates=self.getRunNrs(labNotebookBaseRef) #Error handling!
         idNext=-1
         if (len(replicates)==0):
             idNext=0
         else:
             idNext=replicates[-1] + 1
-        insert=[(testListId,datetime.now(),None,None,0,labNotebookRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookRef','runNr']
+        insert=[(testListId,datetime.now(),None,None,0,labNotebookBaseRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookBaseRef','runNr']
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
 
-    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookBaseRef'):
-        return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
+    def getTestlistId(self,labNotebookBaseRef,tableName='testlist',columnName='labNotebookBaseRef'):
+        return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookBaseRef)[0])
 
-    def getTestlistRow(self,labNotebookRef):
-        return (self.mySqlDb.fetchRecordByColumnValue('testlist','labNotebookRef',labNotebookRef))
+    def getTestlistRow(self,labNotebookBaseRef):
+        return (self.mySqlDb.fetchRecordByColumnValue('testlist','labNotebookBaseRef',labNotebookBaseRef))
                                 
     def getUserId(self,orgId=None,email=None):
         '''
@@ -334,6 +342,67 @@ class DatabaseOperations:
         if not email:
            return (self.mySqlDb.fetchRecordByColumnValue('users','orgId',orgId))[0]
 
+    def assignProject(self,projId,orgId=None,email=None):
+
+        _proj=self.getUserProjects(orgId=orgId,email=email)
+        if (isinstance(_proj,str)):
+            _proj=eval(_proj)
+        if (isinstance(projId,str)):
+            projId=self.getProjId(projId)
+        if _proj is None:
+            _proj=[]
+        if not (projId in _proj):
+            _proj.append(projId)
+        else:
+            return -1
+        _id=self.getUserId(orgId=orgId,email=email)
+        self.mySqlDb.updateRecordById('users',_id,'assignedProjects',json.dumps(str(_proj))) #updateRecordById(self, tableName, uniqueId, columnName, newValue)
+        return (len(_proj)-1)
+        
+    def getUserProjects(self,orgId=None,email=None):
+        _proj=self.getUserRow(orgId=orgId,email=email)[10]
+        if not orgId:
+            if _proj is None:
+                return []
+            else:
+                return (eval(_proj))
+        if not email:
+            if _proj is None:
+                return []
+            else:
+                return (eval(_proj))
+        
+    def getUserProjsDet(self,orgId=None,email=None):
+        _proj=self.getUserProjects(orgId=orgId,email=email)
+        if len(_proj)!=0:
+            _ret={}
+            _proj=self.getProjsDet(_proj)
+            _i=0
+            for _x in _proj:
+                _active=True
+                if _x[3]==0:
+                    _active=False
+                _ret[_i]={
+                    "projCode":_x[1],
+                    "projDescript":_x[2],
+                    "active":_active
+                }
+                _i+=1
+            return _ret
+        else:
+            return {}
+        
+    def getProjsDet(self,proj):
+        _ret=[]
+        if isinstance(proj,str):
+            proj=eval(proj)
+        for _x in proj:
+            _ret.append(self.mySqlDb.fetchRecordById(tableName='projects',id=_x))
+        return _ret
+    
+    def getProjId(self,projCode):
+        return self.mySqlDb.fetchRecordByColumnValue(tableName='projects',columnName='projCode',value=projCode)[0]
+        
     def getUserRow(self,orgId=None,email=None):
         if not orgId:
            return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))
@@ -346,8 +415,8 @@ class DatabaseOperations:
         if not email:
            return (self.mySqlDb.fetchRecordByColumnValue('users','orgId',orgId))[7]
     
-    def getTestlistId(self,labNotebookRef,tableName='testlist',columnName='labNotebookBaseRef'):
-        return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookRef)[0])
+    def getTestlistId(self,labNotebookBaseRef,tableName='testlist',columnName='labNotebookBaseRef'):
+        return (self.mySqlDb.fetchRecordByColumnValue(tableName,columnName,labNotebookBaseRef)[0])
                 
     def getUserTests(self,orgId=None,email=None):
         _ret=[]
@@ -362,21 +431,21 @@ class DatabaseOperations:
                 _ret.append(_x[0])
             return _ret
 
-    def getTestRunIds(self,labNotebookRef):
+    def getTestRunIds(self,labNotebookBaseRef):
         _ret=[]
-        _id=self.getTestlistId(labNotebookRef)
+        _id=self.getTestlistId(labNotebookBaseRef)
         for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testruns',columnName='testlistId',value=_id):
             _ret.append(_x[0])
         return _ret
         
-    def getTestRuns(self,labNotebookRef):
+    def getTestRuns(self,labNotebookBaseRef):
         _ret=[]
-        _id=self.getTestlistId(labNotebookRef=labNotebookRef)
+        _id=self.getTestlistId(labNotebookBaseRef=labNotebookBaseRef)
         for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testruns',columnName='testlistId',value=_id):
             _ret.append(_x)
         return _ret
         
-    def createStdExp(self,labNotebookRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
+    def createStdExp(self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
         ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
             nameTest=nameTest,
             nameTester="",
@@ -384,10 +453,10 @@ class DatabaseOperations:
             flowScript=flowScript,
             description=description,
             testScript=testScript,
-            labNotebookRef=labNotebookRef,
+            labNotebookBaseRef=labNotebookBaseRef,
             orgId=self.mqttService.orgId
         )
-        self.createReplicate(labNotebookRef=labNotebookRef)
+        self.createReplicate(labNotebookBaseRef=labNotebookBaseRef)
         return ret
 
     def setZeroTime(self, id, zeroTime=None):
@@ -403,11 +472,11 @@ class DatabaseOperations:
         self.mySqlDb.connect()
         self.mongoDb.purgeAndPause() #Good idea? :/
 
-    def fetchStreamingBracket(self,labNotebookRef,runNr): #Fetches previous experiment's start time and end time
-        _ret=self.mySqlDb.fetchSpecifiedColumnsByValues(tableName='testruns',columnNames=['startTime','stopTime'],column1Name='labNotebookRef',value1=labNotebookRef,column2Name='runNr',value2=runNr)
+    def fetchStreamingBracket(self,labNotebookBaseRef,runNr): #Fetches previous experiment's start time and end time
+        _ret=self.mySqlDb.fetchSpecifiedColumnsByValues(tableName='testruns',columnNames=['startTime','stopTime'],column1Name='labNotebookBaseRef',value1=labNotebookBaseRef,column2Name='runNr',value2=runNr)
         return [_ret[0],_ret[1]]
-    def setStreamingBracket(self,labNotebookRef,runNr): #Fetches previous experiment's start time and end time
-        _ret=self.fetchStreamingBracket(labNotebookRef,runNr)
+    def setStreamingBracket(self,labNotebookBaseRef,runNr): #Fetches previous experiment's start time and end time
+        _ret=self.fetchStreamingBracket(labNotebookBaseRef,runNr)
         self.mongoDb.prevZeroTime=_ret[0]
         self.mongoDb.prevStopTime=_ret[1]
 
@@ -432,7 +501,7 @@ class DatabaseStreamer(DatabaseOperations):
         id=req["id"]
         if not (id in self.streamRequestDetails):
             self.streamRequestDetails[id]={}
-        self.streamRequestDetails[id]["labNotebookRef"]=req["labNotebookRef"]
+        self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
         self.streamRequestDetails[id]["runNr"]=req["runNr"]
         self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
         self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
@@ -452,7 +521,7 @@ class DatabaseStreamer(DatabaseOperations):
         if not (id in self.dataQueues):
             self.dataQueues[id]=[]
         _rec=self.streamFrom(
-            labNotebookRef=self.streamRequestDetails[id]["labNotebookRef"],
+            labNotebookBaseRef=self.streamRequestDetails[id]["labNotebookBaseRef"],
             runNr=self.streamRequestDetails[id]["runNr"],
             timeWindow=self.streamRequestDetails[id]["timeWindow"],
             nestedField=self.streamRequestDetails[id]["nestedField"],
@@ -460,7 +529,7 @@ class DatabaseStreamer(DatabaseOperations):
         )
         _ret=[]
         _zT=(self.fetchStreamingBracket(
-            labNotebookRef=self.streamRequestDetails[id]["labNotebookRef"],
+            labNotebookBaseRef=self.streamRequestDetails[id]["labNotebookBaseRef"],
             runNr=self.streamRequestDetails[id]["runNr"]
         ))[0]
         for _x in _rec:
@@ -480,13 +549,13 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]
     '''
-    def streamToMqtt(self,id,labNotebookRef,runNr,timeWindow,nestedField=None,nestedValue=None):
+    def streamToMqtt(self,id,labNotebookBaseRef,runNr,timeWindow,nestedField=None,nestedValue=None):
         if not (id in self.dataQueues):
             self.dataQueues[id]=[]
-        _rec=self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
+        _rec=self.streamFrom(labNotebookBaseRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
         for _x in _rec:
             _x=self._packageData(_x["data"],_x["data"]["deviceName"],_x["data"]["setting"])
-        self.dataQueues[id]=self.dataQueues[id] + self.streamFrom(labNotebookRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
+        self.dataQueues[id]=self.dataQueues[id] + self.streamFrom(labNotebookBaseRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
         _data={'dbStreaming':{id:self.dataQueues[id]}}
         self.mqttService.client.publish(
             topic="ui/dbStreaming/out",
@@ -496,12 +565,12 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]
     '''    
-    def streamFrom(self,labNotebookRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
-        return self._retrieve(labNotebookRef,runNr,timeWindow,nestedField,nestedValue)
+    def streamFrom(self,labNotebookBaseRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
+        return self._retrieve(labNotebookBaseRef,runNr,timeWindow,nestedField,nestedValue)
                 
-    def _retrieve(self,labNotebookRef,runNr,timeWindow,nestedField: str = None,nestedValue=None):
-        self.setStreamingBracket(labNotebookRef,runNr)
-        return self.mongoDb.streamTimeBracket(testId=(self.getTestlistId(labNotebookRef)),timeWindowInSeconds=timeWindow,runNr=runNr,nestedField=nestedField,nestedValue=nestedValue)
+    def _retrieve(self,labNotebookBaseRef,runNr,timeWindow,nestedField: str = None,nestedValue=None):
+        self.setStreamingBracket(labNotebookBaseRef,runNr)
+        return self.mongoDb.streamTimeBracket(testId=(self.getTestlistId(labNotebookBaseRef)),timeWindowInSeconds=timeWindow,runNr=runNr,nestedField=nestedField,nestedValue=nestedValue)
 #################################
 #Database operations example
 '''
@@ -537,7 +606,7 @@ if __name__ == '__main__':
 
     testId=thisTest
     runId=dbOp.createReplicate("WJ_Disprin")
-    labNotebookRefs=["MY_REF_2","WJ_Disprin","ANOTHER_ONE"]
+    labNotebookBaseRefs=["MY_REF_2","WJ_Disprin","ANOTHER_ONE"]
     devices=["FLOWSYNMAXI","OHM_DEVICE","A_BICYCLE_BUILT_FOR_TWO"]
     dataSet=[]
     print([testId,runId])
@@ -547,7 +616,7 @@ if __name__ == '__main__':
             orgId="309930",
             testId=testId,
             runNr=runId,
-            labNotebookRef=(random.choice(labNotebookRefs)),
+            labNotebookBaseRef=(random.choice(labNotebookBaseRefs)),
             deviceName=(random.choice(devices)),
             data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
             metadata={"location": "Room 101"}
@@ -560,6 +629,6 @@ if __name__ == '__main__':
         dbOp.mongoDb.insertDataPoint(_x)
         time.sleep(3)
     dbOp.mongoDb.pauseInsertion=True
-    print(dbOp.mongoDb.fetchTimeSeriesData(orgId="309930",labNotebookRef="MY_REF_2"))
+    print(dbOp.mongoDb.fetchTimeSeriesData(orgId="309930",labNotebookBaseRef="MY_REF_2"))
     dbOp.mongoDb.kill()
 '''

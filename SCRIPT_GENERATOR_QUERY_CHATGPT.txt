@@ -1,4 +1,4 @@
-self.streamRequestDetails[id]["labNotebookRef"]=req["labNotebookRef"]
+self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
 self.streamRequestDetails[id]["runNr"]=req["runNr"]
 self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
 self.streamRequestDetails[id]["nestedField"]=req["nestedField"]

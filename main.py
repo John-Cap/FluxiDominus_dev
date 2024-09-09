@@ -84,7 +84,7 @@ print("Signed in!")
 ################################
 '''
 updater.orgId="309930"
-updater.labNotebookRef="EAZY_LEMON_SQUEEZY_1"
+updater.labNotebookBaseRef="EAZY_LEMON_SQUEEZY_1"
 # Main loop!
 while True:
     #Script posted?

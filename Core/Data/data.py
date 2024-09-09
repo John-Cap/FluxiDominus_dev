@@ -3,7 +3,7 @@ from Core.Utils.Utils import Utils
 
 class DataObj_TEMP:
     def __init__(self, id=None, nameTest=None, description=None, nameTester=None, fumehoodId=None,
-                 testScript=None, lockScript=None, flowScript=None, datetimeCreate=None, labNotebookRef=None, orgId=None):
+                 testScript=None, lockScript=None, flowScript=None, datetimeCreate=None, labNotebookBaseRef=None, orgId=None):
         self.id = id
         self.nameTest = nameTest
         self.description = description
@@ -13,12 +13,12 @@ class DataObj_TEMP:
         self.lockScript = lockScript
         self.flowScript = flowScript
         self.datetimeCreate = datetimeCreate
-        self.labNotebookRef= labNotebookRef
+        self.labNotebookBaseRef= labNotebookBaseRef
         self.orgId = orgId
 
     def toDict(self):
         """Convert DataObj to a dictionary."""
-        print('WJ - Labbook ref:',self.labNotebookRef)
+        print('WJ - Labbook ref:',self.labNotebookBaseRef)
         return {
             "id": self.id,
             "nameTest": self.nameTest,
@@ -29,13 +29,13 @@ class DataObj_TEMP:
             "lockScript": self.lockScript,
             "flowScript": self.flowScript,
             "datetimeCreate": self.datetimeCreate,
-            "labNotebookRef": self.labNotebookRef,
+            "labNotebookBaseRef": self.labNotebookBaseRef,
             "orgId": self.orgId
         }
 
 class DataObj(DataObj_TEMP):
-    def __init__(self, id=None, nameTest=None, description=None, nameTester=None, fumehoodId=None, testScript=None, lockScript=None, flowScript=None, datetimeCreate=None, labNotebookRef=None):
-        super().__init__(id, nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate, labNotebookRef)
+    def __init__(self, id=None, nameTest=None, description=None, nameTester=None, fumehoodId=None, testScript=None, lockScript=None, flowScript=None, datetimeCreate=None, labNotebookBaseRef=None):
+        super().__init__(id, nameTest, description, nameTester, fumehoodId, testScript, lockScript, flowScript, datetimeCreate, labNotebookBaseRef)
         self.id = Utils.generateUuid()
         self.description="GENERAL"
         self.fields={"id":self.fields,"description":self.description}
@@ -66,13 +66,13 @@ class DataType:
         return self.type
 
 class DataPoint:
-    def __init__(self,data,labNotebookRef,orgId,testId,runNr,metadata=None,dataType = DataType(),deviceName="UNKNOWN",timestamp = datetime.now(),zeroTime=None):
+    def __init__(self,data,labNotebookBaseRef,orgId,testId,runNr,metadata=None,dataType = DataType(),deviceName="UNKNOWN",timestamp = datetime.now(),zeroTime=None):
         self.timestamp = timestamp
         self.data = data
         self.metadata = metadata if metadata else {}
         self.dataType = dataType
         self.orgId = orgId
-        self.labNotebookRef = labNotebookRef
+        self.labNotebookBaseRef = labNotebookBaseRef
         self.deviceName = deviceName
         self.runNr=runNr
         self.testId=testId
@@ -81,7 +81,7 @@ class DataPoint:
     def toDict(self):
         """Convert the DataPoint to a dictionary format."""
         return {
-            'labNotebookRef': self.labNotebookRef, #Remove
+            'labNotebookBaseRef': self.labNotebookBaseRef, #Remove
             'deviceName': self.deviceName, #Remove
             'timestamp': self.timestamp,
             'data': self.data,
@@ -95,8 +95,8 @@ class DataPoint:
         }
 
 class DataPointFDE(DataPoint): #Fluxidominus default database obj
-    def __init__(self, data, labNotebookRef, orgId, testId, runNr, metadata=None, dataType=DataType(), deviceName="UNKNOWN", timestamp=datetime.now(), zeroTime=None):
-        super().__init__(data, labNotebookRef, orgId, testId, runNr, metadata, dataType, deviceName, timestamp, zeroTime)
+    def __init__(self, data, labNotebookBaseRef, orgId, testId, runNr, metadata=None, dataType=DataType(), deviceName="UNKNOWN", timestamp=datetime.now(), zeroTime=None):
+        super().__init__(data, labNotebookBaseRef, orgId, testId, runNr, metadata, dataType, deviceName, timestamp, zeroTime)
         
 class DataSet:
     def __init__(self, dataPoints = []):
@@ -122,14 +122,14 @@ class DataSetFDD(DataSet):
 if __name__ == "__main__":
     # Create DataPoint instances
     dp1 = DataPoint(
-        labNotebookRef="exp123",
+        labNotebookBaseRef="exp123",
         deviceName="flowsynmaxi2",
         data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
         metadata={"location": "Room 101", "type": "temperature"}
     )
     
     dp2 = DataPoint(
-        labNotebookRef="exp123",
+        labNotebookBaseRef="exp123",
         deviceName="IRSCANNER",
         data={'irScan': [1.2, 3.4, 5.6, 0.8]},
         metadata={"location": "Room 101", "type": "IR"},
