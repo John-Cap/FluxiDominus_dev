@@ -126,6 +126,14 @@ class MySQLDatabase:
             self.cursor.execute(fetch_query, (value1, value2))
             result = self.cursor.fetchone()  # fetchone returns a single matching row
             return result
+        
+    def fetchRecordsByColumnValues(self, tableName, column1Name, value1, column2Name, value2):
+        """Fetch specified columns from a table where two columns match the given values."""
+        if self.cursor:
+            fetch_query = f"SELECT * FROM {tableName} WHERE {column1Name} = %s AND {column2Name} = %s"
+            self.cursor.execute(fetch_query, (value1,value2))
+            result = self.cursor.fetchall()
+            return result
 
     def fetchRecordsByColumnValue(self, tableName, columnName, value):
         """Fetch all records from the specified table where the column matches the given value."""
@@ -371,7 +379,30 @@ class DatabaseOperations:
                 return []
             else:
                 return (eval(_proj))
-        
+
+    def getAllExpWidgetInfo(self):
+        _ret={'ExpWidgetInfo':{}}
+        '''
+        *Get project codes and their descriptions
+        *For each project:
+            *Labnotebook prefix
+                *All testruns for each:
+                    *Run nr
+                    *Create time
+        '''
+        _userId=self.getUserId(self.mqttService.orgId)
+        _userProj=self.getUserProjects(self.mqttService.orgId)
+        for _x in _userProj:
+            _projName=self.getProjCode(_x)
+            _projTests=[]
+            for _y in self.mySqlDb.fetchRecordByColumnValues()
+                _projTests.append(_y)
+            _testListIds=[]
+            _ret['ExpWidgetInfo'][_x]=
+            
+        _userProjDet=self.getUserProjsDet(self.mqttService.orgId)
+        pass
+
     def getUserProjsDet(self,orgId=None,email=None):
         _proj=self.getUserProjects(orgId=orgId,email=email)
         if len(_proj)!=0:
@@ -402,7 +433,10 @@ class DatabaseOperations:
     
     def getProjId(self,projCode):
         return self.mySqlDb.fetchRecordByColumnValue(tableName='projects',columnName='projCode',value=projCode)[0]
-        
+    
+    def getProjCode(self,id):
+        return (self.mySqlDb.fetchRecordById(tableName='projects',id=id))[1]
+    
     def getUserRow(self,orgId=None,email=None):
         if not orgId:
            return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))
