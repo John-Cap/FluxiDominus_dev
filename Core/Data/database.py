@@ -388,14 +388,24 @@ class DatabaseOperations:
         for _x in _userProj: #For each project id, get its name, associated tests, and each test's testruns
             _projName=self.getProjCode(_x)
             _projTests=[]
+            _desc=""
             for _y in self.mySqlDb.fetchRecordsByColumnValues(tableName='testlist',column1Name='projId',value1=_x,column2Name='userId',value2=_userId):
                 _projTests.append(_y[0])
+                _desc=_y[3]
+                _labNotebookBaseRef=_y[4]
+                _datetimeCreate=_y[5]
             for _y in _projTests: #Get runs, complete rows converted to lists
-                _ret['ExpWidgetInfo'][_x]={
+                _ret['ExpWidgetInfo'][str(_x)]={
                     'projCode':_projName,
-                    _y:self.getTestrunsByTestId(_y)
+                    str(_y):{
+                        "testruns":self.getTestrunsByTestId(_y),
+                        "description":_desc,
+                        "labNotebookBaseRef":_labNotebookBaseRef,
+                        "datetimeCreate":_datetimeCreate.isoformat()
+                    }
                 }
-        return _ret
+        print(json.dumps(_ret))
+        return json.dumps(_ret)
 
     def getUserProjsDet(self,orgId=None,email=None):
         _proj=self.getUserProjects(orgId=orgId,email=email)
@@ -470,13 +480,25 @@ class DatabaseOperations:
         _ret=[]
         _id=self.getTestlistId(labNotebookBaseRef=labNotebookBaseRef)
         for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testruns',columnName='testlistId',value=_id):
+            _x=list(_x)
+            for _i, _y in enumerate(_x):
+                if isinstance(_y,datetime):
+                    _x[_i]=_y.isoformat()
+                if isinstance(_y,bytes):
+                    _x[_i]=_y.decode()
             _ret.append(_x)
         return _ret
         
     def getTestrunsByTestId(self,id):
         _ret=[]
         for _x in self.mySqlDb.fetchRecordsByColumnValue(tableName='testruns',columnName='testlistId',value=id):
-            _ret.append(list(_x))
+            _x=list(_x)
+            for _i, _y in enumerate(_x):
+                if isinstance(_y,datetime):
+                    _x[_i]=_y.isoformat()
+                if isinstance(_y,bytes):
+                    _x[_i]=_y.decode()
+            _ret.append(_x)
         return _ret
                 
     def createStdExp(self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
