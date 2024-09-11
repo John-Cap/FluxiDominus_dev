@@ -69,7 +69,7 @@ if __name__ == '__main__':
     print(tests)
     print("\n")
     
-    tests=dbOp.assignProject('PROJ-ED-7',email='jdtoit@csir.co.za')
+    tests=dbOp.assignProject('C1PPT53',email='jdtoit@csir.co.za')
     print(tests)
     print("\n")
         
