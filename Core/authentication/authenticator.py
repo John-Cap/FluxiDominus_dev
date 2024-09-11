@@ -27,7 +27,7 @@ class Administrator(UserBase):
         super().__init__(user, orgId, "admin")
         
 class AuthenticatorBase:
-    def __init__(self,user=None) -> None:
+    def __init__(self,user=User()) -> None:
         self.signedIn=False
         self.lastSignInAt=None
         self.sessionId=uuid.uuid4()
@@ -64,6 +64,7 @@ class AuthenticatorBase:
         #decrypted=self.decryptString(passwordCorrect)
         if not self.signedIn and passwordCorrect == password:
             self.signedIn=True
+            self.user.orgId=orgId
             _report=json.dumps({"LoginPageWidget":{"authenticated":True}})
             self.mqttService.client.publish(MqttTopics.getUiTopic("LoginPageWidget"),_report,qos=2)
             print('Signed in report: '+str(_report))
@@ -88,7 +89,7 @@ class AuthenticatorBase:
         return self.db.fetchRecordByColumnValue("users","orgId",orgId)
 
 class Authenticator(AuthenticatorBase):
-    def __init__(self, user=None) -> None:
+    def __init__(self, user=User()) -> None:
         super().__init__(user)
     def initPlutter(self,mqttService):
         self.mqttService=mqttService

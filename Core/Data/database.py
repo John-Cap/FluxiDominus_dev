@@ -379,16 +379,20 @@ class DatabaseOperations:
             else:
                 return (eval(_proj))
 
-    def getAllExpWidgetInfo(self):
-        _ret={'ExpWidgetInfo':{}}
-        _userId=self.getUserId(self.mqttService.orgId)
-        _userProj=self.getUserProjects(self.mqttService.orgId) #Get all project ids
+    def getAllExpWidgetInfo(self,orgId=None):
+        
+        if not orgId:
+            orgId=self.mqttService.orgId
+        
+        _ret={"getAllExpWidgetInfo":{}}
+        _userId=self.getUserId(orgId)
+        _userProj=self.getUserProjects(orgId) #Get all project ids
         if (isinstance(_userProj,str)):
             _userProj=eval(_userProj)
         for _x in _userProj: #For each project id, get its name, associated tests, and each test's testruns
-            _ret['ExpWidgetInfo'][str(_x)]={}
+            _ret["getAllExpWidgetInfo"][str(_x)]={}
             for _y in self.mySqlDb.fetchRecordsByColumnValues(tableName='testlist',column1Name='projId',value1=_x,column2Name='userId',value2=_userId):
-                _ret['ExpWidgetInfo'][str(_x)][str(_y[0])]={
+                _ret["getAllExpWidgetInfo"][str(_x)][str(_y[0])]={
                     'projCode':self.getProjCode(_x),
                     "testruns":self.getTestrunsByTestId(_y[0]),
                     "description":_y[3],

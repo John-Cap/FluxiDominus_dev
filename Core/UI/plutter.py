@@ -38,7 +38,6 @@ class MqttService:
         self.logData=False
         
         self.orgId=orgId
-        self.labNotebookBaseRef=""
         
         self.automation=automation if automation else (FlowChemAutomation())
         
@@ -50,16 +49,7 @@ class MqttService:
         self.databaseOperations=None
         
         self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
-    '''
-    def addDataToQueue(self,device,data,labNotebookBaseRef,orgId): #Replace with the new class
-        self.dataQueue.append(DataPointFDE(
-            labNotebookBaseRef=labNotebookBaseRef,
-            orgId=orgId,
-            deviceName=device,
-            data=data,
-            metadata={"location": "Room 101", "type": "This particular type"}
-        ).toDict())
-    '''    
+
     def onSubscribe(self, client, userdata, mid, granted_qos):
         if mid in self.topicIDs:
             print("WJ - Subscribed to topic " + self.topicIDs[mid] + " with Qos " + str(granted_qos[0]) + "!")
@@ -159,14 +149,13 @@ class MqttService:
                 labNotebookBaseRef=_params["labNotebookBaseRef"] #Needs to be built up automatically
                 self.databaseOperations.createStdExp(nameTest=nameTest,description=description,testScript=testScript,flowScript=flowScript,labNotebookBaseRef=labNotebookBaseRef)
                 #Then what?
-            if (_func=="searchForTest"):
-                labNotebookBaseRef=_params["labNotebookBaseRef"]
-                _ret=self.databaseOperations.searchForTest(labNotebookBaseRef=labNotebookBaseRef)
-                self.client.publish("ui/dbCmnd/ret",json.dumps({"searchForTest":_ret}))
-                '''
-                (self, nameTest, description, nameTester, testScript,
-                         lockScript, flowScript, labNotebookBaseRef, orgId):
-                '''
+            if (_func=="getAllExpWidgetInfo"):
+                self.client.publish(
+                    "ui/dbCmnd/ret",
+                    self.databaseOperations.getAllExpWidgetInfo(
+                        orgId=self.authenticator.user.orgId
+                    )
+                )
                 
                             
     def start(self):

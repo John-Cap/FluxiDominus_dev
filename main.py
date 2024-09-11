@@ -75,16 +75,16 @@ doIt=True
 
 ################################
 #Signed in?
-'''
 print("WJ - Awaiting sign-in")
 updater.authenticator.mqttService=updater
+updater.authenticator.user.orgId=input("Org Id: ")
+'''
 while not updater.authenticator.signedIn:
     time.sleep(0.2)
 print("Signed in!")
-################################
 '''
-updater.orgId="309930"
-updater.labNotebookBaseRef="EAZY_LEMON_SQUEEZY_1"
+################################
+
 # Main loop!
 while True:
     #Script posted?
