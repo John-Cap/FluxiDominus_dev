@@ -391,9 +391,11 @@ class DatabaseOperations:
             _userProj=eval(_userProj)
         for _x in _userProj: #For each project id, get its name, associated tests, and each test's testruns
             _ret["getAllExpWidgetInfo"][str(_x)]={}
+            _ret["getAllExpWidgetInfo"][str(_x)]["projCode"]=self.getProjCode(_x)
+            _ret["getAllExpWidgetInfo"][str(_x)]["projDescript"]=self.getProjDescript(_x)
+            _ret["getAllExpWidgetInfo"][str(_x)]["testlistEntries"]={}
             for _y in self.mySqlDb.fetchRecordsByColumnValues(tableName='testlist',column1Name='projId',value1=_x,column2Name='userId',value2=_userId):
-                _ret["getAllExpWidgetInfo"][str(_x)][str(_y[0])]={
-                    'projCode':self.getProjCode(_x),
+                _ret["getAllExpWidgetInfo"][str(_x)]["testlistEntries"][str(_y[0])]={
                     "testruns":self.getTestrunsByTestId(_y[0]),
                     "description":_y[3],
                     "labNotebookBaseRef":_y[4],
@@ -435,6 +437,9 @@ class DatabaseOperations:
     def getProjCode(self,id):
         return (self.mySqlDb.fetchRecordById(tableName='projects',id=id))[1]
     
+    def getProjDescript(self,id):
+        return (self.mySqlDb.fetchRecordById(tableName='projects',id=id))[2]
+        
     def getUserRow(self,orgId=None,email=None):
         if not orgId:
            return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))
