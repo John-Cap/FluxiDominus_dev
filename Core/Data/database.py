@@ -348,15 +348,11 @@ class DatabaseOperations:
             idNext=0
         else:
             idNext=replicates[-1] + 1
-        print('Type: ' + flowScript.__class__.__name__+ str(flowScript))
         if isinstance(flowScript,str):
             flowScript=flowScript.replace("'",'"')
             flowScript=flowScript.replace("null",'None')
             flowScript=eval(flowScript)
-        print('Type: '+flowScript.__class__.__name__)
-        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,json.dumps(testScript),"{}",
-                 #json.dumps(flowScript),
-                 b'',b'',0,notes)]
+        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,json.dumps(testScript),json.dumps(flowScript),b'',b'',0,notes)]
         print('WJ - Preparing to insert: '+str(insert))
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
