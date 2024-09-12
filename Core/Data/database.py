@@ -331,6 +331,7 @@ class DatabaseOperations:
         if not (projId in self.getUserProjects(userId=userId)):
             print('Project not assigned to user!')
             return -1
+        #print([projId,userId,description,labNotebookBaseRef,datetime.now().isoformat(),0])
         insert=[(projId,userId,description,labNotebookBaseRef,datetime.now().isoformat(),0)]
         self.mySqlDb.insertRecords('testlist',insert)
         self.createReplicate(labNotebookBaseRef=labNotebookBaseRef,testScript=testScript,flowScript=flowScript,notes=notes)
@@ -347,10 +348,16 @@ class DatabaseOperations:
             idNext=0
         else:
             idNext=replicates[-1] + 1
+        print('Type: ' + flowScript.__class__.__name__+ str(flowScript))
         if isinstance(flowScript,str):
+            flowScript=flowScript.replace("'",'"')
+            flowScript=flowScript.replace("null",'None')
             flowScript=eval(flowScript)
-        print(flowScript.__class__.__name__)
-        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,testScript,json.dumps(flowScript),b'',b'',0,notes)]
+        print('Type: '+flowScript.__class__.__name__)
+        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,json.dumps(testScript),"{}",
+                 #json.dumps(flowScript),
+                 b'',b'',0,notes)]
+        print('WJ - Preparing to insert: '+str(insert))
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
 

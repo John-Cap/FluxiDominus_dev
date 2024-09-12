@@ -84,6 +84,6 @@ if __name__ == '__main__':
     print(tests)
     print("\n")
     
-    tests=dbOp.createTestlistEntry(dbOp.getUserId('50403'),projId='C1PPT53',labNotebookBaseRef='WA_MBang_DING_dang123456')
+    tests=dbOp.createTestlistEntry(dbOp.getUserId('50403'),projId='C1PPT53',labNotebookBaseRef='WA_MBang_DING_dang1234567')
     print(tests)
     print("\n")
