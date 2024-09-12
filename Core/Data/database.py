@@ -1,4 +1,5 @@
 
+from ast import literal_eval
 import json
 import mysql.connector
 from pymongo import MongoClient
@@ -25,11 +26,12 @@ class MySQLDatabase:
         self.cursor = None
         
         self.tableVar={
-            "users":['orgId', 'lastLogin', 'firstName', 'lastName'],
-            "testlist":['nameTest', 'description', 'nameTester', 'fumehoodId', 'testScript', 'lockScript', 'flowScript', 'datetimeCreate', 'labNotebookBaseRef', 'orgId'],
-            "testruns":['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookBaseRef','runNr']
+            "users":['orgId', 'email', 'cellphone', 'lastLogin', 'firstName', 'lastName', 'password', 'admin', 'active', 'assignedProjects'],
+            "testlist":['projId', 'userId', 'description', 'labNotebookBaseRef', 'datetimeCreate', 'locked'],
+            "testruns":['testlistId', 'labNotebookBaseRef', 'runNr', 'createTime', 'startTime', 'endTime', 'locked', 'testScript', 'flowScript', 'optimizer', 'optimizerModel', 'recorded', 'notes'],
+            "projects":['projCode', 'description', 'active'],
+            "fumehoods":['fumehoodNr', 'macAddr', 'ipAddr', 'port', 'userId']
         } #hardcoded
-
     def connect(self):
         """Establish a connection to the MySQL database."""
         try:
@@ -318,18 +320,34 @@ class DatabaseOperations:
         replicates=self.getReplicateIds(labNotebookBaseRef,tableName,columnName)
         ret=[]
         for _x in replicates:
-            ret.append(self.mySqlDb.fetchRecordByColumnValue('testruns','id',_x)[-1])
+            ret.append(self.mySqlDb.fetchRecordByColumnValue('testruns','id',_x)[3])
         return ret
 
-    def createReplicate(self, labNotebookBaseRef, tableName='testlist', columnName='labNotebookBaseRef'):
-        testListId=self.getTestlistId(labNotebookBaseRef,tableName,columnName)
+    def createTestlistEntry(self,userId,projId,labNotebookBaseRef,description="",testScript="",flowScript={},notes=""):
+        '''testlist columns->projId, userId, description, labNotebookBaseRef, datetimeCreate, locked'''
+        #Check if this project is assigned to user
+        if isinstance(projId,str):
+            projId=self.getProjId(projId)
+        if not (projId in self.getUserProjects(userId=userId)):
+            print('Project not assigned to user!')
+            return -1
+        insert=[(projId,userId,description,labNotebookBaseRef,datetime.now().isoformat(),0)]
+        self.mySqlDb.insertRecords('testlist',insert)
+        self.createReplicate(labNotebookBaseRef=labNotebookBaseRef,testScript=testScript,flowScript=flowScript,notes=notes)
+        return self.getTestlistId(labNotebookBaseRef)
+        
+    def createReplicate(self,labNotebookBaseRef,testScript="",flowScript={},notes=""):
+        '''
+        id, testlistId, labNotebookBaseRef, runNr, createTime, startTime, endTime, locked, testScript, flowScript, optimizer, optimizerModel, recorded, notes
+        '''
+        testListId=self.getTestlistId(labNotebookBaseRef,'testlist','labNotebookBaseRef')
         replicates=self.getRunNrs(labNotebookBaseRef) #Error handling!
         idNext=-1
         if (len(replicates)==0):
             idNext=0
         else:
             idNext=replicates[-1] + 1
-        insert=[(testListId,datetime.now(),None,None,0,labNotebookBaseRef,idNext)] #['testlistId', 'createTime', 'startTime', 'stopTime', 'recorded','labNotebookBaseRef','runNr']
+        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,testScript,json.dumps(flowScript),b'',b'',0,notes)]
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
 
@@ -341,8 +359,7 @@ class DatabaseOperations:
                                 
     def getUserId(self,orgId=None,email=None):
         '''
-        >id<	orgId	email	            cellphone	lastLogin	firstName	lastName	password	admin	active
-        22	    50403	jdtoit@csir.co.za	0824440997		        Jurie	    du Toit		            1	    1
+        users columns->orgId	email   cellphone	lastLogin	firstName	lastName	password	admin	active
         '''
         if not orgId:
            return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))[0]
@@ -366,19 +383,14 @@ class DatabaseOperations:
         self.mySqlDb.updateRecordById('users',_id,'assignedProjects',json.dumps(str(_proj))) #updateRecordById(self, tableName, uniqueId, columnName, newValue)
         return (len(_proj)-1)
         
-    def getUserProjects(self,orgId=None,email=None):
-        _proj=self.getUserRow(orgId=orgId,email=email)[10]
-        if not orgId:
-            if _proj is None:
-                return []
-            else:
-                return (eval(_proj))
-        if not email:
-            if _proj is None:
-                return []
-            else:
-                return (eval(_proj))
-
+    def getUserProjects(self,orgId=None,email=None,userId=None):
+        _proj=self.getUserRow(orgId=orgId,email=email,userId=userId)[10]
+        _proj=eval(literal_eval(_proj))
+        if _proj is None:
+            return []
+        else:
+            return _proj
+        
     def getAllExpWidgetInfo(self,orgId=None):
         
         if not orgId:
@@ -440,12 +452,16 @@ class DatabaseOperations:
     def getProjDescript(self,id):
         return (self.mySqlDb.fetchRecordById(tableName='projects',id=id))[2]
         
-    def getUserRow(self,orgId=None,email=None):
-        if not orgId:
-           return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))
-        if not email:
+    def getUserRow(self,orgId=None,email=None,userId=None):
+        if orgId:
            return (self.mySqlDb.fetchRecordByColumnValue('users','orgId',orgId))
-    
+        elif email:
+           return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))
+        elif userId:
+            if isinstance(userId,str):
+                userId=eval(userId)
+            return (self.mySqlDb.fetchRecordByColumnValue('users','id',userId))
+        
     def getPassword(self,orgId=None,email=None):
         if not orgId:
            return (self.mySqlDb.fetchRecordByColumnValue('users','email',email))[7]
@@ -499,7 +515,7 @@ class DatabaseOperations:
                     _x[_i]=_y.decode()
             _ret.append(_x)
         return _ret
-                
+    '''
     def createStdExp(self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
         ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
             nameTest=nameTest,
@@ -513,7 +529,7 @@ class DatabaseOperations:
         )
         self.createReplicate(labNotebookBaseRef=labNotebookBaseRef)
         return ret
-
+    '''
     def setZeroTime(self, id, zeroTime=None):
         if not zeroTime:
             zeroTime=datetime.now()

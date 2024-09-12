@@ -48,7 +48,7 @@ class MqttService:
         
         self.databaseOperations=None
         
-        self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
+        #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
 
     def onSubscribe(self, client, userdata, mid, granted_qos):
         if mid in self.topicIDs:
@@ -136,11 +136,12 @@ class MqttService:
             _msgContents=_msgContents["instructions"]
             _func=_msgContents["function"]
             _params=_msgContents["params"]
+            '''
             if (_func=="createStdExp"):
                 _func=self.dbInstructions[_func]
-                '''
+
                 (self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content")
-                '''
+
                 nameTest=_params["nameTest"] #Short description
                 description=_params["description"] #Long description
                 testScript=self.script #Generated in UI, check if received and parsed!!
@@ -149,6 +150,7 @@ class MqttService:
                 labNotebookBaseRef=_params["labNotebookBaseRef"] #Needs to be built up automatically
                 self.databaseOperations.createStdExp(nameTest=nameTest,description=description,testScript=testScript,flowScript=flowScript,labNotebookBaseRef=labNotebookBaseRef)
                 #Then what?
+            '''
             if (_func=="getAllExpWidgetInfo"):
                 self.client.publish(
                     "ui/dbCmnd/ret",
