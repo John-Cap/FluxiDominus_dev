@@ -158,7 +158,21 @@ class MqttService:
                         orgId=self.authenticator.user.orgId
                     )
                 )
-                
+            elif (_func=="createReplicate"):
+                self.databaseOperations.createReplicate(
+                    labNotebookBaseRef=_params["labNotebookBaseRef"],
+                    testScript=_params["testScript"],
+                    flowScript=_params["flowScript"],
+                    notes=_params["notes"]
+                )
+                '''
+                self.client.publish( #Create a return for 
+                    "ui/dbCmnd/ret",
+                    self.databaseOperations.getAllExpWidgetInfo(
+                        orgId=self.authenticator.user.orgId
+                    )
+                )
+                '''
                             
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
