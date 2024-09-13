@@ -48,6 +48,8 @@ class MqttService:
         
         self.databaseOperations=None
         
+        self.runTest=False
+        
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
 
     def onSubscribe(self, client, userdata, mid, granted_qos):
