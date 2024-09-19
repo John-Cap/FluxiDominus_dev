@@ -46,8 +46,12 @@ if __name__ == '__main__':
     #Instantiate
     dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
+    
+    '''
     ##################################
     #MySql
+    dbOp.createProject('MY_COOL_PROJECT_123',descript="This tells me more about 'MY_COOL_PROJECT_123'")    
+    
     tests=dbOp.getUserRow(email='jdtoit@csir.co.za')
     print(tests)
     print("\n")
@@ -87,3 +91,4 @@ if __name__ == '__main__':
     tests=dbOp.createTestlistEntry(dbOp.getUserId('50403'),projId='C1PPT53',labNotebookBaseRef='WA_MBang_DING_dang1234567')
     print(tests)
     print("\n")
+    '''

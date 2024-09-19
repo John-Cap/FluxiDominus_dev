@@ -62,6 +62,8 @@ class MySQLDatabase:
 
     def insertRecords(self, tableName, records):
         """Insert multiple records into the specified table."""
+        if not isinstance(records,list):
+            records=[records]
         if self.cursor:
             columns=self.tableVar[tableName]
             insertQuery = f"""
@@ -194,13 +196,15 @@ class TimeSeriesDatabaseMongo:
     def fetchTimeSeriesData(self, testId, runNr=0, startTime: datetime = None, endTime: datetime = None, nestedField: str = None, nestedValue=None):
         # Prepare the query with required filters
         query = {
-            'testId': testId,
-            'runNr': runNr
+            'metadata':{
+                'testId': testId,
+                'runNr': runNr
+            }
         }
 
         # Add time filtering to the query if provided
         if startTime and endTime: 
-            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
+            query['metadata']['timestamp'] = {'$gte': startTime, '$lte': endTime}
 
         # Add nested field filtering if provided
         if (nestedField and nestedValue): #Include 'field':value requirement to search
@@ -315,6 +319,9 @@ class DatabaseOperations:
         for _x in replicates:
             ret.append(_x[0])
         return ret
+    
+    def getTestrunId(self,labNotebookBaseRef,runNr): #'labNotebookBaseRef', 'runNr'
+        return (self.mySqlDb.fetchRecordByColumnValues(tableName='testruns',column1Name='labNotebookBaseRef',value1=labNotebookBaseRef,column2Name='runNr',value2=runNr))[0]
 
     def getRunNrs(self, labNotebookBaseRef, tableName='testlist', columnName='labNotebookBaseRef'):
         replicates=self.getReplicateIds(labNotebookBaseRef,tableName,columnName)
@@ -372,6 +379,9 @@ class DatabaseOperations:
         if not email:
            return (self.mySqlDb.fetchRecordByColumnValue('users','orgId',orgId))[0]
 
+    def createProject(self,projCode,descript,active=1):
+        self.mySqlDb.insertRecords('projects',(projCode,descript,active))
+        
     def assignProject(self,projId,orgId=None,email=None):
 
         _proj=self.getUserProjects(orgId=orgId,email=email)

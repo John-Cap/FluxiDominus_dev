@@ -66,37 +66,26 @@ class DataType:
         return self.type
 
 class DataPoint:
-    def __init__(self,data,labNotebookBaseRef,orgId,testId,runNr,metadata=None,dataType = DataType(),deviceName="UNKNOWN",timestamp = datetime.now(),zeroTime=None):
-        self.timestamp = timestamp
-        self.data = data
-        self.metadata = metadata if metadata else {}
-        self.dataType = dataType
-        self.orgId = orgId
-        self.labNotebookBaseRef = labNotebookBaseRef
-        self.deviceName = deviceName
-        self.runNr=runNr
-        self.testId=testId
-        self.zeroTime=zeroTime
+    def __init__(self,testlistId,testrunId,data,metadata=None,timestamp=datetime.now()):
+        self.timestamp=timestamp
+        self.data=data
+        self.metadata=metadata
+        self.testlistId=testlistId
+        self.testrunId=testrunId
     
     def toDict(self):
         """Convert the DataPoint to a dictionary format."""
+        self.metadata["testlistId"]=self.testlistId
+        self.metadata["testrunId"]=self.testrunId
+        self.metadata["timestamp"]=self.timestamp
         return {
-            'labNotebookBaseRef': self.labNotebookBaseRef, #Remove
-            'deviceName': self.deviceName, #Remove
-            'timestamp': self.timestamp,
             'data': self.data,
-            'dataType': self.dataType.getType(), #Remove
-            'metadata': self.metadata, #Now contains -> 'TestLISTid','runNr','testRunId'
-            'orgId':self.orgId, #Remove
-            'testId':self.testId, #'TestLISTid'
-            #'testId':self.testId, #Voeg by
-            'runNr':self.runNr, #Remove
-            'zeroTime':self.zeroTime #Remove
+            'metadata': self.metadata
         }
 
-class DataPointFDE(DataPoint): #Fluxidominus default database obj
-    def __init__(self, data, labNotebookBaseRef, orgId, testId, runNr, metadata=None, dataType=DataType(), deviceName="UNKNOWN", timestamp=datetime.now(), zeroTime=None):
-        super().__init__(data, labNotebookBaseRef, orgId, testId, runNr, metadata, dataType, deviceName, timestamp, zeroTime)
+class DataPointFDE(DataPoint):
+    def __init__(self, testlistId, testrunId, data, metadata=None, timestamp=datetime.now()):
+        super().__init__(testlistId, testrunId, data, metadata, timestamp)
         
 class DataSet:
     def __init__(self, dataPoints = []):
@@ -114,7 +103,7 @@ class DataSet:
 
     def __repr__(self):
         return f"<DataSet(numDataPoints={len(self.dataPoints)})>"
-
+        
 class DataSetFDD(DataSet):
     def __init__(self, dataPoints=[]):
         super().__init__(dataPoints)
@@ -122,18 +111,16 @@ class DataSetFDD(DataSet):
 if __name__ == "__main__":
     # Create DataPoint instances
     dp1 = DataPoint(
-        labNotebookBaseRef="exp123",
-        deviceName="flowsynmaxi2",
+        testlistId=1,
+        testrunId=2,
         data={'systemPressure': 1.2, 'pumpPressure': 3.4, 'temperature': 22.5},
         metadata={"location": "Room 101", "type": "temperature"}
     )
-    
     dp2 = DataPoint(
-        labNotebookBaseRef="exp123",
-        deviceName="IRSCANNER",
-        data={'irScan': [1.2, 3.4, 5.6, 0.8]},
-        metadata={"location": "Room 101", "type": "IR"},
-        dataType=DataType("BEER_FOR_BOYS").type()
+        testlistId=1,
+        testrunId=2,
+        data={'systemPressure': 2.2, 'pumpPressure': 3.5, 'temperature': 24.5},
+        metadata={"location": "Room 101", "type": "temperature"}
     )
 
     # Create DataSet and add DataPoints
