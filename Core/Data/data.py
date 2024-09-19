@@ -74,6 +74,8 @@ class DataPoint:
         self.testrunId=testrunId
     
     def toDict(self):
+        if not self.metadata:
+            self.metadata={}
         """Convert the DataPoint to a dictionary format."""
         self.metadata["testlistId"]=self.testlistId
         self.metadata["testrunId"]=self.testrunId

@@ -193,13 +193,11 @@ class TimeSeriesDatabaseMongo:
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval) #Kannie so lank hier wag nie
 
-    def fetchTimeSeriesData(self, testId, runNr=0, startTime: datetime = None, endTime: datetime = None, nestedField: str = None, nestedValue=None):
+    def fetchTimeSeriesData(self, testlistId, testrunId, startTime: datetime = None, endTime: datetime = None, nestedField: str = None, nestedValue=None):
         # Prepare the query with required filters
         query = {
-            'metadata':{
-                'testId': testId,
-                'runNr': runNr
-            }
+            'metadata.testlistId': testlistId,
+            'metadata.testrunId': testrunId
         }
 
         # Add time filtering to the query if provided
@@ -220,7 +218,7 @@ class TimeSeriesDatabaseMongo:
             _num += 1
 
         # Uncomment the line below to print the number of fetched documents
-        print(f'Fetched {_num} documents for experiment {testId} from {startTime} to {endTime} with nested field {nestedField} = {nestedValue}!')
+        print(f'Fetched {_num} documents for experiment {testlistId} from {startTime} to {endTime} with nested field {nestedField} = {nestedValue}!')
         return _ret
     
     def streamData(self, timeWindowInSeconds, testId, runNr=0, now=None, nestedField: str = None, nestedValue=None):

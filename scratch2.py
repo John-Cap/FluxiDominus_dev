@@ -1,3 +1,4 @@
+from datetime import datetime
 import random
 import time
 from Core.Data.data import DataPointFDE, DataSetFDD
@@ -9,13 +10,14 @@ if __name__ == '__main__':
     #Mqtt
     thisThing=MqttService()
     thisThing.start()
-    thisThing.orgId="309930"
+    thisThing.orgId="50403"
     #Instantiate
     dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
     
     ##################################
     #MySql
+    '''
     tests=dbOp.getUserTests()
     print(tests)
     print("\n")
@@ -24,33 +26,47 @@ if __name__ == '__main__':
     print(thisTest)
     print("\n")
     #Get id's of all thisTest's replicate runs
-    theseTests=dbOp.getReplicateIds("WJ_Disprin")
+    theseTests=dbOp.getReplicateIds("50403_jdtoit_DSIP012A")
+    print(theseTests)
+    print('\n') #[116, 120, 121, 124, 131] #[118, 122, 123, 127, 128, 129, 130]
+  
+    #dbOp.createReplicate("WJ_Disprin")
+    theseTests=dbOp.getReplicateIds("50403_jdtoit_DSIP013A")
     print(theseTests)
     print('\n')
-    dbOp.createReplicate("WJ_Disprin")
-    theseTests=dbOp.getReplicateIds("WJ_Disprin")
-    print(theseTests)
-    print('\n')
-
+    '''
     ##################################
     #Mongo
-
-    testId=thisTest
-    runId=dbOp.createReplicate("WJ_Disprin")
-    labNotebookBaseRefs=["MY_REF_2","WJ_Disprin","ANOTHER_ONE"]
-    devices=["FLOWSYNMAXI","OHM_DEVICE","A_BICYCLE_BUILT_FOR_TWO"]
+    '''
+    _yeahNow=datetime.now()
     dataSet=[]
-    print([testId,runId])
-    _i=100
+    _i=50
     while _i > 0:
-        dataSet.append(DataPointFDE(testlistId=).toDict())
+        _tstlstId=random.choice([296,298])
+        if _tstlstId==296:
+            dataSet.append(
+                DataPointFDE(
+                    testlistId=_tstlstId,
+                    testrunId=random.choice([116,120]),
+                    data={"meemah":"123","anotherField":{"aNestedField":1}}
+                ).toDict())    
+        else:
+            dataSet.append(
+                DataPointFDE(
+                    testlistId=_tstlstId,
+                    testrunId=random.choice([118,122]),
+                    data={"meemah":"123","anotherField":{"aNestedField":1}}
+                ).toDict())
         _i-=1
+        
     
     thisData=DataSetFDD(dataSet)
-    dbOp.mongoDb.start("309930","WJ_Disprin")
+    #dbOp.mongoDb.start("309930","WJ_Disprin")
     for _x in thisData.dataPoints:
         dbOp.mongoDb.insertDataPoint(_x)
-        time.sleep(3)
-    dbOp.mongoDb.pauseInsertion=True
-    print(dbOp.mongoDb.fetchTimeSeriesData(orgId="309930",labNotebookBaseRef="MY_REF_2"))
+        time.sleep(0.25)
+    _yeahNow2=datetime.now()
+    '''
+    #print(dbOp.mongoDb.streamData(timeWindowInSeconds=120,testId=296))
+    print(dbOp.mongoDb.fetchTimeSeriesData(testlistId=298,testrunId=122))
     dbOp.mongoDb.kill()
