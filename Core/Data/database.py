@@ -1,6 +1,7 @@
 
 from ast import literal_eval
 import json
+from bson import utc
 import mysql.connector
 from pymongo import MongoClient
 from datetime import datetime, timedelta
@@ -200,6 +201,10 @@ class TimeSeriesDatabaseMongo:
 
         # Add time filtering to the query if provided
         if startTime and endTime:
+            if not (startTime.tzname()):
+                startTime.replace(tzinfo=utc).isoformat()
+            if not (endTime.tzname()):
+                endTime.replace(tzinfo=utc).isoformat()
             query['timestamp'] = {'$gte': startTime, '$lte': endTime}
 
         # Add nested field filtering if provided
@@ -243,6 +248,8 @@ class TimeSeriesDatabaseMongo:
         # Calculate the corresponding start and end times for the previous experiment
         prevStartTime = self.prevZeroTime + timedelta(seconds=elapsedTime)
         prevEndTime = prevStartTime + timedelta(seconds=timeWindowInSeconds)
+        
+        print([now,elapsedTime,prevStartTime,prevEndTime])
 
         return self.fetchTimeSeriesData(testlistId=testlistId, testrunId=testrunId, startTime=prevStartTime, endTime=prevEndTime, nestedField=nestedField, nestedValue=nestedValue)
 

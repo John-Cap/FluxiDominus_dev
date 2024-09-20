@@ -1,38 +1,16 @@
-My mongo db documents look like this:
 
-{
-  "timestamp": {
-    "$date": "2024-09-19T19:45:02.513Z"
-  },
-  "metadata": {
-    "testlistId": 298,
-    "testrunId": 122,
-    "timestamp": {
-      "$date": "2024-09-19T19:44:52.809Z"
-    }
-  },
-  "data": {
-    "meemah": "123",
-    "anotherField": {
-      "aNestedField": 1
-    }
-  }
-}
-
-This function is supposed to fetch documents according to a query:
+The following method fetches documents from MongoDb:
 
     def fetchTimeSeriesData(self, testlistId, testrunId, startTime: datetime = None, endTime: datetime = None, nestedField: str = None, nestedValue=None):
         # Prepare the query with required filters
         query = {
-            'metadata':{
-                'testlistId': testlistId,
-                'testrunId': testrunId
-            }
+            'metadata.testlistId': testlistId,
+            'metadata.testrunId': testrunId
         }
 
         # Add time filtering to the query if provided
-        if startTime and endTime: 
-            query['metadata']['timestamp'] = {'$gte': startTime, '$lte': endTime}
+        if startTime and endTime:
+            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
 
         # Add nested field filtering if provided
         if (nestedField and nestedValue): #Include 'field':value requirement to search
@@ -47,8 +25,7 @@ This function is supposed to fetch documents according to a query:
             _ret.append(document)
             _num += 1
 
-        # Uncomment the line below to print the number of fetched documents
         print(f'Fetched {_num} documents for experiment {testlistId} from {startTime} to {endTime} with nested field {nestedField} = {nestedValue}!')
         return _ret
     
-It's not fetching anything
+All available filtering works except for when timestamps are provided :/ any ideas?
