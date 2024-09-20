@@ -79,10 +79,10 @@ class DataPoint:
         """Convert the DataPoint to a dictionary format."""
         self.metadata["testlistId"]=self.testlistId
         self.metadata["testrunId"]=self.testrunId
-        self.metadata["timestamp"]=self.timestamp
         return {
             'data': self.data,
-            'metadata': self.metadata
+            'metadata': self.metadata,
+            'timestamp':self.timestamp
         }
 
 class DataPointFDE(DataPoint):

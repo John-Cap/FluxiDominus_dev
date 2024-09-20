@@ -1,6 +1,8 @@
 from datetime import datetime
 import random
 import time
+
+from bson import utc
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
@@ -37,8 +39,12 @@ if __name__ == '__main__':
     '''
     ##################################
     #Mongo
-    '''
-    _yeahNow=datetime.now()
+    _yeahNow=datetime.now(utc)
+    time.sleep(2)
+    dbOp.mongoDb.prevZeroTime=_yeahNow
+    dbOp.mongoDb.currZeroTime=datetime.now(utc)
+    for x in [116,120,118,122]:
+        dbOp.mySqlDb.updateRecordById('testruns',x,'startTime',_yeahNow)
     dataSet=[]
     _i=50
     while _i > 0:
@@ -48,15 +54,19 @@ if __name__ == '__main__':
                 DataPointFDE(
                     testlistId=_tstlstId,
                     testrunId=random.choice([116,120]),
-                    data={"meemah":"123","anotherField":{"aNestedField":1}}
-                ).toDict())    
+                    data={"meemah":"123","anotherField":{"aNestedField":1}},
+                    timestamp=datetime.now(utc)
+                ).toDict()
+            )
         else:
             dataSet.append(
                 DataPointFDE(
                     testlistId=_tstlstId,
                     testrunId=random.choice([118,122]),
-                    data={"meemah":"123","anotherField":{"aNestedField":1}}
-                ).toDict())
+                    data={"meemah":"123","anotherField":{"aNestedField":1}},
+                    timestamp=datetime.now(utc)
+                ).toDict()
+            )
         _i-=1
         
     
@@ -65,8 +75,23 @@ if __name__ == '__main__':
     for _x in thisData.dataPoints:
         dbOp.mongoDb.insertDataPoint(_x)
         time.sleep(0.25)
-    _yeahNow2=datetime.now()
-    '''
-    #print(dbOp.mongoDb.streamData(timeWindowInSeconds=120,testId=296))
-    print(dbOp.mongoDb.fetchTimeSeriesData(testlistId=298,testrunId=122))
+        
+    _yeahNow2=datetime.now(utc)
+
+    for x in [116,120,118,122]:
+        dbOp.mySqlDb.updateRecordById('testruns',x,'endTime',_yeahNow2)
+    dbOp.mongoDb.prevStopTime=_yeahNow2
+    #print(dbOp.mongoDb.streamTimeBracket(timeWindowInSeconds=15,testlistId=298,testrunId=122))
+    print(
+        dbOp.mongoDb.fetchTimeSeriesData(
+            testlistId=298,
+            testrunId=122,
+            #nestedField='data.anotherField.aNestedField',
+            #nestedValue=1,
+            startTime=_yeahNow,
+            endTime=datetime.now(utc)
+            #startTime=_yeahNow,
+            #endTime=_yeahNow2
+        )
+    )
     dbOp.mongoDb.kill()

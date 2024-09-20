@@ -175,9 +175,7 @@ class TimeSeriesDatabaseMongo:
         self.prevStopTime=None
 
     def insertDataPoint(self,dataPoint):
-        dataPoint["timestamp"]=datetime.now()
         self.collection.insert_one(dataPoint)
-        #print(f"Inserted data point: {dataPoint}")
 
     def continuousInsertion(self):
         while True:
@@ -201,8 +199,8 @@ class TimeSeriesDatabaseMongo:
         }
 
         # Add time filtering to the query if provided
-        if startTime and endTime: 
-            query['metadata']['timestamp'] = {'$gte': startTime, '$lte': endTime}
+        if startTime and endTime:
+            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
 
         # Add nested field filtering if provided
         if (nestedField and nestedValue): #Include 'field':value requirement to search
@@ -210,6 +208,7 @@ class TimeSeriesDatabaseMongo:
         elif nestedField:
             query[nestedField] = {'$exists': True} #Fetch if nested field exists regardless of value
         # Fetch and sort the data
+        print(query)
         cursor = self.collection.find(query).sort('timestamp', 1)
         _ret = []
         _num = 0
@@ -221,7 +220,7 @@ class TimeSeriesDatabaseMongo:
         print(f'Fetched {_num} documents for experiment {testlistId} from {startTime} to {endTime} with nested field {nestedField} = {nestedValue}!')
         return _ret
     
-    def streamData(self, timeWindowInSeconds, testId, runNr=0, now=None, nestedField: str = None, nestedValue=None):
+    def streamData(self, testlistId, testrunId, timeWindowInSeconds, now=None, nestedField: str = None, nestedValue=None):
         if now is None:
             now = datetime.now()
 
@@ -232,9 +231,9 @@ class TimeSeriesDatabaseMongo:
             startTime = now
             endTime = now + timedelta(seconds=timeWindowInSeconds) #Must also check if 'endTime' is within time bracket
 
-        return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=startTime, endTime=endTime, nestedField=nestedField, nestedValue=nestedValue)
+        return self.fetchTimeSeriesData(testlistId=testlistId, testrunId=testrunId, startTime=startTime, endTime=endTime, nestedField=nestedField, nestedValue=nestedValue)
 
-    def streamTimeBracket(self, testId, timeWindowInSeconds=0, runNr=0, now=None, nestedField=None, nestedValue=None):
+    def streamTimeBracket(self, testlistId, testrunId, timeWindowInSeconds=0,  now=None, nestedField=None, nestedValue=None):
         if now is None:
             now = datetime.now()
 
@@ -245,7 +244,7 @@ class TimeSeriesDatabaseMongo:
         prevStartTime = self.prevZeroTime + timedelta(seconds=elapsedTime)
         prevEndTime = prevStartTime + timedelta(seconds=timeWindowInSeconds)
 
-        return self.fetchTimeSeriesData(testId=testId, runNr=runNr, startTime=prevStartTime, endTime=prevEndTime, nestedField=nestedField, nestedValue=nestedValue)
+        return self.fetchTimeSeriesData(testlistId=testlistId, testrunId=testrunId, startTime=prevStartTime, endTime=prevEndTime, nestedField=nestedField, nestedValue=nestedValue)
 
     def continuousFetching(self, **kwargs):
         orgId = kwargs.get('orgId')
