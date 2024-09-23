@@ -147,7 +147,38 @@ class MySQLDatabase:
             self.cursor.execute(fetch_query, (value,))
             result = self.cursor.fetchall()
             return result
+        
+    def fetchColumnValById(self, tableName, columnName, id):
+        """
+        Fetches the value from a specified column by row ID.
+
+        """
+        try:
+            if self.connection.is_connected():
+                if tableName not in self.tableVar:
+                    print(f"Error: Table '{tableName}' not found in tableVar.")
+                    return None
+
+                # Ensure column exists in the table schema
+                if columnName not in self.tableVar[tableName]:
+                    print(f"Error: Column '{columnName}' does not exist in table '{tableName}'.")
+                    return None
+
+                # Formulate the query
+                query = f"SELECT {columnName} FROM {tableName} WHERE id = %s"
+                self.cursor.execute(query, (id,))
                 
+                # Fetch the result
+                result = self.cursor.fetchone()
+                if result:
+                    return result[0]
+                else:
+                    print(f"No row found with ID {id}.")
+                    return None
+        except mysql.connector.Error as e:
+            print(f"Error fetching data: {e}")
+            return None
+                        
     def close(self):
         """Close the database connection."""
         if self.cursor:
@@ -535,6 +566,55 @@ class DatabaseOperations:
                     _x[_i]=_y.decode()
             _ret.append(_x)
         return _ret
+    
+    def registerAvailableTele(self,testrunId,device,setting):
+        '''
+        testrunId: id for 'testlist' table \n
+        device: device name (eg. 'sf10vapourtec1') \n
+        setting: key for desired tele (eg. 'pafr') \n
+        displayName: UI-name for telemetry
+        '''
+        _insrt=self.mySqlDb.fetchColumnValById('testruns','availableTele',testrunId)
+        if _insrt == "":
+            _insrt={}
+        else:
+            _insrt=eval(_insrt)
+        _changed=False
+        if not device in _insrt:
+            if isinstance(setting,list):
+                _insrt[device]=setting
+            else:
+                _insrt[device]=[setting]
+            _changed=True
+        else:
+            if isinstance(setting,list):
+                for _x in setting:
+                    if not _x in _insrt[device]:
+                        _insrt[device].append(_x)
+                        if not _changed:
+                            _changed=True
+            else:
+                if not setting in _insrt[device]:
+                    (_insrt[device]).append(setting)
+                    _changed=True
+                else:
+                    return
+        if _changed:
+            self.mySqlDb.updateRecordById('testruns',testrunId,'availableTele',json.dumps(_insrt))
+        else:
+            print('Record not altered')
+    def getAvailableTele(self,testrunId):
+        '''
+        testrunId: id for 'testlist' table
+        '''
+        return eval(self.mySqlDb.fetchColumnValById('testruns','availableTele',testrunId))
+    
+    def getAvailableTeleForDevice(self,testrunId,device):
+        '''
+        testrunId: id for 'testlist' table
+        '''
+        return (eval(self.mySqlDb.fetchColumnValById('testruns','availableTele',testrunId)).get(device,[]))
+    
     '''
     def createStdExp(self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content"):
         ret=(StandardExperiment(self.mySqlDb,tables=["testlist"])).createExperiment(
@@ -564,8 +644,9 @@ class DatabaseOperations:
         self.mongoDb.purgeAndPause() #Good idea? :/
 
     def fetchStreamingBracket(self,labNotebookBaseRef,runNr): #Fetches previous experiment's start time and end time
-        _ret=self.mySqlDb.fetchSpecifiedColumnsByValues(tableName='testruns',columnNames=['startTime','stopTime'],column1Name='labNotebookBaseRef',value1=labNotebookBaseRef,column2Name='runNr',value2=runNr)
+        _ret=self.mySqlDb.fetchSpecifiedColumnsByValues(tableName='testruns',columnNames=['startTime','endTime'],column1Name='labNotebookBaseRef',value1=labNotebookBaseRef,column2Name='runNr',value2=runNr)
         return [_ret[0],_ret[1]]
+    
     def setStreamingBracket(self,labNotebookBaseRef,runNr): #Fetches previous experiment's start time and end time
         _ret=self.fetchStreamingBracket(labNotebookBaseRef,runNr)
         self.mongoDb.prevZeroTime=_ret[0]
@@ -588,6 +669,22 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails={}
         self.zeroTimes={}
 
+    def handleStreamRequestOnceOff(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
+        '''
+        Fetches and publishes requested telemetry for entire run
+        '''       
+        id=req["id"]
+        if not (id in self.streamRequestDetails):
+            self.streamRequestDetails[id]={}
+        self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
+        self.streamRequestDetails[id]["runNr"]=req["runNr"]
+        self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
+        self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
+        self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
+        self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+        self.streamRequestDetails[id]["setting"]=req["setting"]
+        self._returnMqttStreamRequest(id)
+    '''
     def handleStreamRequest(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
         id=req["id"]
         if not (id in self.streamRequestDetails):
@@ -600,7 +697,7 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
         self.streamRequestDetails[id]["setting"]=req["setting"]
         self._returnMqttStreamRequest(id)
-
+    '''
     def _streamingThread(self): #TODO
         pass
 
@@ -611,7 +708,7 @@ class DatabaseStreamer(DatabaseOperations):
     def _returnMqttStreamRequest(self,id):
         if not (id in self.dataQueues):
             self.dataQueues[id]=[]
-        _rec=self.streamFrom(
+        _rec=self._streamFrom(
             labNotebookBaseRef=self.streamRequestDetails[id]["labNotebookBaseRef"],
             runNr=self.streamRequestDetails[id]["runNr"],
             timeWindow=self.streamRequestDetails[id]["timeWindow"],
@@ -639,29 +736,13 @@ class DatabaseStreamer(DatabaseOperations):
         )
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]
-    '''
-    def streamToMqtt(self,id,labNotebookBaseRef,runNr,timeWindow,nestedField=None,nestedValue=None):
-        if not (id in self.dataQueues):
-            self.dataQueues[id]=[]
-        _rec=self.streamFrom(labNotebookBaseRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
-        for _x in _rec:
-            _x=self._packageData(_x["data"],_x["data"]["deviceName"],_x["data"]["setting"])
-        self.dataQueues[id]=self.dataQueues[id] + self.streamFrom(labNotebookBaseRef,runNr,timeWindow=timeWindow,nestedField=nestedField,nestedValue=nestedValue)
-        _data={'dbStreaming':{id:self.dataQueues[id]}}
-        self.mqttService.client.publish(
-            topic="ui/dbStreaming/out",
-            payload=str(_data),
-            qos=2
-        )
-        self.streamRequestDetails[id]={}
-        self.dataQueues[id]=[]
-    '''    
-    def streamFrom(self,labNotebookBaseRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
+
+    def _streamFrom(self,labNotebookBaseRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
         return self._retrieve(labNotebookBaseRef,runNr,timeWindow,nestedField,nestedValue)
                 
     def _retrieve(self,labNotebookBaseRef,runNr,timeWindow,nestedField: str = None,nestedValue=None):
         self.setStreamingBracket(labNotebookBaseRef,runNr)
-        return self.mongoDb.streamTimeBracket(testId=(self.getTestlistId(labNotebookBaseRef)),timeWindowInSeconds=timeWindow,runNr=runNr,nestedField=nestedField,nestedValue=nestedValue)
+        return self.mongoDb.streamTimeBracket(testlistId=(self.getTestlistId(labNotebookBaseRef)),timeWindowInSeconds=timeWindow,testrunId=self.getTestrunId(labNotebookBaseRef,runNr),nestedField=nestedField,nestedValue=nestedValue)
 #################################
 #Database operations example
 '''
@@ -673,6 +754,7 @@ if __name__ == '__main__':
     #Instantiate
     dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
+    
     
     ##################################
     #MySql

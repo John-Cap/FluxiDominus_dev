@@ -1,33 +1,29 @@
-from opcua import Client
+from datetime import datetime
+from Core.Data.database import DatabaseOperations, DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
+from Core.UI.plutter import MqttService
 
-# OPC UA endpoint and node details
-opcua_url = "opc.tcp://146.64.91.174:62552/iCOpcUaServer"
-node_id = "ns=2;s=Local.iCIR.Probe1.SpectraTreated"
 
-def read_opcua_array():
-    # Create a client object to connect to the OPC UA server
-    client = Client(opcua_url)
-    
-    try:
-        # Connect to the OPC UA server
-        client.connect()
-        print(f"Connected to OPC UA server at {opcua_url}")
-        
-        # Get the node using the provided node ID
-        node = client.get_node(node_id)
-        
-        # Read the array value from the node
-        value = node.get_value()
-        
-        print(f"Value from node '{node_id}': {value}")
-        
-    except Exception as e:
-        print(f"Error reading OPC UA node: {e}")
-        
-    finally:
-        # Close the connection to the OPC UA server
-        client.disconnect()
-        print("Disconnected from OPC UA server")
+if __name__ == '__main__':
+    #Mqtt
+    thisThing=MqttService()
+    thisThing.start()
+    thisThing.orgId="50403"
+    #Instantiate
+    mySqlDb=MySQLDatabase(host='146.64.91.174')
+    mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174')
 
-if __name__ == "__main__":
-    read_opcua_array()
+    dbStreaming=DatabaseStreamer(mySqlDb=mySqlDb,mongoDb=mongoDb,mqttService=thisThing)
+    dbStreaming.connect()
+    dbStreaming.mongoDb.currZeroTime=datetime.now()
+    dbStreaming.handleStreamRequestOnceOff(
+        {
+            "id":"123",
+            "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+            "runNr":0,
+            "timeWindow":30,
+            "nestedField":None,
+            "nestedValue":None,
+            "deviceName":"flowsynmaxi2",
+            "setting":"pafr"
+        }
+    )

@@ -1,31 +1,11 @@
-
-The following method fetches documents from MongoDb:
-
-    def fetchTimeSeriesData(self, testlistId, testrunId, startTime: datetime = None, endTime: datetime = None, nestedField: str = None, nestedValue=None):
-        # Prepare the query with required filters
-        query = {
-            'metadata.testlistId': testlistId,
-            'metadata.testrunId': testrunId
-        }
-
-        # Add time filtering to the query if provided
-        if startTime and endTime:
-            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
-
-        # Add nested field filtering if provided
-        if (nestedField and nestedValue): #Include 'field':value requirement to search
-            query[nestedField] = nestedValue
-        elif nestedField:
-            query[nestedField] = {'$exists': True} #Fetch if nested field exists regardless of value
-        # Fetch and sort the data
-        cursor = self.collection.find(query).sort('timestamp', 1)
-        _ret = []
-        _num = 0
-        for document in cursor:
-            _ret.append(document)
-            _num += 1
-
-        print(f'Fetched {_num} documents for experiment {testlistId} from {startTime} to {endTime} with nested field {nestedField} = {nestedValue}!')
-        return _ret
-    
-All available filtering works except for when timestamps are provided :/ any ideas?
+{
+    "123":{
+        "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+        "runNr":0,
+        "timeWindow":30,
+        "nestedField":None,
+        "nestedValue":None,
+        "deviceName":"flowsynmaxi2",
+        "setting":"pafr"
+    }
+}
