@@ -49,7 +49,7 @@ collection_name = "pharma-data"
 metadata={"location": "Room 101", "type": "Demo_Data"}
 
 #Start
-tsDb = TimeSeriesDatabaseMongo(host, port, database_name, collection_name,[])
+tsDb = TimeSeriesDatabaseMongo(host, port, database_name, collection_name)
 #tsDb.start()
 #tsDb.pause()
 
@@ -72,18 +72,19 @@ _reportDelay=Delay(_reportSleep)
 parser=None
 procedure=None
 doIt=True
-'''
+
 ################################
 #Signed in?
 print("WJ - Awaiting sign-in")
 updater.authenticator.mqttService=updater
+updater.authenticator.user.orgId="50403"
+'''
 while not updater.authenticator.signedIn:
     time.sleep(0.2)
 print("Signed in!")
-################################
 '''
-updater.orgId="309930"
-updater.labNotebookRef="EAZY_LEMON_SQUEEZY_1"
+################################
+
 # Main loop!
 while True:
     #Script posted?

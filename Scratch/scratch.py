@@ -9,4 +9,4 @@ dbStrmr=DatabaseStreamer(
     mqttService=mqttService
 )
 
-print(dbStrmr.streamToMqtt(labNotebookRef='WJ_TEST_12',runNr=0,timeWindow=30))
+print(dbStrmr.streamToMqtt(labNotebookBaseRef='WJ_TEST_12',runNr=0,timeWindow=30))

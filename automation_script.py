@@ -1,112 +1,200 @@
-
-#Handles signing in and passwords, etc
-
+# -*- coding: utf-8 -*-  # Use UTF-8 encoding for better compatibility
+import paho.mqtt.client as mqtt
+import time
+import socket
 import json
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import unpad
-import base64
-import binascii
-import uuid
+import threading
 
-from Core.Data.database import MySQLDatabase
-from Core.UI.brokers_and_topics import MqttTopics
+# Constants
+MQTT_TOPIC_CMND = "subflow/hotcoil1/cmnd"
+MQTT_TOPIC_TELE = "subflow/hotcoil1/tele"
+MQTT_BROKER_ADDRESS = "146.64.91.174"  # Replace with your broker address
+MQTT_BROKER_PORT = 1883
+DEVICE_IP_ADDRESS = "192.168.1.213"
+DEVICE_PORT = 81
+DEVICE_RT_POLL_PERIOD = 2
 
-class UserBase:
-    def __init__(self,user="",orgId="",role="") -> None:
-        self.user=user
-        self.orgId=orgId #Employee num
-        self.role=role #Admin/user, etc
-        self.sessionId=uuid.uuid4()
+# Global variables
+device_info = {
+    "deviceName": "hotcoil1",
+    "deviceType": "Hotchip",
+    "inUse": False,
+    "remoteEnabled": False,
+    "ipAddr": DEVICE_IP_ADDRESS,
+    "port": DEVICE_PORT,
+    "tele": {
+        "cmnd": "",
+        "settings": {"temp": 0},
+        "state": {"temp": 0, "state": "OFF"},
+        "timestamp": ""
+    }
+}
 
-class User(UserBase):
-    def __init__(self, user="", orgId="") -> None:
-        super().__init__(user, orgId, "user")
+# Function to handle MQTT messages
+def on_message(client, userdata, message):
+    global device_info, polling_thread
 
-class Administrator(UserBase):
-    def __init__(self, user="", orgId="") -> None:
-        super().__init__(user, orgId, "admin")
-        
-class AuthenticatorBase:
-    def __init__(self,mqttService,user=None) -> None:
-        self.signedIn=False
-        self.lastSignInAt=None
-        self.sessionId=uuid.uuid4()
-        self.user=user
-        self.mqttService=mqttService
-        
-        #Encryption
-        self.key='6d7933326c656e67746873757065727365637265746e6f6f6e656b6e6f777331'
-        self.iv='313662797465736c6f6e676976313233'
-            
-        self.db=MySQLDatabase( #TODO - Hardcoded default
-            host="146.64.91.174",
-            port=3306,
-            user="pharma",
-            password="pharma",
-            database="pharma"
-        )
+    payload = message.payload.decode()
+    data = json.loads(payload)
 
-    def decryptString(self,encData):
-        keyBytes = binascii.unhexlify(self.key)  # Na hex
-        ivBytes = binascii.unhexlify(self.iv)    # Na hex
+    if (data["deviceName"] == device_info["deviceName"]):
 
-        encBytes = base64.b64decode(encData)  # Decode Base64 data
+        if (data["command"] == "SET"):
+            device_info["inUse"] = data["inUse"]
+            device_info["tele"]["cmnd"] = "SET"
+            device_info["tele"]["settings"]["temp"] = data["temperatureSet"]
+            device_info["tele"]["state"]["state"] = "ON"
 
-        cipher = AES.new(keyBytes, AES.MODE_CBC, ivBytes)
+            # Extract the temperature and format it with a decimal point
+            # temperature = data["temperatureSet"]
+            # if temperature % 1 == 0:
+            #     temperature = f"{temperature}.0"
+            # else:
+            #     temperature = f"{temperature:.1f}"
 
-        decryptedData = unpad(cipher.decrypt(encBytes), AES.block_size)
+            # formatted_temperature = f"{temperature:.1f}" if temperature % 1 != 0 else f"{temperature}"
 
-        return decryptedData.decode('utf-8')
+            # device_info["tele"]["settings"]["temp"] = formatted_temperature
 
-    def signIn(self,orgId,password):
-        det=self.loginDetFromDb(orgId)
-        passwordCorrect=det[7]
-        #decrypted=self.decryptString(passwordCorrect)
-        if not self.signedIn and passwordCorrect == password:
-            self.signedIn=True
-            _report=json.dumps({"LoginPageWidget":{"authenticated":True}})
-            self.mqttService.client.publish(MqttTopics.getUiTopic("LoginPageWidget"),_report,qos=2)
-            print('Signed in report: '+str(_report))
-        else:
-            print("Wrong password!")
-                
-    def isAdmin(self):
-        if (self.user is None):
-            return False
-        return (self.user.role == "admin")
-    
-    def assignUser(self,user: User):
-        if (self.user is None):
-            self.user=user
-        else:
-            raise SystemExit(f"Error; Attempt to replace user profile {self.user.user} with {user.user}")
+            temperature = float(data["temperatureSet"])
+            # formatted_temperature = f"{temperature:.1f}" if temperature % 1 != 0 else f"{temperature:.0f}"
+            device_info["tele"]["settings"]["temp"] = temperature
 
-    def loginDetFromDb(self,orgId):
-        if not self.db.connected:
-            self.db.connect()
-        return self.db.fetchRecordByColumnValue("users","orgId",orgId)
 
-class Authenticator(AuthenticatorBase):
-    def __init__(self, user=None) -> None:
-        super().__init__(user)
-        
-if __name__ == "__main__":
-    encData = 'DYWV/12CYFuKsHxa//eJ4g==' #Hello world
-    
-    decrypted_string = Authenticator().decryptString(encData)
-    print(f'Decrypted: {decrypted_string}')
+            try:
+                # Create a socket (SOCK_STREAM means a TCP socket)
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    # Connect to server and send data
+                    data = "out_sp_00 " + str(temperature)
+                    sock.connect((device_info["ipAddr"], int(device_info["port"])))
+                    sock.sendall(bytes(data + "\n", "utf-8"))
 
-    userGuy=User(user="Wessel Bonnet",orgId="309930")
-    imposter=User(user="Mr Imposter")
-    adminGuy=Administrator(user="MR_Bones")
-    
-    auth_1=Authenticator(userGuy)
-    auth_2=Authenticator(user=adminGuy)
-    
-    print(auth_1.isAdmin())
-    print(auth_2.isAdmin())
+                    # Receive data from the server and shut down
+                    received = str(sock.recv(1024), "utf-8")
 
-    print(auth_1.sessionId)
-    print(auth_2.sessionId)
-    
-    print(auth_1.loginDetFromDb(userGuy.orgId))
+                    print("Sent:{}".format(data))
+                    print("Received:{}".format(received))
+                    print("Global: {}".format(device_info))
+            except Exception as e:
+                print("Error:", e)
+
+        elif data["command"] == "REMOTEEN":
+            device_info["inUse"] = data["inUse"]
+            device_info["tele"]["cmnd"] = "REMOTEEN"
+            device_info["remoteEnabled"] = True
+            print("Global: {}".format(device_info))
+
+            try:
+                # Create a socket (SOCK_STREAM means a TCP socket)
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    # Connect to server and send data
+                    data = "out_mode_05 1"
+                    sock.connect((device_info["ipAddr"], int(device_info["port"])))
+                    sock.sendall(bytes(data + "\n", "utf-8"))
+
+                    # Receive data from the server and shut down
+                    received = str(sock.recv(1024), "utf-8")
+
+                    print("Sent:{}".format(data))
+                    print("Received:{}".format(received))
+            except Exception as e:
+                print("Error:", e)
+
+        elif (data["command"] == "REMOTEDIS") :
+            device_info["inUse"] = False
+            device_info["remoteEnabled"] = False
+            device_info["tele"]["cmnd"] = "REMOTEDIS"
+            device_info["tele"]["state"]["state"] = "OFF"
+            print("Global: {}".format(device_info))
+
+            try:
+                # Create a socket (SOCK_STREAM means a TCP socket)
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    # Connect to server and send data
+                    data = "out_sp_00 0.0"
+                    sock.connect((device_info["ipAddr"], int(device_info["port"])))
+                    sock.sendall(bytes(data + "\n", "utf-8"))
+
+                    # Receive data from the server and shut down
+                    received = str(sock.recv(1024), "utf-8")
+
+                    print("Sent:{}".format(data))
+                    print("Received:{}".format(received))
+                    print("Global: {}".format(device_info))
+            except Exception as e:
+                print("Error:", e)
+
+            try:
+                # Create a socket (SOCK_STREAM means a TCP socket)
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    # Connect to server and send data
+                    data = "out_mode_05 0"
+                    sock.connect((device_info["ipAddr"], int(device_info["port"])))
+                    sock.sendall(bytes(data + "\n", "utf-8"))
+
+                    # Receive data from the server and shut down
+                    received = str(sock.recv(1024), "utf-8")
+
+                    print("Sent:{}".format(data))
+                    print("Received:{}".format(received))
+            except Exception as e:
+                print("Error:", e)
+
+# Function to start the periodic task for reading real-time data
+def read_real_time_data():
+    global device_info
+
+    if (device_info["inUse"] == True) :
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((device_info["ipAddr"], int(device_info["port"])))
+                # Send a command to request real-time data (adjust as needed)
+                data = "in_pv"
+                s.sendall(bytes(data + "\n", "utf-8"))
+                response = str(s.recv(1024).decode())
+
+                print("Sent:{}".format(data))
+                print("Received:{}".format(response))
+
+                # Extract the temperature from the response (adjust based on your device's response format)
+                temperature = float(response.split()[0])  # Assuming the response is like "in_pv 25.0"
+
+                # Update device_info with the real-time temperature
+                device_info["tele"]["state"]["temp"] = temperature
+                device_info["tele"]["cmnd"] = "POLL"
+                print("Global: {}".format(device_info))
+
+                # Publish the updated device_info
+                client.publish(MQTT_TOPIC_TELE, json.dumps(device_info))
+        except Exception as e:
+            print("Error reading real-time data:", e)
+
+
+    # # Reschedule the periodic task
+    # timer = threading.Timer(DEVICE_RT_POLL_PERIOD, read_real_time_data)
+    # timer.start()
+
+    # else:
+    #     print("False\r\n")
+
+    threading.Timer(DEVICE_RT_POLL_PERIOD, read_real_time_data).start()
+
+    # if not polling_thread:
+    #     polling_thread = threading.Thread(target=read_real_time_data)
+    #     polling_thread.start()
+
+# Initialize MQTT client
+client = mqtt.Client()
+client.on_message = on_message
+client.connect(MQTT_BROKER_ADDRESS, MQTT_BROKER_PORT)
+client.subscribe(MQTT_TOPIC_CMND)
+print("MQTT Setup complete...")
+
+# polling_thread = threading.Thread(target=read_real_time_data)
+# polling_thread.start()
+threading.Timer(DEVICE_RT_POLL_PERIOD, read_real_time_data).start()
+print("Thread started complete...")
+
+# Start the MQTT loop
+print("MQTT Loop started complete...")
+client.loop_forever()
