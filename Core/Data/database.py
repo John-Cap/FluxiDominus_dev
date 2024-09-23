@@ -29,7 +29,7 @@ class MySQLDatabase:
         self.tableVar={
             "users":['orgId', 'email', 'cellphone', 'lastLogin', 'firstName', 'lastName', 'password', 'admin', 'active', 'assignedProjects'],
             "testlist":['projId', 'userId', 'description', 'labNotebookBaseRef', 'datetimeCreate', 'locked'],
-            "testruns":['testlistId', 'labNotebookBaseRef', 'runNr', 'createTime', 'startTime', 'endTime', 'locked', 'testScript', 'flowScript', 'optimizer', 'optimizerModel', 'recorded', 'notes'],
+            "testruns":['testlistId', 'labNotebookBaseRef', 'runNr', 'createTime', 'startTime', 'endTime', 'locked', 'testScript', 'flowScript', 'optimizer', 'optimizerModel', 'recorded', 'notes', 'availableTele'],
             "projects":['projCode', 'description', 'active'],
             "fumehoods":['fumehoodNr', 'macAddr', 'ipAddr', 'port', 'userId']
         } #hardcoded
