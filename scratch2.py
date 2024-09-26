@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import time
 
@@ -40,33 +40,34 @@ if __name__ == '__main__':
     '''
     ##################################
     #Mongo
-    _yeahNow=datetime.now()
-    dbOp.mongoDb.prevZeroTime=_yeahNow
-    print(datetime.now().tzname())
+    timestamp_1='2024-09-26T04:21:53.485144'
+    timestamp_1=datetime.fromisoformat(timestamp_1)
+    print(timestamp_1)
+    dbOp.setZeroTime(120,timestamp_1)
+    #dbOp.mongoDb.prevZeroTime=timestamp_1
+    '''
     for x in [116,120,118,122]:
-        dbOp.mySqlDb.updateRecordById('testruns',x,'startTime',_yeahNow)
+        dbOp.mySqlDb.updateRecordById('testruns',x,'startTime',timestamp_1)
     dataSet=[]
     _i=50
     while _i > 0:
-        _tstlstId=random.choice([296,298])
-        if _tstlstId==296:
-            dataSet.append(
-                DataPointFDE(
-                    testlistId=_tstlstId,
-                    testrunId=random.choice([116,120]),
-                    data={"meemah":"123","anotherField":{"aNestedField":1}},
-                    timestamp=datetime.now()
-                ).toDict()
-            )
-        else:
-            dataSet.append(
-                DataPointFDE(
-                    testlistId=_tstlstId,
-                    testrunId=random.choice([118,122]),
-                    data={"meemah":"123","anotherField":{"aNestedField":1}},
-                    timestamp=datetime.now()
-                ).toDict()
-            )
+        _tstlstId=random.choice([296])
+
+        dataSet.append(
+            DataPointFDE(
+                testlistId=_tstlstId,
+                testrunId=random.choice([116,120]),
+                data={
+                    'deviceName':random.choice(['flowsynmaxi2','aCoolDevice']),
+                    'settings':{'someSettings':[1,2,3]},
+                    'state':{
+                        'theAbsoluteStateOfThisPlace':'dorty'
+                    }
+                },
+                timestamp=timestamp_1
+            ).toDict()
+        )
+        timestamp_1 = timestamp_1 + timedelta(seconds=random.choice([2,3,7]))
         _i-=1
         
     
@@ -74,30 +75,26 @@ if __name__ == '__main__':
     #dbOp.mongoDb.start("309930","WJ_Disprin")
     for _x in thisData.dataPoints:
         dbOp.mongoDb.insertDataPoint(_x)
-        time.sleep(0.25)
-        
-    _yeahNow2=datetime.now()
-
-    for x in [116,120,118,122]:
-        dbOp.mySqlDb.updateRecordById('testruns',x,'endTime',_yeahNow2)
-    dbOp.mongoDb.prevStopTime=_yeahNow2
-    time.sleep(2)
-    dbOp.mongoDb.currZeroTime=datetime.now()
-    time.sleep(10)
-    print(dbOp.mongoDb.streamData(now=_yeahNow,timeWindowInSeconds=1,testlistId=298,testrunId=122))
-    #print(dbOp.mongoDb.streamTimeBracket(timeWindowInSeconds=5,testlistId=298,testrunId=122))
     '''
-    print(
-        dbOp.mongoDb.fetchTimeSeriesData(
-            testlistId=298,
-            testrunId=122,
-            #nestedField='data.anotherField.aNestedField',
-            #nestedValue=1,
-            startTime=_yeahNow,
-            endTime=datetime.now()
-            #startTime=_yeahNow,
-            #endTime=_yeahNow2
-        )
-    )
+    timestamp_2=timestamp_1 + timedelta(seconds=4000)
+    '''
+    for x in [116,120,118,122]:
+        dbOp.mySqlDb.updateRecordById('testruns',x,'endTime',timestamp_2)
+    '''
+    dbOp.setStopTime(120,timestamp_2)
+    dbOp.mongoDb.currZeroTime=timestamp_2 + timedelta(hours=1000)
+    #print(dbOp.mongoDb.streamData(now=timestamp_2,timeWindowInSeconds=100,testlistId=296,testrunId=120))
+    print(dbOp.mongoDb.streamTimeBracket(now=dbOp.mongoDb.currZeroTime,timeWindowInSeconds=5,testlistId=296,testrunId=120,nestedField='data.deviceName',nestedValue='flowsynmaxi2'))
+    '''
+    {
+        "id":"123",
+        "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+        "runNr":0,
+        "timeWindow":30,
+        "nestedField":None,
+        "nestedValue":None,
+        "deviceName":"flowsynmaxi2",
+        "setting":"pafr"
+    }
     '''
     dbOp.mongoDb.kill()

@@ -231,20 +231,21 @@ class TimeSeriesDatabaseMongo:
         }
 
         # Add time filtering to the query if provided
-        if startTime and endTime:
+        if startTime:
             if not (startTime.tzname()):
                 startTime.replace(tzinfo=utc).isoformat()
+        if endTime:
             if not (endTime.tzname()):
                 endTime.replace(tzinfo=utc).isoformat()
-            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
+        query['timestamp'] = {'$gte': startTime, '$lte': endTime}
 
         # Add nested field filtering if provided
         if (nestedField and nestedValue): #Include 'field':value requirement to search
             query[nestedField] = nestedValue
         elif nestedField:
             query[nestedField] = {'$exists': True} #Fetch if nested field exists regardless of value
+        print(f'Query: ${query}')
         # Fetch and sort the data
-        print(query)
         cursor = self.collection.find(query).sort('timestamp', 1)
         _ret = []
         _num = 0
@@ -279,8 +280,6 @@ class TimeSeriesDatabaseMongo:
         # Calculate the corresponding start and end times for the previous experiment
         prevStartTime = self.prevZeroTime + timedelta(seconds=elapsedTime)
         prevEndTime = prevStartTime + timedelta(seconds=timeWindowInSeconds)
-        
-        print([now,elapsedTime,prevStartTime,prevEndTime])
 
         return self.fetchTimeSeriesData(testlistId=testlistId, testrunId=testrunId, startTime=prevStartTime, endTime=prevEndTime, nestedField=nestedField, nestedValue=nestedValue)
 
@@ -632,11 +631,11 @@ class DatabaseOperations:
     '''
     def setZeroTime(self, id, zeroTime=None):
         if not zeroTime:
-            zeroTime=datetime.now()
+            zeroTime=datetime.now(tz=utc)
         self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='startTime',newValue=zeroTime)
     def setStopTime(self, id, stopTime=None):
         if not stopTime:
-            stopTime=datetime.now()
+            stopTime=datetime.now(tz=utc)
         self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='stopTime',newValue=stopTime)
 
     def connect(self):
