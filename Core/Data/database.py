@@ -636,7 +636,7 @@ class DatabaseOperations:
     def setStopTime(self, id, stopTime=None):
         if not stopTime:
             stopTime=datetime.now(tz=utc)
-        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='stopTime',newValue=stopTime)
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='endTime',newValue=stopTime)
 
     def connect(self):
         self.mySqlDb.connect()

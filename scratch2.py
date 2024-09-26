@@ -44,6 +44,7 @@ if __name__ == '__main__':
     timestamp_1=datetime.fromisoformat(timestamp_1)
     print(timestamp_1)
     dbOp.setZeroTime(120,timestamp_1)
+    print(dbOp.mySqlDb.fetchRecordById(tableName='testruns',id=120))
     #dbOp.mongoDb.prevZeroTime=timestamp_1
     '''
     for x in [116,120,118,122]:
@@ -83,6 +84,7 @@ if __name__ == '__main__':
     '''
     dbOp.setStopTime(120,timestamp_2)
     dbOp.mongoDb.currZeroTime=timestamp_2 + timedelta(hours=1000)
+    dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=120)),runNr=1)
     #print(dbOp.mongoDb.streamData(now=timestamp_2,timeWindowInSeconds=100,testlistId=296,testrunId=120))
     print(dbOp.mongoDb.streamTimeBracket(now=dbOp.mongoDb.currZeroTime,timeWindowInSeconds=5,testlistId=296,testrunId=120,nestedField='data.deviceName',nestedValue='flowsynmaxi2'))
     '''
