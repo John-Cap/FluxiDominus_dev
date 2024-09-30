@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     dbOp.setStopTime(120,timestamp_2)
     
-    dbOp.mongoDb.currZeroTime=timestamp_2 + timedelta(hours=1000)
+    dbOp.mongoDb.currZeroTime=datetime.now(tz=utc)
     dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=120)),runNr=1)
     #print(dbOp.mongoDb.streamData(now=timestamp_2,timeWindowInSeconds=100,testlistId=296,testrunId=120))
     dbOp.mongoDb.streamTimeBracket(now=dbOp.mongoDb.currZeroTime,timeWindowInSeconds=1000,testlistId=296,testrunId=120,nestedField='data.deviceName',nestedValue='flowsynmaxi2')
