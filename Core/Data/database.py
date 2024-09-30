@@ -276,6 +276,8 @@ class TimeSeriesDatabaseMongo:
 
         # Calculate elapsed time since the start of the current experiment
         elapsedTime = (now - self.currZeroTime).total_seconds()
+        
+        print(f'WJ - Elapsed time: {elapsedTime}')
 
         # Calculate the corresponding start and end times for the previous experiment
         prevStartTime = self.prevZeroTime + timedelta(seconds=elapsedTime)
@@ -720,6 +722,7 @@ class DatabaseStreamer(DatabaseOperations):
             runNr=self.streamRequestDetails[id]["runNr"]
         ))[0]
         for _x in _rec:
+            print(_x)
             _ret.append(self._packageData(
                 _x["data"],
                 self.streamRequestDetails[id]["deviceName"],
