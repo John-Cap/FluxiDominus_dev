@@ -5,7 +5,7 @@ import time
 from bson import utc
 import bson
 from Core.Data.data import DataPointFDE, DataSetFDD
-from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
+from Core.Data.database import DatabaseOperations, DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
 
 
@@ -15,7 +15,8 @@ if __name__ == '__main__':
     thisThing.start()
     thisThing.orgId="50403"
     #Instantiate
-    dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
+    #dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
+    dbOp=DatabaseStreamer(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
     dbOp.connect()
     
     ##################################
@@ -80,20 +81,25 @@ if __name__ == '__main__':
 
     dbOp.setStopTime(120,timestamp_2)
     
-    dbOp.mongoDb.currZeroTime=datetime.now(tz=utc)
+    dbOp.mongoDb.currZeroTime=datetime.now()
     dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=120)),runNr=1)
     #print(dbOp.mongoDb.streamData(now=timestamp_2,timeWindowInSeconds=100,testlistId=296,testrunId=120))
-    dbOp.mongoDb.streamTimeBracket(now=dbOp.mongoDb.currZeroTime,timeWindowInSeconds=1000,testlistId=296,testrunId=120,nestedField='data.deviceName',nestedValue='flowsynmaxi2')
+    #dbOp.mongoDb.streamTimeBracket(now=dbOp.mongoDb.currZeroTime,timeWindowInSeconds=1000,testlistId=296,testrunId=120,nestedField='data.deviceName',nestedValue='flowsynmaxi2')
+    print(
+        dbOp.handleStreamRequestOnceOff(
+            {
+                "id":"120A3",
+                "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+                "runNr":1,
+                "timeWindow":55,
+                "nestedField":"data.deviceName",
+                "nestedValue":"aCoolDevice",
+                "deviceName":"flowsynmaxi2",
+                "setting":"pafr"
+            }        
+        )
+    )
     '''
-    {
-        "id":"123",
-        "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
-        "runNr":0,
-        "timeWindow":30,
-        "nestedField":None,
-        "nestedValue":None,
-        "deviceName":"flowsynmaxi2",
-        "setting":"pafr"
-    }
+    
     '''
     dbOp.mongoDb.kill()
