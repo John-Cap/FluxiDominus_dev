@@ -1,0 +1,143 @@
+###################################################################################################################################
+HOTCOILs & HOTCHIPs:
+--------------------
+Commands:	
+REMOTEEN		["settings": {"command":"REMOTEEN"}]
+SET		["settings": {"command":"SET","temp":0.0}]
+REMOTEDIS		["settings": {"command":"REMOTEDIS"}]
+
+subflow/hotcoil1/cmnd
+    Enable:
+	{"deviceName":"hotcoil1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.213", "port": 81}}, "settings": {"command":"REMOTEEN"}}
+    Set value:
+	{"deviceName":"hotcoil1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.213", "port": 81}}, "settings": {"command":"SET","temp":0.1}}
+
+subflow/hotcoil1/tele
+	{"deviceName": "hotcoil1", "deviceType": "Hotchip", "inUse": true, "remoteEnabled": false, "ipAddr": "192.168.1.213", "port": 81, "tele": {"cmnd": "POLL", "settings": {"temp": 0.1}, "state": {"temp": 17.83, "state": "ON"}, "timestamp": ""}}
+
+###################################################################################################################################
+SF10Vapourtec:
+--------------
+Commands:
+REMOTEEN	["settings": {"command":"REMOTEEN"}]
+START		["settings": {"command":"START"}]
+STOP		["settings": {"command":"STOP"}]
+VALVE 		["settings": {"command":"VALVE","valve":"A"}]
+SET		["settings": {"command":"SET","mode":"FLOW", "flowrate":0.1}]
+SET		["settings": {"command":"SET","mode":"REG", "pressure":0.2}]
+SET		["settings": {"command":"SET","mode":"DOSE", "dose":0.3}]
+SET		["settings": {"command":"SET","mode":"GAS", "gasflowrate":0.4}]
+SET		["settings": {"command":"SET","mode":"RAMP", "rampStartSpeed":0.5,"rampStopSpeed":0.6,"rampTime":0.7]
+REMOTEDIS	["settings": {"command":"REMOTEDIS"}]
+
+subflow/sf10Vapourtec1/cmnd
+	{"deviceName":"sf10Vapourtec1","inUse":true, "connDetails":{"serialCom" : {"port": "/dev/ttyUSB0", "baud": 9600, "dataLength": 8, "parity": "N", "stopbits": 1}},
+		"settings": {"command":"SET","mode":"FLOW", "flowrate":0.1}}
+
+subflow/sf10Vapourtec1/tele
+
+{"deviceName": "sf10Vapourtec1", "deviceType": "Pump", "inUse": true, "remoteEnabled": true, "connDetails":{"serialCom": {"port": "/dev/ttyUSB0", "baud": 9600, "dataLength": 8, "parity": "N", "stopbits": 1}}, "tele": {"cmnd": "SETFLOW 1\r\n", "cmndResp": "b'O'b'K'b'\\r'b'\\n'", "settings": {"mode": "FLOW", "flowrate": 1, "pressure": 0, "dose": 0, "gasflowrate": 0, "rampStartRate": 0, "rampStopRate": 0, "rampTime": 0}, "timestamp": ""}}
+
+###################################################################################################################################
+ReactIR702L1:
+------------
+Commands:
+REMOTEEN		["settings": {"command":"REMOTEEN"}]
+SET		["settings": {"command":"SET",????? Future ????]
+REMOTEDIS		["settings": {"command":"REMOTEDIS"}]
+
+subflow/reactIR702L1/cmnd
+	{"deviceName":"reactIR702L1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.50", "port": 62552}},"settings": {"command":"REMOTEEN"}}
+
+subflow/reactIR702L1/tele
+
+{"deviceName": "reactIR702L1", "deviceType": "IR", "inUse": true, "remoteEnabled": true, "ipAddr": "192.168.1.50", "port": 62552, "tele": {"cmnd": "POLL", "settings": {}, "state": {"data": "[...array of floats]"}, "timestamp": ""}}
+
+###################################################################################################################################
+FLOWSYNMAXI2
+------------
+Commands:
+REMOTEEN	["settings": {"command":"REMOTEEN"}]
+SET		["settings":{"command":"SET", "subDevice":"PumpAFlowRate", "value": 0.5}] [milliliters]
+SET		["settings":{"command":"SET", "subDevice":"PumpBFlowRate", "value": 0.5}] [milliliters
+SET		["settings":{"command":"SET", "subDevice":"BinaryPumpCFlowRate", "value": 0.5}] [milliliters
+SET		["settings":{"command":"SET", "subDevice":"BinaryPumpDFlowRate", "value": 0.5}] [milliliters
+
+SET		["settings":{"command":"SET", "subDevice":"Reactor1Temp", "value": 0.5}]
+SET		["settings":{"command":"SET", "subDevice":"Reactor2Temp", "value": 0.5}]
+SET		["settings":{"command":"SET", "subDevice":"Reactor3Temp", "value": 0.5}]
+SET		["settings":{"command":"SET", "subDevice":"Reactor4Temp", "value": 0.5}]
+
+SET		["settings":{"command":"SET", "subDevice":"FlowSynValveA", "value": true}]
+SET		["settings":{"command":"SET", "subDevice":"FlowSynValveB", "value": true}]
+SET		["settings":{"command":"SET", "subDevice":"FlowBinaryValveC", "value": true}]
+SET		["settings":{"command":"SET", "subDevice":"FlowBinaryValveD", "value": true}]
+
+SET		["settings":{"command":"SET", "subDevice":"FlowCWValve", "value": true}]
+
+SET		["settings":{"command":"SET", "subDevice":"FlowSynInjValveA", "value": true}]
+SET		["settings":{"command":"SET", "subDevice":"FlowSynInjValveB", "value": true}]
+SET		["settings":{"command":"SET", "subDevice":"FlowBinaryInjValveC", "value": true}]
+SET		["settings":{"command":"SET", "subDevice":"FlowBinaryInjValveD", "value": true}]
+
+SET		["settings":{"command":"SET", "subDevice":"Heater", "value": true}]
+
+REMOTEDIS	["settings": {"command":"REMOTEDIS"}]
+
+subflow/flowsynmaxi2/cmnd
+	{"deviceName":"flowsynmaxi2","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.202", "port": 80}}, "settings":{"command":"SET", "subDevice":"FlowCWValve", "value": true}}
+
+subflow/flowsynmaxi2/tele
+	{
+    "deviceName": "flowsynmaxi2",
+    "deviceType": "PumpValveHeater",
+    "settings": {
+        "flowRatePumpA": 0,
+        "flowRatePumpB": 0,
+        "flowRatePumpC": 0,
+        "flowRatePumpD": 0,
+        "tempReactor1": 0,
+        "tempReactor2": 0,
+        "tempReactor3": 0,
+        "tempReactor4": 0,
+        "valveOpenA": false,
+        "valveOpenB": false,
+        "valveOpenC": false,
+        "valveOpenD": false,
+        "valveOpenCW": false,
+        "injValveOpenA": false,
+        "injValveOpenB": false,
+        "injValveOpenC": false,
+        "injValveOpenD": false,
+        "heaterON": false
+    },
+    "state": {
+        "pressSystem": 2.8,
+        "pressFlowSynA": 1.95,
+        "pressFlowSynB": 6.49,
+        "pressBinaryC": 0,
+        "pressBinaryD": 0,
+        "tempReactor1": 23.01,
+        "tempReactor2": 23.55,
+        "tempReactor3": 999,
+        "tempReactor4": 999,
+        "valveOpenA": false,
+        "valveOpenB": false,
+        "valveOpenC": false,
+        "valveOpenD": false,
+        "valveOpenCW": false,
+        "valveInjOpenA": false,
+        "valveInjOpenB": false,
+        "valveInjOpenC": false,
+        "valveInjOpenD": false,
+        "flowRatePumpA": 0,
+        "flowRatePumpB": 0,
+        "flowRatePumpC": 0,
+        "flowRatePumpD": 0,
+        "chillerDetected": false
+    },
+    "timestamp": "1724266732995"
+
+
+
+}
