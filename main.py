@@ -49,7 +49,7 @@ collection_name = "pharma-data"
 metadata={"location": "Room 101", "type": "Demo_Data"}
 
 #Start
-tsDb = TimeSeriesDatabaseMongo(host, port, database_name, collection_name)
+#tsDb = TimeSeriesDatabaseMongo(host, port, database_name, collection_name)
 #tsDb.start()
 #tsDb.pause()
 
@@ -91,7 +91,7 @@ while True:
     
     print("WJ - Waiting for script")
     updater.dataQueue=[]
-    tsDb.purgeAndPause()
+    #tsDb.purgeAndPause()
     while updater.script=="":
         time.sleep(0.5)
 
@@ -112,7 +112,7 @@ while True:
 
     updater.script=""
     updater.logData=True
-    tsDb.start('309930','TEST_REF_GG46')
+    #tsDb.start('309930','TEST_REF_GG46')
     
     updater.zeroTime=datetime.now() #Start experiment time
     
@@ -121,7 +121,7 @@ while True:
             #print(updater.dataQueue)
             _reportDelay=Delay(_reportSleep)
             if len(updater.dataQueue)!=0:
-                tsDb.dataPoints=tsDb.dataPoints+updater.dataQueue
+                #tsDb.dataPoints=tsDb.dataPoints+updater.dataQueue
                 updater.dataQueue=[]
             #logger.logData(updater.getTemp(),updater.getIR())
         if len(procedure.currConfig.commands) == 0:

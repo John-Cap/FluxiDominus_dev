@@ -1,11 +1,13 @@
 {
-    "123":{
-        "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
-        "runNr":0,
-        "timeWindow":30,
-        "nestedField":None,
-        "nestedValue":None,
-        "deviceName":"flowsynmaxi2",
-        "setting":"pafr"
+    "instructions":{
+        "function":"handleStreamRequest",
+        "params":{
+            "id":"120A3",
+            "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+            "runNr":1,
+            "timeWindow":6,
+            "deviceName":"flowsynmaxi2",
+            "setting":"pressA"
+        }
     }
 }

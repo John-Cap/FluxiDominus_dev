@@ -15,7 +15,7 @@ if __name__ == '__main__':
     dbStreaming=DatabaseStreamer(mySqlDb=mySqlDb,mongoDb=mongoDb,mqttService=thisThing)
     dbStreaming.connect()
     dbStreaming.mongoDb.currZeroTime=datetime.now()
-    dbStreaming.handleStreamRequestOnceOff(
+    dbStreaming.handleStreamRequest(
         {
             "id":"123",
             "labNotebookBaseRef":"50403_jdtoit_DSIP012A",

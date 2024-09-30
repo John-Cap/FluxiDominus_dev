@@ -1,12 +1,9 @@
 import ast
-import json
+from datetime import datetime
 import threading
 import paho.mqtt.client as mqtt
-from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
-from Core.Data.data import DataPointFDE
-from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
-from Core.Data.experiment import StandardExperiment
+from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.brokers_and_topics import MqttTopics
 from Core.authentication.authenticator import Authenticator
 
@@ -117,11 +114,12 @@ class MqttService:
         elif "script" in _msgContents:
             _msgContents=_msgContents["script"]
             print('############')
+            print('############')
             print("WJ - Script message contents: "+str(_msgContents))
             print('############')
             self.script=self.automation.parsePlutterIn(_msgContents)
-            print('############')
             print("WJ - Parsed script: "+str(self.script))
+            print('############')
             print('############')
         elif "FormPanelWidget" in _msgContents:
             _msgContents=_msgContents["FormPanelWidget"]
@@ -138,21 +136,7 @@ class MqttService:
             _msgContents=_msgContents["instructions"]
             _func=_msgContents["function"]
             _params=_msgContents["params"]
-            '''
-            if (_func=="createStdExp"):
-                _func=self.dbInstructions[_func]
 
-                (self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content")
-
-                nameTest=_params["nameTest"] #Short description
-                description=_params["description"] #Long description
-                testScript=self.script #Generated in UI, check if received and parsed!!
-                lockScript=0
-                flowScript="TODO" #Generated in UI
-                labNotebookBaseRef=_params["labNotebookBaseRef"] #Needs to be built up automatically
-                self.databaseOperations.createStdExp(nameTest=nameTest,description=description,testScript=testScript,flowScript=flowScript,labNotebookBaseRef=labNotebookBaseRef)
-                #Then what?
-            '''
             if (_func=="getAllExpWidgetInfo"):
                 self.client.publish(
                     "ui/dbCmnd/ret",
@@ -167,19 +151,20 @@ class MqttService:
                     flowScript=_params["flowScript"],
                     notes=_params["notes"]
                 )
-                '''
-                self.client.publish( #Create a return for 
+            elif (_func=="handleStreamRequest"):
+                if not self.databaseOperations.mongoDb.currZeroTime:
+                    self.databaseOperations.mongoDb.currZeroTime=datetime.now()
+                self.client.publish(
                     "ui/dbCmnd/ret",
-                    self.databaseOperations.getAllExpWidgetInfo(
-                        orgId=self.authenticator.user.orgId
+                    self.databaseOperations.handleStreamRequest(
+                        _params
                     )
                 )
-                '''
                             
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
-        self.databaseOperations=DatabaseOperations(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
+        self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
         self.databaseOperations.connect()
         thread = threading.Thread(target=self._run)
         thread.start()

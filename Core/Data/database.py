@@ -670,9 +670,9 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails={}
         self.zeroTimes={}
 
-    def handleStreamRequestOnceOff(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
+    def handleStreamRequest(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
         '''
-        Fetches and publishes requested telemetry for entire run
+        Fetches and publishes requested telemetry for time period
         '''       
         id=req["id"]
         if not (id in self.streamRequestDetails):
@@ -681,24 +681,14 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]["runNr"]=req["runNr"]
         self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
         self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+        self.streamRequestDetails[id]["setting"]=req["setting"]
+        
+        #Hardcoded
         self.streamRequestDetails[id]["nestedField"]="data.deviceName"
         self.streamRequestDetails[id]["nestedValue"]=self.streamRequestDetails[id]["deviceName"]
-        self.streamRequestDetails[id]["setting"]=req["setting"]
-        self._returnMqttStreamRequest(id)
-    '''
-    def handleStreamRequest(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
-        id=req["id"]
-        if not (id in self.streamRequestDetails):
-            self.streamRequestDetails[id]={}
-        self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
-        self.streamRequestDetails[id]["runNr"]=req["runNr"]
-        self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
-        self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
-        self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
-        self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
-        self.streamRequestDetails[id]["setting"]=req["setting"]
-        self._returnMqttStreamRequest(id)
-    '''
+        
+        return self._returnMqttStreamRequest(id)
+
     def _streamingThread(self): #TODO
         pass
 
@@ -729,14 +719,10 @@ class DatabaseStreamer(DatabaseOperations):
                 _x["timestamp"],
                 _zT
             ))
-        _data={"dbStreaming":{id:_ret}}
-        self.mqttService.client.publish(
-            topic="ui/dbStreaming/out",
-            payload=json.dumps(_data),
-            qos=2
-        )
+        _data={"handleStreamRequest":{id:_ret}}
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]
+        return json.dumps(_data)
 
     def _streamFrom(self,labNotebookBaseRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
         return self._retrieve(labNotebookBaseRef,runNr,timeWindow,nestedField,nestedValue)
