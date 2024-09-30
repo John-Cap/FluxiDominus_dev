@@ -45,6 +45,7 @@ if __name__ == '__main__':
     timestamp_1=datetime.fromisoformat(timestamp_1)
     dbOp.setZeroTime(120,timestamp_1)
     
+    '''
     dataSet=[]
     _i=60
     while _i > 0:
@@ -80,21 +81,25 @@ if __name__ == '__main__':
     )
     for _x in thisData.dataPoints:
         dbOp.mongoDb.insertDataPoint(_x)
+        
+    '''
+        
     dbOp.setStopTime(120,timestamp_1)
     
     dbOp.mongoDb.currZeroTime=datetime.now()
-    dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=120)),runNr=1)
+    #dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=120)),runNr=1)
 
     time.sleep(5)
+    '''
+    Message from Flutter
+    '''
     print(
         dbOp.handleStreamRequestOnceOff(
             {
                 "id":"120A3",
                 "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
                 "runNr":1,
-                "timeWindow":120,
-                "nestedField":"data.deviceName",
-                "nestedValue":"flowsynmaxi2",
+                "timeWindow":45,
                 "deviceName":"flowsynmaxi2",
                 "setting":"pressA"
             }        

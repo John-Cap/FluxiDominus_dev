@@ -680,9 +680,9 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
         self.streamRequestDetails[id]["runNr"]=req["runNr"]
         self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
-        self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
-        self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
         self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+        self.streamRequestDetails[id]["nestedField"]="data.deviceName"
+        self.streamRequestDetails[id]["nestedValue"]=self.streamRequestDetails[id]["deviceName"]
         self.streamRequestDetails[id]["setting"]=req["setting"]
         self._returnMqttStreamRequest(id)
     '''
@@ -722,7 +722,6 @@ class DatabaseStreamer(DatabaseOperations):
             runNr=self.streamRequestDetails[id]["runNr"]
         ))[0]
         for _x in _rec:
-            print(_x)
             _ret.append(self._packageData(
                 _x["data"],
                 self.streamRequestDetails[id]["deviceName"],
