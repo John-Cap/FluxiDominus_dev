@@ -31,8 +31,19 @@ SET		["settings": {"command":"SET","mode":"RAMP", "rampStartSpeed":0.5,"rampStop
 REMOTEDIS	["settings": {"command":"REMOTEDIS"}]
 
 subflow/sf10Vapourtec1/cmnd
-	{"deviceName":"sf10Vapourtec1","inUse":true, "connDetails":{"serialCom" : {"port": "/dev/ttyUSB0", "baud": 9600, "dataLength": 8, "parity": "N", "stopbits": 1}},
-		"settings": {"command":"SET","mode":"FLOW", "flowrate":0.1}}
+	{
+        "deviceName":"sf10Vapourtec1",
+        "inUse":true,"connDetails":{
+            "serialCom":{
+                "port":"/dev/ttyUSB0",
+                "baud":9600,
+                "dataLength":8,
+                "parity":"N",
+                "stopbits":1
+            }
+        },
+		"settings": {"command":"SET","mode":"FLOW", "flowrate":0.1}
+    }
 
 subflow/sf10Vapourtec1/tele
 
@@ -53,7 +64,7 @@ subflow/reactIR702L1/tele
 
 {"deviceName": "reactIR702L1", "deviceType": "IR", "inUse": true, "remoteEnabled": true, "ipAddr": "192.168.1.50", "port": 62552, "tele": {"cmnd": "POLL", "settings": {}, "state": {"data": "[...array of floats]"}, "timestamp": ""}}
 
-###################################################################################################################################
+############### ####################################################################################################################
 FLOWSYNMAXI2
 ------------
 Commands:
@@ -85,8 +96,21 @@ SET		["settings":{"command":"SET", "subDevice":"Heater", "value": true}]
 REMOTEDIS	["settings": {"command":"REMOTEDIS"}]
 
 subflow/flowsynmaxi2/cmnd
-	{"deviceName":"flowsynmaxi2","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.202", "port": 80}}, "settings":{"command":"SET", "subDevice":"FlowCWValve", "value": true}}
-
+{
+    "deviceName": "flowsynmaxi2",
+    "inUse": true,
+    "connDetails": {
+        "ipCom": {
+        "addr": "192.168.1.202",
+        "port": 80
+        }
+    },
+    "settings": {
+        "command": "SET",
+        "subDevice": "PumpAFlowRate",
+        "value": 0.5
+    }
+}
 subflow/flowsynmaxi2/tele
 	{
     "deviceName": "flowsynmaxi2",

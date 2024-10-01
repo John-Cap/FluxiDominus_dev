@@ -9,7 +9,8 @@ from Core.Data.database import TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater
-updater = MqttService(broker_address="localhost")
+#updater = MqttService(broker_address="localhost")
+updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
 

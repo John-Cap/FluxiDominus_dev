@@ -11,3 +11,13 @@
         }
     }
 }
+
+            "flowsynmaxi2": {
+                "pafr":self.commandTemplates["flowsynmaxi2_pafr"],
+                "pbfr":self.commandTemplates["flowsynmaxi2_pbfr"],
+                "sva":self.commandTemplates["flowsynmaxi2_sva"],
+                "svb":self.commandTemplates["flowsynmaxi2_svb"],
+                "svcw":self.commandTemplates["flowsynmaxi2_svcw"],
+                "svia":self.commandTemplates["flowsynmaxi2_svia"],
+                "svib":self.commandTemplates["flowsynmaxi2_svib"]
+            },
