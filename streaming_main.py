@@ -1,11 +1,8 @@
-from datetime import datetime, timedelta
-import random
+from datetime import datetime
 import time
 
 from bson import utc
-import bson
-from Core.Data.data import DataPointFDE, DataSetFDD
-from Core.Data.database import DatabaseOperations, DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
+from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
 
 
@@ -24,8 +21,21 @@ if __name__ == '__main__':
 
     _now=time.time()
     
-    '''
-    Message from Flutter
+    ''' "ui/dbCmnd/in"
+    Message from Flutter:
+    {
+        "instructions":{
+            "function":"handleStreamRequest",
+            "params":{
+                "id":"120A3",
+                "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+                "runNr":1,
+                "timeWindow":6,
+                "deviceName":"flowsynmaxi2",
+                "setting":"pressA"
+            }
+        }
+    }
     '''
     while (time.time() - _now)<60:
         dbOp.handleStreamRequest(

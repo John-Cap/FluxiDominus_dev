@@ -42,31 +42,38 @@ if __name__ == '__main__':
     #Mongo
     timestamp_1='2024-09-26T04:21:53.485144'
     timestamp_1=datetime.fromisoformat(timestamp_1)
-    dbOp.setZeroTime(120,timestamp_1)
+    #dbOp.setZeroTime(120,timestamp_1)
     #dbOp.mongoDb.prevZeroTime=timestamp_1
     '''
     for x in [116,120,118,122]:
         dbOp.mySqlDb.updateRecordById('testruns',x,'startTime',timestamp_1)
+    '''
     dataSet=[]
-    _i=50
+
+    _i=300
     while _i > 0:
         _tstlstId=random.choice([296])
-
         dataSet.append(
             DataPointFDE(
                 testlistId=_tstlstId,
-                testrunId=random.choice([116,120]),
+                testrunId=random.choice([
+                    120
+                ]),
                 data={
-                    'deviceName':random.choice(['flowsynmaxi2','aCoolDevice']),
-                    'settings':{'someSettings':[1,2,3]},
+                    'deviceName':random.choice(['flowsynmaxi2']),
+                    'settings':{'someSettings':[
+                        1,
+                        2,
+                        3
+                    ]},
                     'state':{
-                        'theAbsoluteStateOfThisPlace':'dorty'
+                        'pressFlowSynA':random.choice([1,2,3])
                     }
                 },
                 timestamp=timestamp_1
             ).toDict()
         )
-        timestamp_1 = timestamp_1 + timedelta(seconds=random.choice([2,3,7]))
+        timestamp_1 = timestamp_1 + timedelta(seconds=random.choice([1]))
         _i-=1
         
     
@@ -84,7 +91,7 @@ if __name__ == '__main__':
     dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=120)),runNr=1)
     #print(dbOp.mongoDb.streamData(now=timestamp_2,timeWindowInSeconds=100,testlistId=296,testrunId=120))
     dbOp.mongoDb.streamTimeBracket(now=dbOp.mongoDb.currZeroTime,timeWindowInSeconds=1000,testlistId=296,testrunId=120,nestedField='data.deviceName',nestedValue='flowsynmaxi2')
-    '''
+
     {
         "id":"123",
         "labNotebookBaseRef":"50403_jdtoit_DSIP012A",

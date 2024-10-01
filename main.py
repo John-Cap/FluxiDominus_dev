@@ -5,7 +5,6 @@ import time
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
-from Core.Data.database import TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater
@@ -100,11 +99,10 @@ while True:
 
         parser = ScriptParser(updater.script, client)
         procedure = parser.createProcedure(fdpDecoder)
-                
+
         print('#######')
         print('WJ - Parsed script is: '+updater.script)
         print('#######')
-
 
     except:
         print("Script parsing error!")
@@ -116,6 +114,7 @@ while True:
     #tsDb.start('309930','TEST_REF_GG46')
     
     updater.zeroTime=datetime.now() #Start experiment time
+    updater.databaseOperations.mongoDb.currZeroTime=datetime.now() #Start experiment time
     
     while doIt:
         if _reportDelay.elapsed():
