@@ -96,7 +96,7 @@ class DataSet:
         self.dataPoints = dataPoints
 
     def addDataPoint(self, dataPoint):
-        if isinstance(dataPoint, DataPoint):
+        if isinstance(dataPoint, DataPoint) or isinstance(dataPoint, DataPointFDE):
             self.dataPoints.append(dataPoint)
         else:
             raise TypeError("Expected a DataPoint instance")

@@ -65,7 +65,6 @@ decoder_kwargs = {
 fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
 automation = FlowChemAutomation()
 
-doIt = True
 _reportSleep=5
 _reportDelay=Delay(_reportSleep)
 
@@ -90,8 +89,9 @@ while True:
     #Script posted?
     
     print("WJ - Waiting for script")
-    updater.dataQueue=[]
-    #tsDb.purgeAndPause()
+    updater.dataQueue.dataPoints=[] #Pasop!
+    updater.abort=False
+    
     while updater.script=="":
         time.sleep(0.5)
 
@@ -106,34 +106,58 @@ while True:
 
     except:
         print("Script parsing error!")
-        doIt=False
-        #exit()
-
+        updater.script=""
+        updater.abort=True
+        
     updater.script=""
-    updater.logData=True
-    #tsDb.start('309930','TEST_REF_GG46')
+    updater.logData=True #TODO - moet stel via UI
+    
+    #Wait for go
+    print('WJ - Waiting for go command')
+    while (not updater.runTest) and (not updater.abort):
+        time.sleep(0.1)
+
+    if updater.abort:
+        print('WJ - Testrun aborted!')
+        if updater.runTest:
+            updater.runTest=False
+            updater.abort=False
+        continue
     
     updater.zeroTime=datetime.now() #Start experiment time
-    updater.databaseOperations.mongoDb.currZeroTime=datetime.now() #Start experiment time
+    updater.databaseOperations.mongoDb.currZeroTime=updater.zeroTime #Start experiment time
+    updater.databaseOperations.setZeroTime(updater.currTestrunId)
     
-    while doIt:
-        if _reportDelay.elapsed():
-            #print(updater.dataQueue)
-            _reportDelay=Delay(_reportSleep)
-            if len(updater.dataQueue)!=0:
-                #tsDb.dataPoints=tsDb.dataPoints+updater.dataQueue
-                updater.dataQueue=[]
-            #logger.logData(updater.getTemp(),updater.getIR())
+    print('WJ - Here we go!')
+    
+    while (not updater.abort):
+
         if len(procedure.currConfig.commands) == 0:
             procedure.next()
             if procedure.currConfig is None:
                 print("Procedure complete")
-                doIt = False
+                updater.abort = True
             else:
                 print("Next procedure!")
         else:
             procedure.currConfig.sendMQTT(waitForDelivery=True)
-        time.sleep(0.2)
-    doIt=True
-thread.join()
-exit()
+
+        if _reportDelay.elapsed() and updater.logData:
+            if len(updater.dataQueue.dataPoints) != 0:
+                for _x in updater.dataQueue.toDict(): #TODO - sit liewers almal op 'n slag in
+                    updater.databaseOperations.mongoDb.insertDataPoint(_x)
+                    
+                updater.dataQueue=[]
+            _reportDelay=Delay(_reportSleep)
+                        
+        #TODO - might be better in own thread            
+        if _reportDelay.elapsed() or updater.abort:
+            if len(updater.dataQueue.dataPoints) != 0:
+                for _x in updater.dataQueue.toDict(): #TODO - sit liewers almal op 'n slag in
+                    updater.databaseOperations.mongoDb.insertDataPoint(_x)
+                    
+                updater.dataQueue.dataPoints=[]
+            _reportDelay=Delay(_reportSleep)
+            
+        time.sleep(0.05)
+    updater.databaseOperations.setStopTime(updater.currTestrunId)
