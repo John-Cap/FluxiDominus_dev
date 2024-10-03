@@ -8,8 +8,8 @@ from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.UI.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater
-updater = MqttService(broker_address="localhost")
-#updater = MqttService(broker_address="146.64.91.174")
+#updater = MqttService(broker_address="localhost")
+updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
 
@@ -70,7 +70,6 @@ _reportDelay=Delay(_reportSleep)
 
 parser=None
 procedure=None
-doIt=True
 
 ################################
 #Signed in?
@@ -83,7 +82,8 @@ while not updater.authenticator.signedIn:
 print("Signed in!")
 '''
 ################################
-
+#Database flags
+noTestDetails=False
 # Main loop!
 while True:
     #Script posted?
@@ -91,9 +91,11 @@ while True:
     print("WJ - Waiting for script")
     updater.dataQueue.dataPoints=[] #Pasop!
     updater.abort=False
+    updater.runTest=False
+    updater.registeredTeleDevices={}
     
     while updater.script=="":
-        time.sleep(0.5)
+        time.sleep(0.1)
 
     try:
 
@@ -107,10 +109,9 @@ while True:
     except:
         print("Script parsing error!")
         updater.script=""
-        updater.abort=True
+        continue
         
     updater.script=""
-    updater.logData=True #TODO - moet stel via UI
     
     #Wait for go
     print('WJ - Waiting for go command')
@@ -124,10 +125,15 @@ while True:
             updater.abort=False
         continue
     
-    updater.zeroTime=datetime.now() #Start experiment time
-    updater.databaseOperations.mongoDb.currZeroTime=updater.zeroTime #Start experiment time
-    updater.databaseOperations.setZeroTime(updater.currTestrunId)
-    
+    if updater.currTestlistId and updater.currTestrunId:
+        noTestDetails=False
+        updater.zeroTime=datetime.now() #Start experiment time
+        updater.databaseOperations.mongoDb.currZeroTime=updater.zeroTime #Start experiment time
+        updater.databaseOperations.setZeroTime(updater.currTestrunId)
+        print(f"WJ - Set zerotime for testrun entry {updater.currTestrunId}!")
+    else:
+        noTestDetails=True
+        
     print('WJ - Here we go!')
     
     while (not updater.abort):
@@ -141,23 +147,20 @@ while True:
                 print("Next procedure!")
         else:
             procedure.currConfig.sendMQTT(waitForDelivery=True)
-
-        if _reportDelay.elapsed() and updater.logData:
+            
+        if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
             if len(updater.dataQueue.dataPoints) != 0:
-                for _x in updater.dataQueue.toDict(): #TODO - sit liewers almal op 'n slag in
-                    updater.databaseOperations.mongoDb.insertDataPoint(_x)
-                    
-                updater.dataQueue=[]
-            _reportDelay=Delay(_reportSleep)
-                        
-        #TODO - might be better in own thread            
-        if _reportDelay.elapsed() or updater.abort:
-            if len(updater.dataQueue.dataPoints) != 0:
-                for _x in updater.dataQueue.toDict(): #TODO - sit liewers almal op 'n slag in
-                    updater.databaseOperations.mongoDb.insertDataPoint(_x)
-                    
+                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
                 updater.dataQueue.dataPoints=[]
             _reportDelay=Delay(_reportSleep)
-            
+
         time.sleep(0.05)
-    updater.databaseOperations.setStopTime(updater.currTestrunId)
+                        
+    #TODO - in own thread
+    if updater.abort and not noTestDetails:
+        if len(updater.dataQueue.dataPoints) != 0:
+            updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+            updater.dataQueue.dataPoints=[]
+        _reportDelay=Delay(_reportSleep)
+    if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
+        updater.databaseOperations.setStopTime(updater.currTestrunId)

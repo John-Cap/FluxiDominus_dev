@@ -42,7 +42,7 @@ subflow/sf10Vapourtec1/cmnd
                 "stopbits":1
             }
         },
-		"settings": {"command":"SET","mode":"FLOW", "flowrate":0.1}
+		"settings": {"command":"SET","mode":"FLOW", "flowrate":0.0}
     }
 
 subflow/sf10Vapourtec1/tele

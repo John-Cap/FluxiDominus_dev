@@ -209,6 +209,9 @@ class TimeSeriesDatabaseMongo:
     def insertDataPoint(self,dataPoint):
         self.collection.insert_one(dataPoint)
 
+    def insertDataPoints(self,dataPoints):
+        self.collection.insert_many(dataPoints)
+        
     def continuousInsertion(self):
         while True:
             while self.pauseInsertion:
@@ -380,7 +383,7 @@ class DatabaseOperations:
         self.createReplicate(labNotebookBaseRef=labNotebookBaseRef,testScript=testScript,flowScript=flowScript,notes=notes)
         return self.getTestlistId(labNotebookBaseRef)
         
-    def createReplicate(self,labNotebookBaseRef,testScript="",flowScript={},notes=""):
+    def createReplicate(self,labNotebookBaseRef,testScript="",flowScript={},notes="",availableTele={}):
         '''
         id, testlistId, labNotebookBaseRef, runNr, createTime, startTime, endTime, locked, testScript, flowScript, optimizer, optimizerModel, recorded, notes
         '''
@@ -395,7 +398,7 @@ class DatabaseOperations:
             flowScript=flowScript.replace("'",'"')
             flowScript=flowScript.replace("null",'None')
             flowScript=eval(flowScript)
-        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,json.dumps(testScript),json.dumps(flowScript),b'',b'',0,notes)]
+        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,json.dumps(testScript),json.dumps(flowScript),b'',b'',0,notes,json.dumps(availableTele))]
         print('WJ - Preparing to insert: '+str(insert))
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
@@ -576,7 +579,7 @@ class DatabaseOperations:
         displayName: UI-name for telemetry
         '''
         _insrt=self.mySqlDb.fetchColumnValById('testruns','availableTele',testrunId)
-        if _insrt == "":
+        if _insrt == "" or _insrt == "{}":
             _insrt={}
         else:
             _insrt=eval(_insrt)
@@ -604,6 +607,7 @@ class DatabaseOperations:
             self.mySqlDb.updateRecordById('testruns',testrunId,'availableTele',json.dumps(_insrt))
         else:
             print('Record not altered')
+            
     def getAvailableTele(self,testrunId):
         '''
         testrunId: id for 'testlist' table

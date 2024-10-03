@@ -2,6 +2,7 @@ import ast
 from datetime import datetime
 import threading
 import paho.mqtt.client as mqtt
+from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
@@ -51,6 +52,9 @@ class MqttService:
         self.currTestlistId=None
         self.currTestrunId=None
         self.abort=False
+        
+        #Telemetry
+        self.registeredTeleDevices={}
         
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
 
@@ -105,16 +109,20 @@ class MqttService:
         self.lastMsgFromTopic[topic]=_msgContents
         ##
         if "deviceName" in _msgContents:
-            #Add to queue?
-            if self.runTest and self.logData:
-                self.dataQueue.addDataPoint(
-                    DataPointFDE(
-                        testlistId=self.currTestlistId,
-                        testrunId=self.currTestrunId,
-                        data=_msgContents,
-                        timestamp=datetime.now()
-                    )             
-                )
+            #Add to db streaming queue?
+            if (self.currTestrunId and self.currTestlistId and self.logData):
+                if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                    self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                if self.runTest and self.logData and (self.currTestrunId and self.currTestlistId):
+                    self.dataQueue.addDataPoint(
+                        DataPointFDE(
+                            testlistId=self.currTestlistId,
+                            testrunId=self.currTestrunId,
+                            data=_msgContents,
+                            timestamp=datetime.now()
+                        )
+                    )
         ##        
         elif "script" in _msgContents:
             _msgContents=_msgContents["script"]
@@ -158,6 +166,12 @@ class MqttService:
                     testScript=_params["testScript"],
                     flowScript=_params["flowScript"],
                     notes=_params["notes"]
+                )
+                self.client.publish(
+                    "ui/dbCmnd/ret",
+                    self.databaseOperations.getAllExpWidgetInfo(
+                        orgId=self.authenticator.user.orgId
+                    )
                 )
             elif (_func=="handleStreamRequest"):
                 if not self.databaseOperations.mongoDb.currZeroTime:
