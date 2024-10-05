@@ -87,9 +87,10 @@ if __name__ == '__main__':
     ##dbOp.setStopTime(120,timestamp_1)
     
     dbOp.mongoDb.currZeroTime=datetime.now()
-    #dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=120)),runNr=1)
+    dbOp.setZeroTime()
+    dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=296)),runNr=6)
 
-    time.sleep(5)
+    time.sleep(1)
     '''
     Message from Flutter
     '''
@@ -97,8 +98,8 @@ if __name__ == '__main__':
         dbOp.handleStreamRequest(
             {
                 "id":"120A3",
-                "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
-                "runNr":1,
+                "labNotebookBaseRef":"50403_jdtoit_DSIP012A_7",
+                "runNr":7,
                 "timeWindow":25, #Get all desired datapoints from now to 45 seconds in future
                 "deviceName":"flowsynmaxi2",
                 "setting":"pressA"
