@@ -31,7 +31,7 @@ if __name__ == '__main__':
                 "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
                 "runNr":1,
                 "timeWindow":6,
-                "deviceName":"flowsynmaxi2",
+                "deviceName":"hotcoil1",
                 "setting":"pressA"
             }
         }
@@ -42,10 +42,10 @@ if __name__ == '__main__':
             {
                 "id":"120A3",
                 "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
-                "runNr":1,
-                "timeWindow":6,
-                "deviceName":"flowsynmaxi2",
-                "setting":"pressA"
+                "runNr":6,
+                "timeWindow":60,
+                "deviceName":"hotcoil1",
+                "setting":"temp"
             }
         )
         time.sleep(5)
