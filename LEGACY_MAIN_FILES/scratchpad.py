@@ -1,26 +1,35 @@
-#Flow jiggler
-from Core.Fluids.FlowPath import FlowJiggler, Pump
+import sys
+import os
+import socket
+import time
 
+HOST = "146.64.91.174"  # Replace
+PORT = 13000            # Default port
 
-_pump_1=Pump(volume=0.5,name="PUMP_1",flowrateIn=2)
-_pump_2=Pump(volume=0.5,name="PUMP_2",flowrateIn=1)
-_pump_3=Pump(volume=0.5,name="PUMP_3",flowrateIn=3)
-_jiggler=FlowJiggler(
-    flowrates={
-        _pump_1.id:_pump_1.flowrateIn,
-        _pump_2.id:_pump_2.flowrateIn,
-        _pump_3.id:_pump_3.flowrateIn
-    },
-    pumps=[_pump_1,_pump_2,_pump_3]
-)
-_jiggler.setFlowKeepConst(_pump_1,1.79)
-for _x,_y in _jiggler.flowrates.items():
-    print(str(_x)+" "+str(_y))
-print("")
-_jiggler.setFlowKeepConst(_pump_2,2)
-for _x,_y in _jiggler.flowrates.items():
-    print(str(_x)+" "+str(_y))
-print("")
-_jiggler.setFlowKeepConst(_pump_3,0.5)
-for _x,_y in _jiggler.flowrates.items():
-    print(str(_x)+" "+str(_y))
+print('Connect to ' + HOST + ':' + str(PORT))
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect((HOST, PORT))
+
+message  = "<Message>\r\n"
+message += "   <QuickShimRequest/>\r\n"
+message += "</Message>\r\n"
+
+print('\r\nSend message:')
+print(message)
+s.send(message.encode())
+
+print('\r\nMessage received:')
+s.settimeout(10.0)
+try:
+    while True:
+        time.sleep(0.2)
+        chunk = s.recv(8192)
+        if chunk:
+            print(chunk.decode())
+
+except socket.error as msg:
+    s.settimeout(None)    
+
+# will only get here if a timeout occurs
+print('\r\nClose connection')
+s.close()

@@ -1,12 +1,11 @@
 import ast
-import json
+from datetime import datetime
 import threading
 import paho.mqtt.client as mqtt
-from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
+from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
-from Core.Data.data import DataPointFDE
-from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
-from Core.Data.experiment import StandardExperiment
+from Core.Data.data import DataPointFDE, DataSetFDD
+from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.brokers_and_topics import MqttTopics
 from Core.authentication.authenticator import Authenticator
 
@@ -34,7 +33,7 @@ class MqttService:
         self.isSubscribed = {}
 
         self.lastMsgFromTopic={}
-        self.dataQueue=[]
+        self.dataQueue=DataSetFDD([])
         self.logData=False
         
         self.orgId=orgId
@@ -48,7 +47,14 @@ class MqttService:
         
         self.databaseOperations=None
         
+        #TODO - random test related var
         self.runTest=False
+        self.currTestlistId=None
+        self.currTestrunId=None
+        self.abort=False
+        
+        #Telemetry
+        self.registeredTeleDevices={}
         
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
 
@@ -101,32 +107,39 @@ class MqttService:
         _msgContents=_msgContents.replace("null","None")
         _msgContents = ast.literal_eval(_msgContents)
         self.lastMsgFromTopic[topic]=_msgContents
+        ##
         if "deviceName" in _msgContents:
-            '''
-            if (self.logData):
-                self.addDataToQueue(_msgContents["deviceName"],_msgContents,self.labNotebookBaseRef,self.orgId)
-            '''
-            if _msgContents["deviceName"]=="hotcoil1":
-                if 'state' in _msgContents:
-                    self.temp = _msgContents['state']['temp']
-            if _msgContents["deviceName"]=="reactIR702L1":
-                if 'state' in _msgContents:
-                    self.IR = _msgContents['state']['data']
-            else:
-                pass
+            #Add to db streaming queue?
+            if (self.currTestrunId and self.currTestlistId and self.logData):
+                if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                    self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                if self.runTest and self.logData and (self.currTestrunId and self.currTestlistId):
+                    self.dataQueue.addDataPoint(
+                        DataPointFDE(
+                            testlistId=self.currTestlistId,
+                            testrunId=self.currTestrunId,
+                            data=_msgContents,
+                            timestamp=datetime.now()
+                        )
+                    )
+        ##        
         elif "script" in _msgContents:
             _msgContents=_msgContents["script"]
+            print('############')
             print('############')
             print("WJ - Script message contents: "+str(_msgContents))
             print('############')
             self.script=self.automation.parsePlutterIn(_msgContents)
-            print('############')
             print("WJ - Parsed script: "+str(self.script))
             print('############')
+            print('############')
+        ##
         elif "FormPanelWidget" in _msgContents:
             _msgContents=_msgContents["FormPanelWidget"]
             self.formPanelData=_msgContents
             print(f"WJ - Received FormPanelData: {_msgContents}")
+        ##
         elif "LoginPageWidget" in _msgContents:
             _msgContents=_msgContents["LoginPageWidget"]
             if ("password" in _msgContents):
@@ -134,25 +147,12 @@ class MqttService:
                 self.authenticator.signIn(orgId=_msgContents["orgId"],password=_msgContents["password"])
             else:
                 print(_msgContents)
+        ##
         elif topic=="ui/dbCmnd/in":
             _msgContents=_msgContents["instructions"]
             _func=_msgContents["function"]
             _params=_msgContents["params"]
-            '''
-            if (_func=="createStdExp"):
-                _func=self.dbInstructions[_func]
 
-                (self,labNotebookBaseRef,nameTest="Short description",description="Long description",flowScript=b"",testScript=b"script_content")
-
-                nameTest=_params["nameTest"] #Short description
-                description=_params["description"] #Long description
-                testScript=self.script #Generated in UI, check if received and parsed!!
-                lockScript=0
-                flowScript="TODO" #Generated in UI
-                labNotebookBaseRef=_params["labNotebookBaseRef"] #Needs to be built up automatically
-                self.databaseOperations.createStdExp(nameTest=nameTest,description=description,testScript=testScript,flowScript=flowScript,labNotebookBaseRef=labNotebookBaseRef)
-                #Then what?
-            '''
             if (_func=="getAllExpWidgetInfo"):
                 self.client.publish(
                     "ui/dbCmnd/ret",
@@ -167,19 +167,46 @@ class MqttService:
                     flowScript=_params["flowScript"],
                     notes=_params["notes"]
                 )
-                '''
-                self.client.publish( #Create a return for 
+                self.client.publish(
                     "ui/dbCmnd/ret",
                     self.databaseOperations.getAllExpWidgetInfo(
                         orgId=self.authenticator.user.orgId
                     )
                 )
-                '''
-                            
+            elif (_func=="handleStreamRequest"):
+                if not self.databaseOperations.mongoDb.currZeroTime:
+                    self.databaseOperations.mongoDb.currZeroTime=datetime.now()
+                self.client.publish(
+                    "ui/dbCmnd/ret",
+                    self.databaseOperations.handleStreamRequest(
+                        _params
+                    )
+                )
+            elif (_func=="updateTestrunDetails"):
+                self.currTestlistId=_params["testlistId"]
+                self.currTestrunId=_params["testrunId"]
+                self.currLabNotebookBaseRef=_params["labNotebookBaseRef"]
+                print(f'WJ - Set testrun to {self.currTestrunId} for testlist entry {self.currTestlistId}')
+            elif (_func=="enableLogging"):
+                self.logData=True
+                print(f'WJ - Streaming to db enabled')
+            elif (_func=="disableLogging"):
+                self.logData=False
+                print(f'WJ - Streaming to db disabled')
+            elif (_func=="abort"):
+                if not self.abort:
+                    self.abort=True
+                    print(f'WJ - Aborting run!')
+            elif (_func=="goCommand"):
+                if self.abort:
+                    self.abort=False
+                self.runTest=True
+                print("WJ - Let's go!")
+                                    
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
-        self.databaseOperations=DatabaseOperations(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
+        self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
         self.databaseOperations.connect()
         thread = threading.Thread(target=self._run)
         thread.start()

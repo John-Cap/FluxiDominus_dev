@@ -5,11 +5,11 @@ import time
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
-from Core.Data.database import TimeSeriesDatabaseMongo
 from Core.UI.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater
-updater = MqttService(broker_address="localhost")
+#updater = MqttService(broker_address="localhost")
+updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
 
@@ -49,7 +49,7 @@ collection_name = "pharma-data"
 metadata={"location": "Room 101", "type": "Demo_Data"}
 
 #Start
-tsDb = TimeSeriesDatabaseMongo(host, port, database_name, collection_name)
+#tsDb = TimeSeriesDatabaseMongo(host, port, database_name, collection_name)
 #tsDb.start()
 #tsDb.pause()
 
@@ -65,13 +65,11 @@ decoder_kwargs = {
 fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
 automation = FlowChemAutomation()
 
-doIt = True
 _reportSleep=5
 _reportDelay=Delay(_reportSleep)
 
 parser=None
 procedure=None
-doIt=True
 
 ################################
 #Signed in?
@@ -84,56 +82,84 @@ while not updater.authenticator.signedIn:
 print("Signed in!")
 '''
 ################################
-
+#Database flags
+noTestDetails=False
 # Main loop!
 while True:
     #Script posted?
     
     print("WJ - Waiting for script")
-    updater.dataQueue=[]
-    tsDb.purgeAndPause()
+    updater.dataQueue.dataPoints=[] #Pasop!
+    updater.abort=False
+    updater.runTest=False
+    updater.registeredTeleDevices={}
+    
     while updater.script=="":
-        time.sleep(0.5)
+        time.sleep(0.1)
 
     try:
 
         parser = ScriptParser(updater.script, client)
         procedure = parser.createProcedure(fdpDecoder)
-                
+
         print('#######')
         print('WJ - Parsed script is: '+updater.script)
         print('#######')
 
-
     except:
         print("Script parsing error!")
-        doIt=False
-        #exit()
-
+        updater.script=""
+        continue
+        
     updater.script=""
-    updater.logData=True
-    tsDb.start('309930','TEST_REF_GG46')
     
-    updater.zeroTime=datetime.now() #Start experiment time
+    #Wait for go
+    print('WJ - Waiting for go command')
+    while (not updater.runTest) and (not updater.abort):
+        time.sleep(0.1)
+
+    if updater.abort:
+        print('WJ - Testrun aborted!')
+        if updater.runTest:
+            updater.runTest=False
+            updater.abort=False
+        continue
     
-    while doIt:
-        if _reportDelay.elapsed():
-            #print(updater.dataQueue)
-            _reportDelay=Delay(_reportSleep)
-            if len(updater.dataQueue)!=0:
-                tsDb.dataPoints=tsDb.dataPoints+updater.dataQueue
-                updater.dataQueue=[]
-            #logger.logData(updater.getTemp(),updater.getIR())
+    if updater.currTestlistId and updater.currTestrunId:
+        noTestDetails=False
+        updater.zeroTime=datetime.now() #Start experiment time
+        updater.databaseOperations.mongoDb.currZeroTime=updater.zeroTime #Start experiment time
+        updater.databaseOperations.setZeroTime(updater.currTestrunId)
+        print(f"WJ - Set zerotime for testrun entry {updater.currTestrunId}!")
+    else:
+        noTestDetails=True
+        
+    print('WJ - Here we go!')
+    
+    while (not updater.abort):
+
         if len(procedure.currConfig.commands) == 0:
             procedure.next()
             if procedure.currConfig is None:
                 print("Procedure complete")
-                doIt = False
+                updater.abort = True
             else:
                 print("Next procedure!")
         else:
             procedure.currConfig.sendMQTT(waitForDelivery=True)
-        time.sleep(0.2)
-    doIt=True
-thread.join()
-exit()
+            
+        if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
+            if len(updater.dataQueue.dataPoints) != 0:
+                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+                updater.dataQueue.dataPoints=[]
+            _reportDelay=Delay(_reportSleep)
+
+        time.sleep(0.05)
+                        
+    #TODO - in own thread
+    if updater.abort and not noTestDetails:
+        updater.databaseOperations.setStopTime(updater.currTestrunId)
+        if len(updater.dataQueue.dataPoints) != 0:
+            updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+            updater.dataQueue.dataPoints=[]
+        

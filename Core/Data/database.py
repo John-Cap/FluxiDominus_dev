@@ -209,6 +209,9 @@ class TimeSeriesDatabaseMongo:
     def insertDataPoint(self,dataPoint):
         self.collection.insert_one(dataPoint)
 
+    def insertDataPoints(self,dataPoints):
+        self.collection.insert_many(dataPoints)
+        
     def continuousInsertion(self):
         while True:
             while self.pauseInsertion:
@@ -276,6 +279,8 @@ class TimeSeriesDatabaseMongo:
 
         # Calculate elapsed time since the start of the current experiment
         elapsedTime = (now - self.currZeroTime).total_seconds()
+        
+        print(f'WJ - Elapsed time: {elapsedTime}')
 
         # Calculate the corresponding start and end times for the previous experiment
         prevStartTime = self.prevZeroTime + timedelta(seconds=elapsedTime)
@@ -378,7 +383,7 @@ class DatabaseOperations:
         self.createReplicate(labNotebookBaseRef=labNotebookBaseRef,testScript=testScript,flowScript=flowScript,notes=notes)
         return self.getTestlistId(labNotebookBaseRef)
         
-    def createReplicate(self,labNotebookBaseRef,testScript="",flowScript={},notes=""):
+    def createReplicate(self,labNotebookBaseRef,testScript="",flowScript={},notes="",availableTele={}):
         '''
         id, testlistId, labNotebookBaseRef, runNr, createTime, startTime, endTime, locked, testScript, flowScript, optimizer, optimizerModel, recorded, notes
         '''
@@ -393,7 +398,7 @@ class DatabaseOperations:
             flowScript=flowScript.replace("'",'"')
             flowScript=flowScript.replace("null",'None')
             flowScript=eval(flowScript)
-        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,json.dumps(testScript),json.dumps(flowScript),b'',b'',0,notes)]
+        insert=[(testListId,labNotebookBaseRef,idNext,datetime.now().isoformat(),None,None,0,json.dumps(testScript),json.dumps(flowScript),b'',b'',0,notes,json.dumps(availableTele))]
         print('WJ - Preparing to insert: '+str(insert))
         self.mySqlDb.insertRecords('testruns',insert)
         return idNext
@@ -574,7 +579,7 @@ class DatabaseOperations:
         displayName: UI-name for telemetry
         '''
         _insrt=self.mySqlDb.fetchColumnValById('testruns','availableTele',testrunId)
-        if _insrt == "":
+        if _insrt == "" or _insrt == "{}":
             _insrt={}
         else:
             _insrt=eval(_insrt)
@@ -602,6 +607,7 @@ class DatabaseOperations:
             self.mySqlDb.updateRecordById('testruns',testrunId,'availableTele',json.dumps(_insrt))
         else:
             print('Record not altered')
+            
     def getAvailableTele(self,testrunId):
         '''
         testrunId: id for 'testlist' table
@@ -668,9 +674,9 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails={}
         self.zeroTimes={}
 
-    def handleStreamRequestOnceOff(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
+    def handleStreamRequest(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
         '''
-        Fetches and publishes requested telemetry for entire run
+        Fetches and publishes requested telemetry for time period
         '''       
         id=req["id"]
         if not (id in self.streamRequestDetails):
@@ -678,25 +684,15 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
         self.streamRequestDetails[id]["runNr"]=req["runNr"]
         self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
-        self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
-        self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
         self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
         self.streamRequestDetails[id]["setting"]=req["setting"]
-        self._returnMqttStreamRequest(id)
-    '''
-    def handleStreamRequest(self,req: dict): #Looks at 'req' received from Flutter and works out what it wants
-        id=req["id"]
-        if not (id in self.streamRequestDetails):
-            self.streamRequestDetails[id]={}
-        self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
-        self.streamRequestDetails[id]["runNr"]=req["runNr"]
-        self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
-        self.streamRequestDetails[id]["nestedField"]=req["nestedField"]
-        self.streamRequestDetails[id]["nestedValue"]=req["nestedValue"]
-        self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
-        self.streamRequestDetails[id]["setting"]=req["setting"]
-        self._returnMqttStreamRequest(id)
-    '''
+        
+        #Hardcoded
+        self.streamRequestDetails[id]["nestedField"]="data.deviceName"
+        self.streamRequestDetails[id]["nestedValue"]=self.streamRequestDetails[id]["deviceName"]
+        
+        return self._returnMqttStreamRequest(id)
+
     def _streamingThread(self): #TODO
         pass
 
@@ -727,14 +723,10 @@ class DatabaseStreamer(DatabaseOperations):
                 _x["timestamp"],
                 _zT
             ))
-        _data={"dbStreaming":{id:_ret}}
-        self.mqttService.client.publish(
-            topic="ui/dbStreaming/out",
-            payload=json.dumps(_data),
-            qos=2
-        )
+        _data={"handleStreamRequest":{id:_ret}}
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]
+        return json.dumps(_data)
 
     def _streamFrom(self,labNotebookBaseRef,runNr,timeWindow=30,nestedField: str = None,nestedValue=None): #This is not streaming
         return self._retrieve(labNotebookBaseRef,runNr,timeWindow,nestedField,nestedValue)

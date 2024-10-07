@@ -1,11 +1,23 @@
 {
-    "123":{
-        "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
-        "runNr":0,
-        "timeWindow":30,
-        "nestedField":None,
-        "nestedValue":None,
-        "deviceName":"flowsynmaxi2",
-        "setting":"pafr"
+    "instructions":{
+        "function":"handleStreamRequest",
+        "params":{
+            "id":"120A3",
+            "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+            "runNr":1,
+            "timeWindow":6,
+            "deviceName":"flowsynmaxi2",
+            "setting":"pressA"
+        }
     }
 }
+
+            "flowsynmaxi2": {
+                "pafr":self.commandTemplates["flowsynmaxi2_pafr"],
+                "pbfr":self.commandTemplates["flowsynmaxi2_pbfr"],
+                "sva":self.commandTemplates["flowsynmaxi2_sva"],
+                "svb":self.commandTemplates["flowsynmaxi2_svb"],
+                "svcw":self.commandTemplates["flowsynmaxi2_svcw"],
+                "svia":self.commandTemplates["flowsynmaxi2_svia"],
+                "svib":self.commandTemplates["flowsynmaxi2_svib"]
+            },
