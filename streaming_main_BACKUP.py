@@ -11,7 +11,7 @@ from Core.UI.plutter import MqttService
 
 if __name__ == '__main__':
     #Mqtt
-    thisThing=MqttService()
+    thisThing=MqttService(broker_address='146.64.91.174')
     thisThing.start()
     thisThing.orgId="50403"
     #Instantiate
@@ -86,10 +86,12 @@ if __name__ == '__main__':
         
     ##dbOp.setStopTime(120,timestamp_1)
     
-    dbOp.mongoDb.currZeroTime=datetime.now()
-    dbOp.setZeroTime()
-    dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=296)),runNr=6)
-
+    dbOp.mongoDb.currZeroTime=datetime.now() - timedelta(hours=2)
+    #dbOp.setStreamingBracket(labNotebookBaseRef="50403_jdtoit_DSIP012A",runNr=11)
+    #self.currTestrunId and self.currTestlistId and self.logData
+    thisThing.currTestlistId=296
+    thisThing.currTestrunId=138
+    thisThing.logData=True
     time.sleep(1)
     '''
     Message from Flutter
@@ -98,13 +100,14 @@ if __name__ == '__main__':
         dbOp.handleStreamRequest(
             {
                 "id":"120A3",
-                "labNotebookBaseRef":"50403_jdtoit_DSIP012A_7",
-                "runNr":7,
+                "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+                "runNr":11,
                 "timeWindow":25, #Get all desired datapoints from now to 45 seconds in future
                 "deviceName":"flowsynmaxi2",
-                "setting":"pressA"
+                "setting":'pressA'
             }
         )
     )
+    time.sleep(15)
     
     dbOp.mongoDb.kill()

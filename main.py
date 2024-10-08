@@ -158,8 +158,7 @@ while True:
                         
     #TODO - in own thread
     if updater.abort and not noTestDetails:
-        updater.databaseOperations.setStopTime(updater.currTestrunId)
         if len(updater.dataQueue.dataPoints) != 0:
             updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
             updater.dataQueue.dataPoints=[]
-        
+        updater.databaseOperations.setStopTime(updater.currTestrunId)        

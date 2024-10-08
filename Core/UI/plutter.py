@@ -1,6 +1,7 @@
 import ast
 from datetime import datetime
 import threading
+import time
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
@@ -35,6 +36,8 @@ class MqttService:
         self.lastMsgFromTopic={}
         self.dataQueue=DataSetFDD([])
         self.logData=False
+        self.lastReceivedTime={}
+        self.minTeleInterval=0.5
         
         self.orgId=orgId
         
@@ -109,12 +112,32 @@ class MqttService:
         self.lastMsgFromTopic[topic]=_msgContents
         ##
         if "deviceName" in _msgContents:
-            #Add to db streaming queue?
+            #Add to db streaming queue? Minimum wait passed?
             if (self.currTestrunId and self.currTestlistId and self.logData):
-                if not _msgContents["deviceName"] in self.registeredTeleDevices:
-                    self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
-                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                if self.runTest and self.logData and (self.currTestrunId and self.currTestlistId):
+                if "tele" in _msgContents:
+                    if not _msgContents["deviceName"] in self.lastReceivedTime:
+                        self.lastReceivedTime[_msgContents["deviceName"]]=time.perf_counter()
+                    else:
+                        if time.perf_counter() - self.lastReceivedTime[_msgContents["deviceName"]] < self.minTeleInterval:
+                            return #TODO - make sure it's fine to jump ship here
+                        else:
+                            if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                                self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                                self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                            print('Adding datapoint!')
+                            self.dataQueue.addDataPoint(
+                                DataPointFDE(
+                                    testlistId=self.currTestlistId,
+                                    testrunId=self.currTestrunId,
+                                    data=_msgContents,
+                                    timestamp=datetime.now()
+                                )
+                            )
+                else:
+                    if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                        self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                        self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                    print('Adding datapoint!')
                     self.dataQueue.addDataPoint(
                         DataPointFDE(
                             testlistId=self.currTestlistId,
@@ -122,8 +145,8 @@ class MqttService:
                             data=_msgContents,
                             timestamp=datetime.now()
                         )
-                    )
-        ##        
+                    )                    
+                    
         elif "script" in _msgContents:
             _msgContents=_msgContents["script"]
             print('############')

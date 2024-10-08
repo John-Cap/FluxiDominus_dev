@@ -84,7 +84,7 @@ class DataPoint:
         return {
             'data': self.data,
             'metadata': self.metadata,
-            'timestamp':self.timestamp
+            'timestamp':self.timestamp #TODO - utc?
         }
 
 class DataPointFDE(DataPoint):

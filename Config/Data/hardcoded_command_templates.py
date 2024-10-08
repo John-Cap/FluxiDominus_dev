@@ -4,145 +4,145 @@ class HardcodedTeleAddresses:
     hardcodedTeleAddresses = {
         'flowsynmaxi1': {
             'pafr': {
-                'address': ['state', 'flowRatePumpA'],
+                'address': ['tele','state','flowRatePumpA'],
                 'displayName': 'Pump A Flowrate'
             },
             'pbfr': {
-                'address': ['state', 'flowRatePumpB'],
+                'address': ['tele','state', 'flowRatePumpB'],
                 'displayName': 'Pump B Flowrate'
             },
             'sva': {
-                'address': ['state', 'valveOpenA'],
+                'address': ['tele','state', 'valveOpenA'],
                 'displayName': 'Valve A Open'
             },
             'svb': {
-                'address': ['state', 'valveOpenB'],
+                'address': ['tele','state', 'valveOpenB'],
                 'displayName': 'Valve B Open'
             },
             'svcw': {
-                'address': ['state', 'valveOpenCW'],
+                'address': ['tele','state', 'valveOpenCW'],
                 'displayName': 'Collecting'
             },
             'pressA': {
-                'address': ['state', 'pressFlowSynA'],
+                'address': ['tele','state', 'pressFlowSynA'],
                 'displayName': 'Pump A Pressure'
             },
             'pressB': {
-                'address': ['state', 'pressFlowSynB'],
+                'address': ['tele','state', 'pressFlowSynB'],
                 'displayName': 'Pump B Pressure'
             },
             'pressSys': {
-                'address': ['state', 'pressSystem'],
+                'address': ['tele','state', 'pressSystem'],
                 'displayName': 'System Pressure'
             },
             'temp_1': {
-                'address': ['state', 'tempReactor1'],
+                'address': ['tele','state', 'tempReactor1'],
                 'displayName': 'Heater Temperature'
             },
             'temp_2': {
-                'address': ['state', 'tempReactor2'],
+                'address': ['tele','state', 'tempReactor2'],
                 'displayName': 'Coil Temperature'
             }
         },
         'flowsynmaxi2': {
             'pafr': {
-                'address': ['state', 'flowRatePumpA'],
+                'address': ['tele','state','flowRatePumpA'],
                 'displayName': 'Pump A Flowrate'
             },
             'pbfr': {
-                'address': ['state', 'flowRatePumpB'],
+                'address': ['tele','state', 'flowRatePumpB'],
                 'displayName': 'Pump B Flowrate'
             },
             'sva': {
-                'address': ['state', 'valveOpenA'],
+                'address': ['tele','state', 'valveOpenA'],
                 'displayName': 'Valve A Open'
             },
             'svb': {
-                'address': ['state', 'valveOpenB'],
+                'address': ['tele','state', 'valveOpenB'],
                 'displayName': 'Valve B Open'
             },
             'svcw': {
-                'address': ['state', 'valveOpenCW'],
+                'address': ['tele','state', 'valveOpenCW'],
                 'displayName': 'Collecting'
             },
             'pressA': {
-                'address': ['state', 'pressFlowSynA'],
+                'address': ['tele','state', 'pressFlowSynA'],
                 'displayName': 'Pump A Pressure'
             },
             'pressB': {
-                'address': ['state', 'pressFlowSynB'],
+                'address': ['tele','state', 'pressFlowSynB'],
                 'displayName': 'Pump B Pressure'
             },
             'pressSys': {
-                'address': ['state', 'pressSystem'],
+                'address': ['tele','state', 'pressSystem'],
                 'displayName': 'System Pressure'
             },
             'temp_1': {
-                'address': ['state', 'tempReactor1'],
+                'address': ['tele','state', 'tempReactor1'],
                 'displayName': 'Heater Temperature'
             },
             'temp_2': {
-                'address': ['state', 'tempReactor2'],
+                'address': ['tele','state', 'tempReactor2'],
                 'displayName': 'Coil Temperature'
             }
         },
         'hotcoil1': {
             'temp': {
-                'address': ['state','temp'],
+                'address': ['tele','state','temp'],
                 'displayName': 'Temperature'
             },
             'status': {
-                'address': ['state','state'],
+                'address': ['tele','state','state'],
                 'displayName': 'Status'
             }
         },
         'hotcoil2': {
             'temp': {
-                'address': ['state','temp'],
+                'address': ['tele','state','temp'],
                 'displayName': 'Temperature'
             },
             'status': {
-                'address': ['state','state'],
+                'address': ['tele','state','state'],
                 'displayName': 'Status'
             }
         },
         'hotchip1': {
             'temp': {
-                'address': ['state','temp'],
+                'address': ['tele','state','temp'],
                 'displayName': 'Temperature'
             },
             'status': {
-                'address': ['state','state'],
+                'address': ['tele','state','state'],
                 'displayName': 'Status'
             }
         },
         'hotchip2': {
             'temp': {
-                'address': ['state','temp'],
+                'address': ['tele','state','temp'],
                 'displayName': 'Temperature'
             },
             'status': {
-                'address': ['state','state'],
+                'address': ['tele','state','state'],
                 'displayName': 'Status'
             }
         },
         'sf10vapourtec1': { #TODO - hoekom is hierdie waardes nie in "state" nie?
             'fr': {
-                'address': ['settings', 'flowrate'],
+                'address': ['tele','settings', 'flowrate'],
                 'displayName':'Flowrate'
             },
             'pressSys': {
-                'address': ['settings', 'pressure'],
+                'address': ['tele','settings', 'pressure'],
                 'displayName':'Pressure'
             }
         },
         'sf10vapourtec2': { #TODO - hoekom is hierdie waardes nie in "state" nie?
             'fr': {
-                'address': ['settings', 'flowrate'],
+                'address': ['tele','settings', 'flowrate'],
                 'displayName':'Flowrate'
             },
             'pressSys': {
-                'address': ['settings', 'pressure'],
+                'address': ['tele','settings', 'pressure'],
                 'displayName':'Pressure'
             }
         }
