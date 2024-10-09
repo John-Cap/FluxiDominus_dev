@@ -1,1 +1,22 @@
-ê
+Works
+${
+    'metadata.testlistId': 296, 
+    'metadata.testrunId': 139, 
+    'timestamp': {
+        '$gte': datetime.datetime(2024, 10, 9, 6, 58, 12, 1000, tzinfo=datetime.timezone.utc), 
+        '$lte': datetime.datetime(2024, 10, 9, 6, 59, 12, 1000, tzinfo=datetime.timezone.utc)
+    }, 
+    'data.deviceName': 'flowsynmaxi2'
+}
+
+Does not work
+Query:
+${
+    'metadata.testlistId': 296,
+    'metadata.testrunId': 139,
+    'timestamp': {
+        '$gte': datetime.datetime(2024, 10, 9, 6, 58, 14, 129718, tzinfo=datetime.timezone.utc),
+        '$lte': datetime.datetime(2024, 10, 9, 7, 0, 14, 129718, tzinfo=datetime.timezone.utc)
+    },
+    'data.deviceName': 'flowsynmaxi2'
+}

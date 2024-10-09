@@ -2,6 +2,8 @@
 from datetime import datetime
 import time
 
+from bson import utc
+
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
@@ -126,7 +128,7 @@ while True:
     
     if updater.currTestlistId and updater.currTestrunId:
         noTestDetails=False
-        updater.zeroTime=datetime.now() #Start experiment time
+        updater.zeroTime=datetime.now(utc) #Start experiment time
         updater.databaseOperations.mongoDb.currZeroTime=updater.zeroTime #Start experiment time
         updater.databaseOperations.setZeroTime(updater.currTestrunId)
         print(f"WJ - Set zerotime for testrun entry {updater.currTestrunId}!")

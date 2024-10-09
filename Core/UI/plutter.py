@@ -2,6 +2,7 @@ import ast
 from datetime import datetime
 import threading
 import time
+from bson import utc
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
@@ -113,38 +114,41 @@ class MqttService:
         ##
         if "deviceName" in _msgContents:
             #Add to db streaming queue? Minimum wait passed?
-            if (self.currTestrunId and self.currTestlistId and self.logData):
-                if "tele" in _msgContents:
-                    if not _msgContents["deviceName"] in self.lastReceivedTime:
-                        self.lastReceivedTime[_msgContents["deviceName"]]=time.perf_counter()
-                    else:
-                        if time.perf_counter() - self.lastReceivedTime[_msgContents["deviceName"]] < self.minTeleInterval:
-                            return #TODO - make sure it's fine to jump ship here
+            if self.runTest:
+                if (self.currTestrunId and self.currTestlistId and self.logData):
+                    if "tele" in _msgContents:
+                        if not _msgContents["deviceName"] in self.lastReceivedTime:
+                            self.lastReceivedTime[_msgContents["deviceName"]]=time.perf_counter()
                         else:
-                            if not _msgContents["deviceName"] in self.registeredTeleDevices:
-                                self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
-                                self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                            print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
-                            self.dataQueue.addDataPoint(
-                                DataPointFDE(
-                                    testlistId=self.currTestlistId,
-                                    testrunId=self.currTestrunId,
-                                    data=_msgContents
+                            if time.perf_counter() - self.lastReceivedTime[_msgContents["deviceName"]] < self.minTeleInterval:
+                                return #TODO - make sure it's fine to jump ship here
+                            else:
+                                if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                                    self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                                print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
+                                self.dataQueue.addDataPoint(
+                                    DataPointFDE(
+                                        testlistId=self.currTestlistId,
+                                        testrunId=self.currTestrunId,
+                                        data=_msgContents,
+                                        timestamp=datetime.now(utc)
+                                    )
                                 )
+                    else:
+                        if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                            self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                            self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                        print(f'Adding command datapoint for {_msgContents["deviceName"]}!')
+                        self.dataQueue.addDataPoint(
+                            DataPointFDE(
+                                testlistId=self.currTestlistId,
+                                testrunId=self.currTestrunId,
+                                data=_msgContents,
+                                timestamp=datetime.now(utc)
                             )
-                else:
-                    if not _msgContents["deviceName"] in self.registeredTeleDevices:
-                        self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
-                        self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                    print(f'Adding command datapoint for {_msgContents["deviceName"]}!')
-                    self.dataQueue.addDataPoint(
-                        DataPointFDE(
-                            testlistId=self.currTestlistId,
-                            testrunId=self.currTestrunId,
-                            data=_msgContents
-                        )
-                    )                    
-                    
+                        )                    
+                        
         elif "script" in _msgContents:
             _msgContents=_msgContents["script"]
             print('############')

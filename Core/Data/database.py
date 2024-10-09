@@ -239,7 +239,7 @@ class TimeSeriesDatabaseMongo:
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval) #Kannie so lank hier wag nie
 
-    def fetchTimeSeriesData(self, testlistId, testrunId, startTime: datetime = None, endTime: datetime = None, nestedField: str = None, nestedValue=None):
+    def fetchTimeSeriesData(self, testlistId, testrunId, startTime = None, endTime = None, nestedField: str = None, nestedValue=None):
         # Prepare the query with required filters
         query = {
             'metadata.testlistId': testlistId,
@@ -247,15 +247,18 @@ class TimeSeriesDatabaseMongo:
         }
 
         # Add time filtering to the query if provided
-        if startTime:
-            print(f'WJ - Raw startTime: {startTime}')
-            if not (startTime.tzname()):
-                startTime.replace(tzinfo=utc).isoformat()
-        if endTime:
-            print(f'WJ - Raw startTime: {endTime}')
-            if not (endTime.tzname()):
-                endTime.replace(tzinfo=utc).isoformat()
-        query['timestamp'] = {'$gte': startTime, '$lte': endTime}
+        if startTime and endTime:
+            if startTime:
+                print(f'WJ - Raw startTime: {startTime}')
+                if not (startTime.tzname()):
+                    startTime.replace(tzinfo=utc).isoformat()
+                print(f'WJ - Formatted startTime: {startTime}')
+            if endTime:
+                print(f'WJ - Raw endTime: {endTime}')
+                if not (endTime.tzname()):
+                    endTime.replace(tzinfo=utc).isoformat()
+                print(f'WJ - Formatted endTime: {endTime}')
+            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
 
         # Add nested field filtering if provided
         if (nestedField and nestedValue): #Include 'field':value requirement to search
@@ -703,7 +706,7 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
         self.streamRequestDetails[id]["setting"]=req["setting"]
         
-        #Hardcoded
+        #TODO - Hardcoded
         self.streamRequestDetails[id]["nestedField"]="data.deviceName"
         self.streamRequestDetails[id]["nestedValue"]=self.streamRequestDetails[id]["deviceName"]
         

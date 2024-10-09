@@ -68,7 +68,7 @@ class DataType:
         return self.type
 
 class DataPoint:
-    def __init__(self,testlistId,testrunId,data,metadata=None,timestamp=datetime.now(utc)):
+    def __init__(self,testlistId,testrunId,data,metadata=None,timestamp=None):
         self.timestamp=timestamp
         self.data=data
         self.metadata=metadata
@@ -88,7 +88,7 @@ class DataPoint:
         }
 
 class DataPointFDE(DataPoint):
-    def __init__(self, testlistId, testrunId, data, metadata=None, timestamp=datetime.now(utc)):
+    def __init__(self, testlistId, testrunId, data, metadata=None, timestamp=None):
         super().__init__(testlistId, testrunId, data, metadata, timestamp)
         
 class DataSet:
