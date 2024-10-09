@@ -93,6 +93,7 @@ while True:
     updater.abort=False
     updater.runTest=False
     updater.registeredTeleDevices={}
+    updater.script==""
     
     while updater.script=="":
         time.sleep(0.1)
@@ -108,10 +109,8 @@ while True:
 
     except:
         print("Script parsing error!")
-        updater.script=""
+        #updater.script=""
         continue
-        
-    updater.script=""
     
     #Wait for go
     print('WJ - Waiting for go command')

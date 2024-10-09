@@ -124,26 +124,24 @@ class MqttService:
                             if not _msgContents["deviceName"] in self.registeredTeleDevices:
                                 self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
                                 self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                            print('Adding datapoint!')
+                            print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
                             self.dataQueue.addDataPoint(
                                 DataPointFDE(
                                     testlistId=self.currTestlistId,
                                     testrunId=self.currTestrunId,
-                                    data=_msgContents,
-                                    timestamp=datetime.now()
+                                    data=_msgContents
                                 )
                             )
                 else:
                     if not _msgContents["deviceName"] in self.registeredTeleDevices:
                         self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
                         self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                    print('Adding datapoint!')
+                    print(f'Adding command datapoint for {_msgContents["deviceName"]}!')
                     self.dataQueue.addDataPoint(
                         DataPointFDE(
                             testlistId=self.currTestlistId,
                             testrunId=self.currTestrunId,
-                            data=_msgContents,
-                            timestamp=datetime.now()
+                            data=_msgContents
                         )
                     )                    
                     
