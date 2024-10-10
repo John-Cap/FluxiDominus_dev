@@ -95,11 +95,19 @@ while True:
     updater.abort=False
     updater.runTest=False
     updater.registeredTeleDevices={}
-    updater.script==""
+    updater.script=""
+    updater.databaseOperations.mongoDb.currZeroTime=None
     
-    while updater.script=="":
+    while updater.script=="" and not updater.abort:
         time.sleep(0.1)
 
+    if updater.abort:
+        print('WJ - Testrun aborted!')
+        if updater.runTest:
+            updater.runTest=False
+            updater.abort=False
+        continue
+    
     try:
 
         parser = ScriptParser(updater.script, client)
@@ -155,10 +163,10 @@ while True:
                 updater.dataQueue.dataPoints=[]
             _reportDelay=Delay(_reportSleep)
 
-        time.sleep(0.05)
+        time.sleep(0.1)
                         
     #TODO - in own thread
-    if updater.abort and not noTestDetails:
+    if updater.logData and not noTestDetails:
         if len(updater.dataQueue.dataPoints) != 0:
             updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
             updater.dataQueue.dataPoints=[]

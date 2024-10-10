@@ -108,9 +108,9 @@ if __name__ == '__main__':
                 "id":"120A3",
                 "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
                 "runNr":16,
-                "timeWindow":25, #Get all desired datapoints from now to 45 seconds in future
-                "deviceName":"flowsynmaxi2",
-                "setting":'pressA'
+                "timeWindow":1200, #Get all desired datapoints from now to 45 seconds in future
+                "deviceName":"hotcoil1",
+                "setting":'temp'
             }
         )
     )

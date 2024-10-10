@@ -735,13 +735,16 @@ class DatabaseStreamer(DatabaseOperations):
             runNr=self.streamRequestDetails[id]["runNr"]
         ))[0]
         for _x in _rec:
-            _ret.append(self._packageData(
+            _thisRet=self._packageData(
                 _x["data"],
                 self.streamRequestDetails[id]["deviceName"],
                 self.streamRequestDetails[id]["setting"],
                 _x["timestamp"],
                 _zT
-            ))
+            )
+            if not _thisRet[1]:
+                continue
+            _ret.append(_thisRet)
         _data={"handleStreamRequest":{id:_ret}}
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]

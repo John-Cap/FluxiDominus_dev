@@ -20,7 +20,10 @@ class MqttService:
         self.allTopicsUI=allTopicsUI
         self.temp = 0
         self.IR = []
+        
         self.script = ""
+        self.parsedProcedure = None
+        
         self.formPanelData={}
 
         self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
@@ -219,6 +222,7 @@ class MqttService:
                 self.logData=False
                 print(f'WJ - Streaming to db disabled')
             elif (_func=="abort"):
+                self.databaseOperations.mongoDb.currZeroTime=None
                 if not self.abort:
                     self.abort=True
                     print(f'WJ - Aborting run!')

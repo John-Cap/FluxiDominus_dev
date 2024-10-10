@@ -12,7 +12,7 @@ self.streamRequestDetails[id]["setting"]=req["setting"]
         'myCoolId':{
             "id":"anEvenCoolerId",
             "labNotebookBaseRef":"WJ_TEST_12",
-            "runNr":0,
+            "runNr":16,
             "timeWindow":30,
             "nestedField":"deviceName",
             "nestedValue":"A_BICYCLE_BUILT_FOR_TWO",

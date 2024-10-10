@@ -1,8 +1,8 @@
-        self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
-        self.streamRequestDetails[id]["runNr"]=req["runNr"]
-        self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
-        self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
-        self.streamRequestDetails[id]["setting"]=req["setting"]
+self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
+self.streamRequestDetails[id]["runNr"]=req["runNr"]
+self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
+self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+self.streamRequestDetails[id]["setting"]=req["setting"]
 
 Hotcoil
 {
