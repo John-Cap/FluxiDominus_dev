@@ -129,7 +129,7 @@ class MqttService:
                                 if not _msgContents["deviceName"] in self.registeredTeleDevices:
                                     self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
                                     self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                                print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
+                                #print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
                                 self.dataQueue.addDataPoint(
                                     DataPointFDE(
                                         testlistId=self.currTestlistId,
@@ -142,7 +142,7 @@ class MqttService:
                         if not _msgContents["deviceName"] in self.registeredTeleDevices:
                             self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
                             self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                        print(f'Adding command datapoint for {_msgContents["deviceName"]}!')
+                        #print(f'Adding command datapoint for {_msgContents["deviceName"]}!')
                         self.dataQueue.addDataPoint(
                             DataPointFDE(
                                 testlistId=self.currTestlistId,

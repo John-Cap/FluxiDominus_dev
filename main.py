@@ -164,7 +164,7 @@ while True:
             _reportDelay=Delay(_reportSleep)
 
         time.sleep(0.1)
-                        
+        
     #TODO - in own thread
     if updater.logData and not noTestDetails:
         if len(updater.dataQueue.dataPoints) != 0:
