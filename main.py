@@ -1,5 +1,6 @@
 
 from datetime import datetime
+import json
 import time
 
 from bson import utc
@@ -9,7 +10,7 @@ from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.UI.plutter import MqttService
 
-# Create an instance of MQTTTemperatureUpdater
+# Create an instance of MQTTTemperatureUpdater#
 #updater = MqttService(broker_address="localhost")
 updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
@@ -88,11 +89,15 @@ print("Signed in!")
 noTestDetails=False
 # Main loop!
 while True:
+    #Send back test not started confirmation
+    updater.client.publish("ui/dbCmnd/ret",json.dumps({"runTest":False}))
+
     #Script posted?
-    
+    #        
     print("WJ - Waiting for script")
     updater.dataQueue.dataPoints=[] #Pasop!
     updater.abort=False
+    #And notify backend
     updater.runTest=False
     updater.registeredTeleDevices={}
     updater.script=""
@@ -137,13 +142,80 @@ while True:
     if updater.currTestlistId and updater.currTestrunId:
         noTestDetails=False
         updater.zeroTime=datetime.now(utc) #Start experiment time
-        updater.databaseOperations.mongoDb.currZeroTime=updater.zeroTime #Start experiment time
+        updater.databaseOperations.mongoDb.currZeroTime=None #Start experiment time
         updater.databaseOperations.setZeroTime(updater.currTestrunId)
         print(f"WJ - Set zerotime for testrun entry {updater.currTestrunId}!")
     else:
         noTestDetails=True
         
     print('WJ - Here we go!')
+    '''
+    #Hardcoded streaming example
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+        "instructions":{
+            "function":"handleStreamRequest",
+            "params":{
+                "id":"hotcoil1_temp",
+                "labNotebookBaseRef":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testlist',columnName='labNotebookBaseRef',id=updater.currTestlistId),
+                "runNr":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId),
+                "timeWindow":1000,
+                "deviceName":"hotcoil1",
+                "setting":"temp"
+            }
+        }
+    }))
+    '''
+    '''
+    time.sleep(2)
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+        "instructions":{
+            "function":"handleStreamRequest",
+            "params":{
+                "id":"flowsynmaxi2_pressA",
+                "labNotebookBaseRef":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testlist',columnName='labNotebookBaseRef',id=updater.currTestlistId),
+                "runNr":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId),
+                "timeWindow":1000,
+                "deviceName":"flowsynmaxi2",
+                "setting":"pressA"
+            }
+        }
+    }))
+    time.sleep(2)
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+        "instructions":{
+            "function":"handleStreamRequest",
+            "params":{
+                "id":"flowsynmaxi2_pressB",
+                "labNotebookBaseRef":updater.currLabNotebookBaseRef,
+                "runNr":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId),
+                "timeWindow":1000,
+                "deviceName":"flowsynmaxi2",
+                "setting":"pressB"
+            }
+        }
+    }))
+    time.sleep(2)
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+        "instructions":{
+            "function":"handleStreamRequest",
+            "params":{
+                "id":"flowsynmaxi2_pressSys",
+                "labNotebookBaseRef":updater.currLabNotebookBaseRef,
+                "runNr":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId),
+                "timeWindow":1000,
+                "deviceName":"flowsynmaxi2",
+                "setting":"pressSys"
+            }
+        }
+    }))
+    '''
+    #
+    #Send back test start confirmation
+    updater.client.publish("ui/dbCmnd/ret",json.dumps({"runTest":True}))
     
     while (not updater.abort):
 
