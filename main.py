@@ -93,7 +93,7 @@ while True:
     updater.client.publish("ui/dbCmnd/ret",json.dumps({"runTest":False}))
 
     #Script posted?
-    #        
+    #
     print("WJ - Waiting for script")
     updater.dataQueue.dataPoints=[] #Pasop!
     updater.abort=False
@@ -149,74 +149,76 @@ while True:
         noTestDetails=True
         
     print('WJ - Here we go!')
-    '''
-    #Hardcoded streaming example
-    updater.client.publish(
-        topic="ui/dbCmnd/in",payload=json.dumps({
-        "instructions":{
-            "function":"handleStreamRequest",
-            "params":{
-                "id":"hotcoil1_temp",
-                "labNotebookBaseRef":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testlist',columnName='labNotebookBaseRef',id=updater.currTestlistId),
-                "runNr":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId),
-                "timeWindow":1000,
-                "deviceName":"hotcoil1",
-                "setting":"temp"
-            }
-        }
-    }))
-    '''
-    '''
-    time.sleep(2)
-    updater.client.publish(
-        topic="ui/dbCmnd/in",payload=json.dumps({
-        "instructions":{
-            "function":"handleStreamRequest",
-            "params":{
-                "id":"flowsynmaxi2_pressA",
-                "labNotebookBaseRef":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testlist',columnName='labNotebookBaseRef',id=updater.currTestlistId),
-                "runNr":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId),
-                "timeWindow":1000,
-                "deviceName":"flowsynmaxi2",
-                "setting":"pressA"
-            }
-        }
-    }))
-    time.sleep(2)
-    updater.client.publish(
-        topic="ui/dbCmnd/in",payload=json.dumps({
-        "instructions":{
-            "function":"handleStreamRequest",
-            "params":{
-                "id":"flowsynmaxi2_pressB",
-                "labNotebookBaseRef":updater.currLabNotebookBaseRef,
-                "runNr":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId),
-                "timeWindow":1000,
-                "deviceName":"flowsynmaxi2",
-                "setting":"pressB"
-            }
-        }
-    }))
-    time.sleep(2)
-    updater.client.publish(
-        topic="ui/dbCmnd/in",payload=json.dumps({
-        "instructions":{
-            "function":"handleStreamRequest",
-            "params":{
-                "id":"flowsynmaxi2_pressSys",
-                "labNotebookBaseRef":updater.currLabNotebookBaseRef,
-                "runNr":updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId),
-                "timeWindow":1000,
-                "deviceName":"flowsynmaxi2",
-                "setting":"pressSys"
-            }
-        }
-    }))
-    '''
+
     #
-    #Send back test start confirmation
-    updater.client.publish("ui/dbCmnd/ret",json.dumps({"runTest":True}))
-    
+    #Inform UI of test start and provide zerotime
+    #
+    _zt=updater.databaseOperations.mongoDb.currZeroTime
+    updater.client.publish("ui/dbCmnd/ret",json.dumps(
+        {
+            "runTest":True,
+            "datetime":updater.databaseOperations.mongoDb.currZeroTime
+        })
+    )
+    #Hardcoded streaming example, D E L E T E
+    _thisRef=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId)
+    _thisTstrn=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId)
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+            "instructions":{
+                "function":"handleStreamRequest",
+                "params":{
+                    "id":"hotcoil1_temp",
+                    "labNotebookBaseRef":_thisRef,
+                    "runNr":_thisTstrn,
+                    "timeWindow":1000,
+                    "deviceName":"hotcoil1",
+                    "setting":"temp"
+                }
+            }
+        }))
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+            "instructions":{
+                "function":"handleStreamRequest",
+                "params":{
+                    "id":"flowsynmaxi2_pressA",
+                    "labNotebookBaseRef":_thisRef,
+                    "runNr":_thisTstrn,
+                    "timeWindow":1000,
+                    "deviceName":"flowsynmaxi2",
+                    "setting":"pressA"
+                }
+            }
+        }))
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+            "instructions":{
+                "function":"handleStreamRequest",
+                "params":{
+                    "id":"flowsynmaxi2_pressB",
+                    "labNotebookBaseRef":_thisRef,
+                    "runNr":_thisTstrn,
+                    "timeWindow":1000,
+                    "deviceName":"flowsynmaxi2",
+                    "setting":"pressB"
+                }
+            }
+        }))
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+            "instructions":{
+                "function":"handleStreamRequest",
+                "params":{
+                    "id":"flowsynmaxi2_pressSystem",
+                    "labNotebookBaseRef":_thisRef,
+                    "runNr":_thisTstrn,
+                    "timeWindow":1000,
+                    "deviceName":"flowsynmaxi2",
+                    "setting":"pressSys"
+                }
+            }
+        }))
     while (not updater.abort):
 
         if len(procedure.currConfig.commands) == 0:

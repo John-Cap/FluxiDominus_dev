@@ -165,3 +165,32 @@ subflow/flowsynmaxi2/tele
 
 
 }
+
+###################################################################################################################################
+NMR1
+------------
+Commands:
+REMOTEEN		["settings": {"command":"REMOTEEN"}]
+STOP		["settings": {"command":"STOP"}]
+RUN_CHECKSHIM	["settings": {"command":"RUN_CHECKSHIM"}]
+RUN_POWERSHIM	["settings": {"command":"RUN_POWERSHIM"}]
+RUN_QUICKSHIM	["settings": {"command":"RUN_QUICKSHIM"}]
+RUN_QUICKSCAN	["settings": {"command":"RUN_QUICKSCAN"}]
+RUN_STANDARDSCAN	["settings": {"command":"RUN_STANDARDSCAN"}]
+RUN_POWERSCAN	["settings": {"command":"RUN_POWERSCAN"}]
+SET_OUTPUT_FOLDER	["settings": {"command":"SET_OUTPUT_FOLDER","folder":"\\test"}]
+REMOTEDIS		["settings": {"command":"REMOTEDIS"}]
+RECONNECT		["settings": {"command":"RECONNECT"}]
+
+subflow/nmr1/cmnd
+	{"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.52", "port": 13000}}, "settings":{"command":"REMOTEEN"}} #Remoteen
+    {"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.52", "port": 13000}}, "settings":{"command":"SET_OUTPUT_FOLDER","folder":"\\test"}} #Set output folder
+	{"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.52", "port": 13000}}, "settings": {"command":"RUN_POWERSHIM"}} #runPowershim
+    {"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.52", "port": 13000}}, "settings": {"command":"RUN_CHECKSHIM"}} #runCheckshim
+    {"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.52", "port": 13000}}, "settings": {"command":"RUN_QUICKSHIM"}} #runQuickshim
+    {"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.52", "port": 13000}}, "settings": {"command":"RUN_STANDARDSCAN"}} #runStandardScan
+    {"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.52", "port": 13000}}, "settings": {"command":"RUN_POWERSCAN"}} #runPowerScan
+    {"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.52", "port": 13000}}, "settings": {"command":"RUN_QUICKSCAN"}} #runQuickScan
+
+subflow/nmr1/tele
+	{"deviceName": "nmr1", "deviceType": "NMR", "inUse": true, "remoteEnabled": false, "connDetails": {"ipCom": {"addr": "192.168.1.52", "port": 13000}}, "tele": {"cmnd": "RUN_QUICKSHIM", "cmndResp": "b'<Message>\\n  <StatusNotification timestamp=\"12:35:19\">\\n    <Progress protocol=\"SHIM\" percentage=\"96\" secondsRemaining=\"14\" />\\n  </StatusNotification>\\n</Message>'", "settings": {"folder": ""}, "state": {"protocol": "SHIM", "status": "Running", "dataFolder": "", "percentage": "96", "secondsRemaining": "14", "error": "Could not detect a single peak.\nAre you sure that you inserted the reference sample?"}, "timestamp": ""}}
