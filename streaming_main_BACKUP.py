@@ -11,7 +11,7 @@ from Core.UI.plutter import MqttService
 
 if __name__ == '__main__':
     #Mqtt
-    thisThing=MqttService()
+    thisThing=MqttService(broker_address='146.64.91.174')
     thisThing.start()
     thisThing.orgId="50403"
     #Instantiate
@@ -87,24 +87,34 @@ if __name__ == '__main__':
     ##dbOp.setStopTime(120,timestamp_1)
     
     dbOp.mongoDb.currZeroTime=datetime.now()
-    dbOp.setZeroTime()
-    dbOp.setStreamingBracket(labNotebookBaseRef=(dbOp.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=296)),runNr=6)
-
+    #dbOp.setStreamingBracket(labNotebookBaseRef="50403_jdtoit_DSIP012A",runNr=11)
+    #self.currTestrunId and self.currTestlistId and self.logData
+    thisThing.currTestlistId=296
+    thisThing.currTestrunId=143
+    #thisThing.logData=True
     time.sleep(1)
+    dbOp.mongoDb.fetchTimeSeriesData(296,139,startTime=(datetime.fromisoformat('2024-10-09T06:58:12.001+00:00')),endTime=(datetime.fromisoformat('2024-10-09T06:59:12.001+00:00')),nestedField='data.deviceName',nestedValue='flowsynmaxi2')
+    print('\n')
+    time.sleep(1)
+    dbOp.mongoDb.prevZeroTime=(datetime.fromisoformat('2024-10-09T06:57:12.001+00:00'))
+    dbOp.mongoDb.streamTimeBracket(296,139,timeWindowInSeconds=120,nestedField='data.deviceName',nestedValue='flowsynmaxi2')
+    
     '''
     Message from Flutter
-    '''
+    '''    
     print(
         dbOp.handleStreamRequest(
             {
                 "id":"120A3",
-                "labNotebookBaseRef":"50403_jdtoit_DSIP012A_7",
-                "runNr":7,
-                "timeWindow":25, #Get all desired datapoints from now to 45 seconds in future
-                "deviceName":"flowsynmaxi2",
-                "setting":"pressA"
+                "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+                "runNr":16,
+                "timeWindow":1200, #Get all desired datapoints from now to 45 seconds in future
+                "deviceName":"hotcoil1",
+                "setting":'temp'
             }
         )
     )
+
+    time.sleep(15)
     
     dbOp.mongoDb.kill()

@@ -1,0 +1,63 @@
+self.streamRequestDetails[id]["labNotebookBaseRef"]=req["labNotebookBaseRef"]
+self.streamRequestDetails[id]["runNr"]=req["runNr"]
+self.streamRequestDetails[id]["timeWindow"]=req["timeWindow"]
+self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
+self.streamRequestDetails[id]["setting"]=req["setting"]
+
+Hotcoil
+{
+    "instructions":{
+        "function":"handleStreamRequest",
+        "params":{
+            "id":"hotcoil1_temp",
+            "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+            "runNr":17,
+            "timeWindow":1000,
+            "deviceName":"hotcoil1",
+            "setting":"temp"
+        }
+    }
+}
+
+Maxi pump A pressure
+{
+    "instructions":{
+        "function":"handleStreamRequest",
+        "params":{
+            "id":"flowsynmaxi2_pressA",
+            "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+            "runNr":17,
+            "timeWindow":1000,
+            "deviceName":"flowsynmaxi2",
+            "setting":"pressA"
+        }
+    }
+}
+Maxi pump B pressure
+{
+    "instructions":{
+        "function":"handleStreamRequest",
+        "params":{
+            "id":"flowsynmaxi2_pressB",
+            "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+            "runNr":17,
+            "timeWindow":1000,
+            "deviceName":"flowsynmaxi2",
+            "setting":"pressB"
+        }
+    }
+}
+Maxi sys pressure
+{
+    "instructions":{
+        "function":"handleStreamRequest",
+        "params":{
+            "id":"flowsynmaxi2_pressSys",
+            "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
+            "runNr":17,
+            "timeWindow":1000,
+            "deviceName":"flowsynmaxi2",
+            "setting":"pressSys"
+        }
+    }
+}

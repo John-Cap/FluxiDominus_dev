@@ -74,10 +74,23 @@ class MySQLDatabase:
             self.cursor.executemany(insertQuery, records)
             self.connection.commit()
             print(f"Records inserted successfully into '{tableName}'.")
-    
-    def updateRecordById(self, tableName, uniqueId, columnName, newValue):
-        """Update a specific column's value in a row identified by a unique ID."""
+            
+    def updateRecordById(self, tableName, uniqueId, columnName, newValue, override=True):
+        """Update a specific column's value in a row identified by a unique ID. override=True allows a current value to be overriden."""
         if self.cursor:
+            if not override:
+                # Check the current value of the column
+                checkQuery = f"""
+                SELECT {columnName} FROM {tableName} WHERE id = %s
+                """
+                self.cursor.execute(checkQuery, (uniqueId,))
+                currentValue = self.cursor.fetchone()
+
+                # If there is a current value and it's not NULL or empty, skip the update
+                if currentValue and currentValue[0] not in (None, '', 'NULL'):
+                    print(f"Update skipped: Column '{columnName}' already has a value in record with ID {uniqueId}.")
+                    return
+            
             # Prepare the SQL query to update the specific column in the table.
             updateQuery = f"""
             UPDATE {tableName}
@@ -226,7 +239,7 @@ class TimeSeriesDatabaseMongo:
                 print('WJ - Inserted '+str(_numOf)+' datapoints into database '+str(self.db)+'!')
             time.sleep(self.insertionInterval) #Kannie so lank hier wag nie
 
-    def fetchTimeSeriesData(self, testlistId, testrunId, startTime: datetime = None, endTime: datetime = None, nestedField: str = None, nestedValue=None):
+    def fetchTimeSeriesData(self, testlistId, testrunId, startTime = None, endTime = None, nestedField: str = None, nestedValue=None):
         # Prepare the query with required filters
         query = {
             'metadata.testlistId': testlistId,
@@ -234,13 +247,18 @@ class TimeSeriesDatabaseMongo:
         }
 
         # Add time filtering to the query if provided
-        if startTime:
-            if not (startTime.tzname()):
-                startTime.replace(tzinfo=utc).isoformat()
-        if endTime:
-            if not (endTime.tzname()):
-                endTime.replace(tzinfo=utc).isoformat()
-        query['timestamp'] = {'$gte': startTime, '$lte': endTime}
+        if startTime and endTime:
+            if startTime:
+                print(f'WJ - Raw startTime: {startTime}')
+                if not (startTime.tzname()):
+                    startTime.replace(tzinfo=utc).isoformat()
+                print(f'WJ - Formatted startTime: {startTime}')
+            if endTime:
+                print(f'WJ - Raw endTime: {endTime}')
+                if not (endTime.tzname()):
+                    endTime.replace(tzinfo=utc).isoformat()
+                print(f'WJ - Formatted endTime: {endTime}')
+            query['timestamp'] = {'$gte': startTime, '$lte': endTime}
 
         # Add nested field filtering if provided
         if (nestedField and nestedValue): #Include 'field':value requirement to search
@@ -638,11 +656,11 @@ class DatabaseOperations:
     def setZeroTime(self, id, zeroTime=None):
         if not zeroTime:
             zeroTime=datetime.now(tz=utc)
-        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='startTime',newValue=zeroTime)
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='startTime',newValue=zeroTime,override=False)
     def setStopTime(self, id, stopTime=None):
         if not stopTime:
             stopTime=datetime.now(tz=utc)
-        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='endTime',newValue=stopTime)
+        self.mySqlDb.updateRecordById(tableName='testruns',uniqueId=id,columnName='endTime',newValue=stopTime,override=False)
 
     def connect(self):
         self.mySqlDb.connect()
@@ -650,6 +668,7 @@ class DatabaseOperations:
 
     def fetchStreamingBracket(self,labNotebookBaseRef,runNr): #Fetches previous experiment's start time and end time
         _ret=self.mySqlDb.fetchSpecifiedColumnsByValues(tableName='testruns',columnNames=['startTime','endTime'],column1Name='labNotebookBaseRef',value1=labNotebookBaseRef,column2Name='runNr',value2=runNr)
+        print(f'WJ - Streaming bracket: {_ret}')
         return [_ret[0],_ret[1]]
     
     def setStreamingBracket(self,labNotebookBaseRef,runNr): #Fetches previous experiment's start time and end time
@@ -687,7 +706,7 @@ class DatabaseStreamer(DatabaseOperations):
         self.streamRequestDetails[id]["deviceName"]=req["deviceName"]
         self.streamRequestDetails[id]["setting"]=req["setting"]
         
-        #Hardcoded
+        #TODO - Hardcoded
         self.streamRequestDetails[id]["nestedField"]="data.deviceName"
         self.streamRequestDetails[id]["nestedValue"]=self.streamRequestDetails[id]["deviceName"]
         
@@ -716,13 +735,16 @@ class DatabaseStreamer(DatabaseOperations):
             runNr=self.streamRequestDetails[id]["runNr"]
         ))[0]
         for _x in _rec:
-            _ret.append(self._packageData(
+            _thisRet=self._packageData(
                 _x["data"],
                 self.streamRequestDetails[id]["deviceName"],
                 self.streamRequestDetails[id]["setting"],
                 _x["timestamp"],
                 _zT
-            ))
+            )
+            if not _thisRet[1]:
+                continue
+            _ret.append(_thisRet)
         _data={"handleStreamRequest":{id:_ret}}
         self.streamRequestDetails[id]={}
         self.dataQueues[id]=[]

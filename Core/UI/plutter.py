@@ -1,6 +1,8 @@
 import ast
 from datetime import datetime
 import threading
+import time
+from bson import utc
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
@@ -18,7 +20,10 @@ class MqttService:
         self.allTopicsUI=allTopicsUI
         self.temp = 0
         self.IR = []
+        
         self.script = ""
+        self.parsedProcedure = None
+        
         self.formPanelData={}
 
         self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
@@ -35,6 +40,8 @@ class MqttService:
         self.lastMsgFromTopic={}
         self.dataQueue=DataSetFDD([])
         self.logData=False
+        self.lastReceivedTime={}
+        self.minTeleInterval=0.5
         
         self.orgId=orgId
         
@@ -109,21 +116,42 @@ class MqttService:
         self.lastMsgFromTopic[topic]=_msgContents
         ##
         if "deviceName" in _msgContents:
-            #Add to db streaming queue?
-            if (self.currTestrunId and self.currTestlistId and self.logData):
-                if not _msgContents["deviceName"] in self.registeredTeleDevices:
-                    self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
-                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                if self.runTest and self.logData and (self.currTestrunId and self.currTestlistId):
-                    self.dataQueue.addDataPoint(
-                        DataPointFDE(
-                            testlistId=self.currTestlistId,
-                            testrunId=self.currTestrunId,
-                            data=_msgContents,
-                            timestamp=datetime.now()
-                        )
-                    )
-        ##        
+            #Add to db streaming queue? Minimum wait passed?
+            if self.runTest:
+                if (self.currTestrunId and self.currTestlistId and self.logData):
+                    if "tele" in _msgContents:
+                        if not _msgContents["deviceName"] in self.lastReceivedTime:
+                            self.lastReceivedTime[_msgContents["deviceName"]]=time.perf_counter()
+                        else:
+                            if time.perf_counter() - self.lastReceivedTime[_msgContents["deviceName"]] < self.minTeleInterval:
+                                return #TODO - make sure it's fine to jump ship here
+                            else:
+                                if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                                    self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                                #print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
+                                self.dataQueue.addDataPoint(
+                                    DataPointFDE(
+                                        testlistId=self.currTestlistId,
+                                        testrunId=self.currTestrunId,
+                                        data=_msgContents,
+                                        timestamp=datetime.now(utc)
+                                    )
+                                )
+                    else:
+                        if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                            self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                            self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                        #print(f'Adding command datapoint for {_msgContents["deviceName"]}!')
+                        self.dataQueue.addDataPoint(
+                            DataPointFDE(
+                                testlistId=self.currTestlistId,
+                                testrunId=self.currTestrunId,
+                                data=_msgContents,
+                                timestamp=datetime.now(utc)
+                            )
+                        )                    
+                        
         elif "script" in _msgContents:
             _msgContents=_msgContents["script"]
             print('############')
@@ -194,6 +222,7 @@ class MqttService:
                 self.logData=False
                 print(f'WJ - Streaming to db disabled')
             elif (_func=="abort"):
+                self.databaseOperations.mongoDb.currZeroTime=None
                 if not self.abort:
                     self.abort=True
                     print(f'WJ - Aborting run!')

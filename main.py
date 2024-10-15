@@ -1,13 +1,16 @@
 
 from datetime import datetime
+import json
 import time
+
+from bson import utc
 
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
 from Core.UI.plutter import MqttService
 
-# Create an instance of MQTTTemperatureUpdater
+# Create an instance of MQTTTemperatureUpdater#
 #updater = MqttService(broker_address="localhost")
 updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
@@ -86,17 +89,30 @@ print("Signed in!")
 noTestDetails=False
 # Main loop!
 while True:
+    #Send back test not started confirmation
+    updater.client.publish("ui/dbCmnd/ret",json.dumps({"runTest":False}))
+
     #Script posted?
-    
+    #
     print("WJ - Waiting for script")
     updater.dataQueue.dataPoints=[] #Pasop!
     updater.abort=False
+    #And notify backend
     updater.runTest=False
     updater.registeredTeleDevices={}
+    updater.script=""
+    updater.databaseOperations.mongoDb.currZeroTime=None
     
-    while updater.script=="":
+    while updater.script=="" and not updater.abort:
         time.sleep(0.1)
 
+    if updater.abort:
+        print('WJ - Testrun aborted!')
+        if updater.runTest:
+            updater.runTest=False
+            updater.abort=False
+        continue
+    
     try:
 
         parser = ScriptParser(updater.script, client)
@@ -108,10 +124,8 @@ while True:
 
     except:
         print("Script parsing error!")
-        updater.script=""
+        #updater.script=""
         continue
-        
-    updater.script=""
     
     #Wait for go
     print('WJ - Waiting for go command')
@@ -127,15 +141,84 @@ while True:
     
     if updater.currTestlistId and updater.currTestrunId:
         noTestDetails=False
-        updater.zeroTime=datetime.now() #Start experiment time
-        updater.databaseOperations.mongoDb.currZeroTime=updater.zeroTime #Start experiment time
+        updater.zeroTime=datetime.now(utc) #Start experiment time
+        updater.databaseOperations.mongoDb.currZeroTime=None #Start experiment time
         updater.databaseOperations.setZeroTime(updater.currTestrunId)
         print(f"WJ - Set zerotime for testrun entry {updater.currTestrunId}!")
     else:
         noTestDetails=True
         
     print('WJ - Here we go!')
-    
+
+    #
+    #Inform UI of test start and provide zerotime
+    #
+    _zt=updater.databaseOperations.mongoDb.currZeroTime
+    updater.client.publish("ui/dbCmnd/ret",json.dumps(
+        {
+            "runTest":True,
+            "datetime":updater.databaseOperations.mongoDb.currZeroTime
+        })
+    )
+    #Hardcoded streaming example, D E L E T E
+    _thisRef=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId)
+    _thisTstrn=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId)
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+            "instructions":{
+                "function":"handleStreamRequest",
+                "params":{
+                    "id":"hotcoil1_temp",
+                    "labNotebookBaseRef":_thisRef,
+                    "runNr":_thisTstrn,
+                    "timeWindow":1000,
+                    "deviceName":"hotcoil1",
+                    "setting":"temp"
+                }
+            }
+        }))
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+            "instructions":{
+                "function":"handleStreamRequest",
+                "params":{
+                    "id":"flowsynmaxi2_pressA",
+                    "labNotebookBaseRef":_thisRef,
+                    "runNr":_thisTstrn,
+                    "timeWindow":1000,
+                    "deviceName":"flowsynmaxi2",
+                    "setting":"pressA"
+                }
+            }
+        }))
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+            "instructions":{
+                "function":"handleStreamRequest",
+                "params":{
+                    "id":"flowsynmaxi2_pressB",
+                    "labNotebookBaseRef":_thisRef,
+                    "runNr":_thisTstrn,
+                    "timeWindow":1000,
+                    "deviceName":"flowsynmaxi2",
+                    "setting":"pressB"
+                }
+            }
+        }))
+    updater.client.publish(
+        topic="ui/dbCmnd/in",payload=json.dumps({
+            "instructions":{
+                "function":"handleStreamRequest",
+                "params":{
+                    "id":"flowsynmaxi2_pressSystem",
+                    "labNotebookBaseRef":_thisRef,
+                    "runNr":_thisTstrn,
+                    "timeWindow":1000,
+                    "deviceName":"flowsynmaxi2",
+                    "setting":"pressSys"
+                }
+            }
+        }))
     while (not updater.abort):
 
         if len(procedure.currConfig.commands) == 0:
@@ -154,12 +237,11 @@ while True:
                 updater.dataQueue.dataPoints=[]
             _reportDelay=Delay(_reportSleep)
 
-        time.sleep(0.05)
-                        
+        time.sleep(0.1)
+        
     #TODO - in own thread
-    if updater.abort and not noTestDetails:
-        updater.databaseOperations.setStopTime(updater.currTestrunId)
+    if updater.logData and not noTestDetails:
         if len(updater.dataQueue.dataPoints) != 0:
             updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
             updater.dataQueue.dataPoints=[]
-        
+        updater.databaseOperations.setStopTime(updater.currTestrunId)        
