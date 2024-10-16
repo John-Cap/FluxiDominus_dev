@@ -87,11 +87,65 @@ print("Signed in!")
 ################################
 #Database flags
 noTestDetails=False
+
+#Ping database delay
+mySqlPngDelay=30;
+lstPngTime=time.time();
 # Main loop!
 while True:
     #Send back test not started confirmation
     updater.client.publish("ui/dbCmnd/ret",json.dumps({"runTest":False}))
 
+    #Set setup to safe state
+    updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "connDetails": {
+            "ipCom": {
+            "addr": "192.168.1.202",
+            "port": 80
+            }
+        },
+        "settings": {
+            "command": "SET",
+            "subDevice": "PumpAFlowRate",
+            "value": 0
+        }
+    }))
+    updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "connDetails": {
+            "ipCom": {
+            "addr": "192.168.1.202",
+            "port": 80
+            }
+        },
+        "settings": {
+            "command": "SET",
+            "subDevice": "PumpBFlowRate",
+            "value": 0
+        }
+    }))
+    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0}}))
+    updater.client.publish("subflow/sf10Vapourtec1/cmnd",json.dumps({
+        "deviceName": "sf10Vapourtec1",
+        "inUse": True,
+        "connDetails": {
+            "serialCom": {
+            "port": "/dev/ttyUSB0",
+            "baud": 9600,
+            "dataLength": 8,
+            "parity": "N",
+            "stopbits": 1
+            }
+        },
+        "settings": {
+            "command": "SET",
+            "mode": "FLOW",
+            "flowrate": 0
+        }
+        }))
     #Script posted?
     #
     print("WJ - Waiting for script")
@@ -104,6 +158,16 @@ while True:
     updater.databaseOperations.mongoDb.currZeroTime=None
     
     while updater.script=="" and not updater.abort:
+        #dbConnection ping
+        if time.time() - lstPngTime > mySqlPngDelay:
+            if updater.databaseOperations.mySqlDb.connection.is_connected():
+                lstPngTime=time.time();
+                print('mySQL db pinged!');
+            else:
+                print('mySQL db ping not answered!');
+                updater.databaseOperations.mySqlDb.connect();
+                time.sleep(0.5);
+        #
         time.sleep(0.1)
 
     if updater.abort:
@@ -111,6 +175,55 @@ while True:
         if updater.runTest:
             updater.runTest=False
             updater.abort=False
+        updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+            "deviceName": "flowsynmaxi2",
+            "inUse": True,
+            "connDetails": {
+                "ipCom": {
+                "addr": "192.168.1.202",
+                "port": 80
+                }
+            },
+            "settings": {
+                "command": "SET",
+                "subDevice": "PumpAFlowRate",
+                "value": 0
+            }
+        }))
+        updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+            "deviceName": "flowsynmaxi2",
+            "inUse": True,
+            "connDetails": {
+                "ipCom": {
+                "addr": "192.168.1.202",
+                "port": 80
+                }
+            },
+            "settings": {
+                "command": "SET",
+                "subDevice": "PumpBFlowRate",
+                "value": 0
+            }
+        }))
+        updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0}}))
+        updater.client.publish("subflow/sf10Vapourtec1/cmnd",json.dumps({
+            "deviceName": "sf10Vapourtec1",
+            "inUse": True,
+            "connDetails": {
+                "serialCom": {
+                "port": "/dev/ttyUSB0",
+                "baud": 9600,
+                "dataLength": 8,
+                "parity": "N",
+                "stopbits": 1
+                }
+            },
+            "settings": {
+                "command": "SET",
+                "mode": "FLOW",
+                "flowrate": 0
+            }
+        }))
         continue
     
     try:
@@ -130,6 +243,16 @@ while True:
     #Wait for go
     print('WJ - Waiting for go command')
     while (not updater.runTest) and (not updater.abort):
+        #dbConnection ping
+        if time.time() - lstPngTime > mySqlPngDelay:
+            if updater.databaseOperations.mySqlDb.connection.is_connected():
+                lstPngTime=time.time();
+                print('mySQL db pinged!');
+            else:
+                print('mySQL db ping not answered!');
+                updater.databaseOperations.mySqlDb.connect();
+                time.sleep(0.5);
+        #
         time.sleep(0.1)
 
     if updater.abort:
@@ -160,7 +283,7 @@ while True:
             "datetime":updater.databaseOperations.mongoDb.currZeroTime
         })
     )
-    #Hardcoded streaming example, D E L E T E
+    #TODO - Hardcoded streaming example
     _thisRef=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId)
     _thisTstrn=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId)
     updater.client.publish(
@@ -219,8 +342,18 @@ while True:
                 }
             }
         }))
+    
     while (not updater.abort):
-
+        #dbConnection ping
+        if time.time() - lstPngTime > mySqlPngDelay:
+            if updater.databaseOperations.mySqlDb.connection.is_connected():
+                lstPngTime=time.time();
+                print('mySQL db pinged!');
+            else:
+                print('mySQL db ping not answered!');
+                updater.databaseOperations.mySqlDb.connect();
+                time.sleep(0.5);
+        #
         if len(procedure.currConfig.commands) == 0:
             procedure.next()
             if procedure.currConfig is None:
@@ -244,4 +377,4 @@ while True:
         if len(updater.dataQueue.dataPoints) != 0:
             updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
             updater.dataQueue.dataPoints=[]
-        updater.databaseOperations.setStopTime(updater.currTestrunId)        
+        updater.databaseOperations.setStopTime(updater.currTestrunId)

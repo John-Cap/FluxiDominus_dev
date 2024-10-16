@@ -108,7 +108,22 @@ subflow/flowsynmaxi2/cmnd
     "settings": {
         "command": "SET",
         "subDevice": "PumpAFlowRate",
-        "value": 0.5
+        "value": 0
+    }
+}
+{
+    "deviceName": "flowsynmaxi2",
+    "inUse": true,
+    "connDetails": {
+        "ipCom": {
+        "addr": "192.168.1.202",
+        "port": 80
+        }
+    },
+    "settings": {
+        "command": "SET",
+        "subDevice": "PumpBFlowRate",
+        "value": 0
     }
 }
 subflow/flowsynmaxi2/tele
