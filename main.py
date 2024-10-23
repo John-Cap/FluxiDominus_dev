@@ -3,7 +3,7 @@ from datetime import datetime
 import json
 import time
 
-from bson import utc
+from pytz import utc
 
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
@@ -74,11 +74,11 @@ _reportDelay=Delay(_reportSleep)
 parser=None
 procedure=None
 
-################################
+################################ 1.70 - 3.00 A/B -> 11:15
 #Signed in?
 print("WJ - Awaiting sign-in")
 updater.authenticator.mqttService=updater
-updater.authenticator.user.orgId="50403"
+updater.authenticator.user.orgId="309930"
 '''
 while not updater.authenticator.signedIn:
     time.sleep(0.2)
@@ -102,7 +102,7 @@ while True:
         "inUse": True,
         "connDetails": {
             "ipCom": {
-            "addr": "192.168.1.202",
+            "addr": "192.168.1.201",
             "port": 80
             }
         },
@@ -117,7 +117,7 @@ while True:
         "inUse": True,
         "connDetails": {
             "ipCom": {
-            "addr": "192.168.1.202",
+            "addr": "192.168.1.201",
             "port": 80
             }
         },
@@ -174,56 +174,7 @@ while True:
         print('WJ - Testrun aborted!')
         if updater.runTest:
             updater.runTest=False
-            updater.abort=False
-        updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
-            "deviceName": "flowsynmaxi2",
-            "inUse": True,
-            "connDetails": {
-                "ipCom": {
-                "addr": "192.168.1.202",
-                "port": 80
-                }
-            },
-            "settings": {
-                "command": "SET",
-                "subDevice": "PumpAFlowRate",
-                "value": 0
-            }
-        }))
-        updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
-            "deviceName": "flowsynmaxi2",
-            "inUse": True,
-            "connDetails": {
-                "ipCom": {
-                "addr": "192.168.1.202",
-                "port": 80
-                }
-            },
-            "settings": {
-                "command": "SET",
-                "subDevice": "PumpBFlowRate",
-                "value": 0
-            }
-        }))
-        updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0}}))
-        updater.client.publish("subflow/sf10Vapourtec1/cmnd",json.dumps({
-            "deviceName": "sf10Vapourtec1",
-            "inUse": True,
-            "connDetails": {
-                "serialCom": {
-                "port": "/dev/ttyUSB0",
-                "baud": 9600,
-                "dataLength": 8,
-                "parity": "N",
-                "stopbits": 1
-                }
-            },
-            "settings": {
-                "command": "SET",
-                "mode": "FLOW",
-                "flowrate": 0
-            }
-        }))
+        updater.abort=False
         continue
     
     try:
@@ -261,8 +212,10 @@ while True:
             updater.runTest=False
             updater.abort=False
         continue
-    
-    if updater.currTestlistId and updater.currTestrunId:
+    print(f'WJ - ctrid {updater.currTestrunId}')
+    print(f'WJ - ctlstid {updater.currTestlistId}')
+    if updater.currTestlistId != None  and updater.currTestrunId != None:
+        print('WJ - currTestlistId and currTestrunId')
         noTestDetails=False
         updater.zeroTime=datetime.now(utc) #Start experiment time
         updater.databaseOperations.mongoDb.currZeroTime=None #Start experiment time
@@ -270,6 +223,7 @@ while True:
         print(f"WJ - Set zerotime for testrun entry {updater.currTestrunId}!")
     else:
         noTestDetails=True
+        print('WJ - No test details!')
         
     print('WJ - Here we go!')
 
@@ -280,10 +234,11 @@ while True:
     updater.client.publish("ui/dbCmnd/ret",json.dumps(
         {
             "runTest":True,
-            "datetime":updater.databaseOperations.mongoDb.currZeroTime
+            "datetime":_zt
         })
     )
     #TODO - Hardcoded streaming example
+    '''
     _thisRef=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId)
     _thisTstrn=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId)
     updater.client.publish(
@@ -342,7 +297,7 @@ while True:
                 }
             }
         }))
-    
+    '''
     while (not updater.abort):
         #dbConnection ping
         if time.time() - lstPngTime > mySqlPngDelay:

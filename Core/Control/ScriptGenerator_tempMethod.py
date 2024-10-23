@@ -242,7 +242,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.202",
+                            "addr": "192.168.1.201",
                             "port": 80
                         }
                     },
@@ -261,7 +261,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.202",
+                            "addr": "192.168.1.201",
                             "port": 80
                         }
                     },
@@ -280,7 +280,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.202",
+                            "addr": "192.168.1.201",
                             "port": 80
                         }
                     },
@@ -299,7 +299,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.202",
+                            "addr": "192.168.1.201",
                             "port": 80
                         }
                     },
@@ -318,7 +318,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.202",
+                            "addr": "192.168.1.201",
                             "port": 80
                         }
                     },
@@ -337,7 +337,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.202",
+                            "addr": "192.168.1.201",
                             "port": 80
                         }
                     },
@@ -352,7 +352,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.202",
+                            "addr": "192.168.1.201",
                             "port": 80
                         }
                     },

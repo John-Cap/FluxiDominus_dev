@@ -1,0 +1,4385 @@
+{
+    "\u0000": {
+        "Collection": {
+            "5percentStartTime": 10.795767784118652,
+            "5percentStopTime": 12.387100219726562,
+            "95percentStartTime": 11.049385070800781,
+            "95percentStopTime": 11.82376766204834,
+            "asAvailable": false,
+            "asCollectorMode": false,
+            "asInjectorMode": false,
+            "asNozzleWashVol": 2e-322,
+            "asPattern": 0,
+            "asRack2Code": 0,
+            "asRack3Code": 0,
+            "asType": 10,
+            "collectAll": true,
+            "collectFor": 0.1,
+            "collectStartTime": 10.795767784118652,
+            "collectSteadyState": false,
+            "collectStopTime": 2.055e-321,
+            "divertToWasteFor": 10.795767784118652,
+            "doNotCollect": false,
+            "fcAvailable": false,
+            "fcNozzleWashVol": 2.233e-321,
+            "fcPattern": 0,
+            "fcRackCode": 276,
+            "fcType": 0,
+            "injectToReagentBottle": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "numberOfVials": 1,
+            "startFrom": 0,
+            "totalCollVolume": 0.1,
+            "useOpticalDetector": false,
+            "uv150Available": false,
+            "uvDeadBandTime": 0.16666666666666666,
+            "uvDeadBandVolume": 0.5,
+            "uvFullScaleIntensity": 1,
+            "uvMaxCollVolume": 1,
+            "uvStartThreshPercent": 25,
+            "uvStopThreshPercent": 50,
+            "uvdAvailable": false,
+            "uvdType": 1,
+            "uvpower": 50,
+            "volumePerVial": 0.1
+        },
+        "Data and Results": {
+            "dispModelForPath": [
+                0,
+                0
+            ],
+            "pathsDeadVolTimes": [
+                0.425,
+                0.45,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsFlowRates": [
+                1,
+                2
+            ],
+            "pathsReagentBottleTimes": [
+            ],
+            "pathsReagentTimes": [
+                0.15000000000000002,
+                0.55,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsSolventTimes": [
+                11.93576774597168,
+                0.9467182576656341,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsStartTimes": [
+                0,
+                10.432,
+                0,
+                7.12839,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsTimes": [
+                11.08576774597168,
+                0.49671825766563416
+            ],
+            "pathsVolumes": [
+                11.686505317687988,
+                1.2938052415847778
+            ],
+            "pumpsForPaths": [
+                0,
+                1
+            ],
+            "reagentsForPaths": [
+                1,
+                2
+            ],
+            "totalFlowRate": 3
+        },
+        "ExternalTriggers": {
+            "triggersActive": [
+                false,
+                false,
+                false
+            ],
+            "triggersTimes": [
+                -1,
+                -1,
+                -1
+            ]
+        },
+        "Loading": {
+            "asRack1Code": 0,
+            "cleanAtStart": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "doNotFill": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "fillLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "loadingWithAS": true,
+            "partialLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "sampleDescription": [
+                "Sample A Desc",
+                "Sample B Desc",
+                "Sample C Desc",
+                "Sample D Desc"
+            ],
+            "siteForLoading": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "siteForLoadingReagBottle": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "Pumps": {
+            "activePumpsVector": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "flowRateWhenLoad": 4,
+            "loopVolumes": [
+                1000,
+                2000,
+                1000,
+                0,
+                1000,
+                1000,
+                1000,
+                1000
+            ],
+            "postWashFR": 1,
+            "postWashVolume": 1,
+            "preWashFR": 1,
+            "preWashVolume": 0,
+            "pumpsAdvRet": [
+                0,
+                10.432,
+                0,
+                7.12839,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pumpsDeadVolumes": [
+                0.85,
+                0.9,
+                0,
+                0,
+                0,
+                0.55,
+                0.55,
+                0
+            ],
+            "pumpsFR": [
+                1,
+                2,
+                1,
+                0,
+                1,
+                1,
+                1,
+                1
+            ],
+            "pumpsFlowSpecification": 0,
+            "pumpsForHeatAndCool": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPostWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPreWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsReagConcent": [
+                0.5,
+                0.5,
+                0,
+                0.5,
+                0,
+                0,
+                0,
+                0
+            ],
+            "reagentVolume": [
+                1,
+                2,
+                1,
+                3,
+                1,
+                1,
+                1,
+                1
+            ],
+            "sampleLoopPumpsVector": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "stoichiometricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "volumeForCleaning": 10,
+            "volumetricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        "Reaction Results": {
+            "bprPressure": 0,
+            "cleaningTime": 2.5,
+            "concModelTime": 1.5913324356079102,
+            "finalSampleLoopWash": false,
+            "flowRateWhenCleaning": 4,
+            "flowRateWhenCooling": 0.1,
+            "flowRateWhenHeating": 0.25,
+            "flowRateWhenLoading": 4,
+            "m_frForIndReactors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_frForReactors": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpChannelPerIndReactor0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor0": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor2": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsExtraFR0": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR1": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR2": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR3": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR4": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR5": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR6": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR7": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "newRack": false,
+            "numberOfVials": 1,
+            "postWashTime": 0,
+            "preWashTime": 0,
+            "pumpsMFCGasType": [
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            "pumpsMFCType": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnBPRMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnFRMode": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnGasMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsType": [
+            ],
+            "pumpsWStaticValve": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "reactorsPossitions": [
+                0,
+                2
+            ],
+            "reactorsTempSet": [
+                30,
+                45
+            ],
+            "skipHeatingEnable": false,
+            "start5percentTime": 10.795767784118652,
+            "startFrom": 0,
+            "switchBackMult": 1,
+            "timeFCWash1": 0,
+            "timeFCWash2": 0,
+            "timePerVial": 1.5913324356079102
+        },
+        "Reactors": {
+            "RTimeCalc": [
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "RTimeCalcInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "active": [
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "activeInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "chillersAvailable": [
+            ],
+            "chillersSetPoint": [
+            ],
+            "densityCorrection": [
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1
+            ],
+            "indVolumes": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "ionAvailable": -1,
+            "ionCurrent": 0,
+            "ionNoChannel": false,
+            "ionVoltage": 0,
+            "residenceTime": 0,
+            "tempSet": [
+                30,
+                25,
+                45,
+                25,
+                25,
+                25,
+                25,
+                25,
+                0,
+                0,
+                0,
+                0,
+                25,
+                25,
+                0
+            ],
+            "vbfrAvailable": false,
+            "vbfrColumnSize": 0,
+            "volumeForReactorPaths0": [
+                10
+            ],
+            "volumeForReactorPaths1": [
+                0
+            ],
+            "volumeForReactorPaths2": [
+                0
+            ],
+            "volumeForReactorPaths3": [
+                10
+            ],
+            "volumeForReactorPaths4": [
+                0
+            ],
+            "volumeForReactorPaths5": [
+                0
+            ],
+            "volumeForReactorPaths6": [
+                0
+            ],
+            "volumeForReactorPaths7": [
+                0
+            ],
+            "volumes": [
+                10,
+                0,
+                10,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "data": [
+            0,
+            2,
+            30,
+            45,
+            3,
+            1
+        ],
+        "executableReaction": true,
+        "execute": true,
+        "name": "r1"
+    },
+    "\u0001": {
+        "Collection": {
+            "5percentStartTime": 5.031149387359619,
+            "5percentStopTime": 6.566610813140869,
+            "95percentStartTime": 5.480149745941162,
+            "95percentStopTime": 6.407310485839844,
+            "asAvailable": false,
+            "asCollectorMode": false,
+            "asInjectorMode": false,
+            "asNozzleWashVol": 10.812718391418457,
+            "asPattern": -536870912,
+            "asRack2Code": 0,
+            "asRack3Code": 0,
+            "asType": 1068161850,
+            "collectAll": true,
+            "collectFor": 1.53546142578125,
+            "collectStartTime": 5.031149387359619,
+            "collectSteadyState": false,
+            "collectStopTime": 6.566610813140869,
+            "divertToWasteFor": 5.031149387359619,
+            "doNotCollect": false,
+            "fcAvailable": false,
+            "fcNozzleWashVol": 10.810051918029785,
+            "fcPattern": 1068108378,
+            "fcRackCode": -2147483648,
+            "fcType": 1076207120,
+            "injectToReagentBottle": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "numberOfVials": 1,
+            "startFrom": 1,
+            "totalCollVolume": 6.141845703125,
+            "useOpticalDetector": false,
+            "uv150Available": false,
+            "uvDeadBandTime": 0.125,
+            "uvDeadBandVolume": 0.5,
+            "uvFullScaleIntensity": 1,
+            "uvMaxCollVolume": 1,
+            "uvStartThreshPercent": 25,
+            "uvStopThreshPercent": 50,
+            "uvdAvailable": false,
+            "uvdType": 1,
+            "uvpower": 50,
+            "volumePerVial": 6.141845703125
+        },
+        "Data and Results": {
+            "dispModelForPath": [
+                0,
+                0
+            ],
+            "pathsDeadVolTimes": [
+                0.425,
+                0.45,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsFlowRates": [
+                3,
+                1
+            ],
+            "pathsReagentBottleTimes": [
+            ],
+            "pathsReagentTimes": [
+                0.05000000000000001,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsSolventTimes": [
+                4.1037426312764484,
+                1.5179755926132201,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsStartTimes": [
+                1.55599,
+                4.96786,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsTimes": [
+                3.8204092979431152,
+                0.6179755926132202
+            ],
+            "pathsVolumes": [
+                11.686505317687988,
+                1.2938052415847778
+            ],
+            "pumpsForPaths": [
+                0,
+                1
+            ],
+            "reagentsForPaths": [
+                1,
+                0.9
+            ],
+            "totalFlowRate": 4
+        },
+        "ExternalTriggers": {
+            "triggersActive": [
+                false,
+                false,
+                false
+            ],
+            "triggersTimes": [
+                -1,
+                -1,
+                -1
+            ]
+        },
+        "Loading": {
+            "asRack1Code": 0,
+            "cleanAtStart": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "doNotFill": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "fillLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "loadingWithAS": true,
+            "partialLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "sampleDescription": [
+                "Sample A Desc",
+                "Sample B Desc",
+                "Sample C Desc",
+                "Sample D Desc"
+            ],
+            "siteForLoading": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "siteForLoadingReagBottle": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "Pumps": {
+            "activePumpsVector": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "flowRateWhenLoad": 4,
+            "loopVolumes": [
+                1000,
+                900,
+                1000,
+                0,
+                1000,
+                1000,
+                1000,
+                1000
+            ],
+            "postWashFR": 1,
+            "postWashVolume": 1,
+            "preWashFR": 1,
+            "preWashVolume": 0,
+            "pumpsAdvRet": [
+                1.55599,
+                4.96786,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pumpsDeadVolumes": [
+                0.85,
+                0.9,
+                0,
+                0,
+                0,
+                0.55,
+                0.55,
+                0
+            ],
+            "pumpsFR": [
+                3,
+                1,
+                1,
+                0,
+                1,
+                1,
+                1,
+                1
+            ],
+            "pumpsFlowSpecification": 0,
+            "pumpsForHeatAndCool": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPostWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPreWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsReagConcent": [
+                0.5,
+                0.5,
+                0,
+                0.5,
+                0,
+                0,
+                0,
+                0
+            ],
+            "reagentVolume": [
+                1,
+                0.9,
+                1,
+                0.9,
+                1,
+                1,
+                1,
+                1
+            ],
+            "sampleLoopPumpsVector": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "stoichiometricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "volumeForCleaning": 10,
+            "volumetricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        "Reaction Results": {
+            "bprPressure": 0,
+            "cleaningTime": 2.5,
+            "concModelTime": 1.53546142578125,
+            "finalSampleLoopWash": false,
+            "flowRateWhenCleaning": 4,
+            "flowRateWhenCooling": 0.1,
+            "flowRateWhenHeating": 0.25,
+            "flowRateWhenLoading": 4,
+            "m_frForIndReactors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_frForReactors": [
+                3,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpChannelPerIndReactor0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor0": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor2": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsExtraFR0": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR1": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR2": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR3": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR4": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR5": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR6": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR7": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "newRack": false,
+            "numberOfVials": 1,
+            "postWashTime": 0,
+            "preWashTime": 0,
+            "pumpsMFCGasType": [
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            "pumpsMFCType": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnBPRMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnFRMode": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnGasMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsType": [
+            ],
+            "pumpsWStaticValve": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "reactorsPossitions": [
+                0,
+                2
+            ],
+            "reactorsTempSet": [
+                50,
+                27
+            ],
+            "skipHeatingEnable": false,
+            "start5percentTime": 5.031149387359619,
+            "startFrom": 1,
+            "switchBackMult": 1,
+            "timeFCWash1": 0,
+            "timeFCWash2": 0,
+            "timePerVial": 1.53546142578125
+        },
+        "Reactors": {
+            "RTimeCalc": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "RTimeCalcInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "active": [
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "activeInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "chillersAvailable": [
+            ],
+            "chillersSetPoint": [
+            ],
+            "densityCorrection": [
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1
+            ],
+            "indVolumes": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "ionAvailable": -1,
+            "ionCurrent": 0,
+            "ionNoChannel": false,
+            "ionVoltage": 0,
+            "residenceTime": 3.3333333333333335,
+            "tempSet": [
+                50,
+                25,
+                27,
+                25,
+                25,
+                25,
+                25,
+                25,
+                0,
+                0,
+                0,
+                0,
+                25,
+                25,
+                0
+            ],
+            "vbfrAvailable": false,
+            "vbfrColumnSize": 0,
+            "volumeForReactorPaths0": [
+                10
+            ],
+            "volumeForReactorPaths1": [
+                0
+            ],
+            "volumeForReactorPaths2": [
+                0
+            ],
+            "volumeForReactorPaths3": [
+                10
+            ],
+            "volumeForReactorPaths4": [
+                0
+            ],
+            "volumeForReactorPaths5": [
+                0
+            ],
+            "volumeForReactorPaths6": [
+                0
+            ],
+            "volumeForReactorPaths7": [
+                0
+            ],
+            "volumes": [
+                10,
+                0,
+                10,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "data": [
+            0,
+            3,
+            27,
+            50,
+            3,
+            1
+        ],
+        "executableReaction": true,
+        "execute": true,
+        "name": "r2"
+    },
+    "\u0002": {
+        "Collection": {
+            "5percentStartTime": 2.633112907409668,
+            "5percentStopTime": 3.236988067626953,
+            "95percentStartTime": 2.8647329807281494,
+            "95percentStopTime": 3.004108190536499,
+            "asAvailable": false,
+            "asCollectorMode": false,
+            "asInjectorMode": false,
+            "asNozzleWashVol": 6.9106970796193e-310,
+            "asPattern": 513,
+            "asRack2Code": 0,
+            "asRack3Code": 0,
+            "asType": 1667301477,
+            "collectAll": true,
+            "collectFor": 0.6038751602172852,
+            "collectStartTime": 2.633112907409668,
+            "collectSteadyState": false,
+            "collectStopTime": 3.236988067626953,
+            "divertToWasteFor": 2.633112907409668,
+            "doNotCollect": false,
+            "fcAvailable": false,
+            "fcNozzleWashVol": 4.176952530956322e+199,
+            "fcPattern": 1818847331,
+            "fcRackCode": 17,
+            "fcType": 25978,
+            "injectToReagentBottle": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "numberOfVials": 1,
+            "startFrom": 2,
+            "totalCollVolume": 4.831001281738281,
+            "useOpticalDetector": false,
+            "uv150Available": false,
+            "uvDeadBandTime": 0.0625,
+            "uvDeadBandVolume": 0.5,
+            "uvFullScaleIntensity": 1,
+            "uvMaxCollVolume": 1,
+            "uvStartThreshPercent": 25,
+            "uvStopThreshPercent": 50,
+            "uvdAvailable": false,
+            "uvdType": 1,
+            "uvpower": 50,
+            "volumePerVial": 4.831001281738281
+        },
+        "Data and Results": {
+            "dispModelForPath": [
+                0,
+                0
+            ],
+            "pathsDeadVolTimes": [
+                0.425,
+                0.45,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsFlowRates": [
+                4,
+                4
+            ],
+            "pathsReagentBottleTimes": [
+            ],
+            "pathsReagentTimes": [
+                0.037500000000000006,
+                0.024999999999999994,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsSolventTimes": [
+                3.021487855911255,
+                0.43581303060054777,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsStartTimes": [
+                0,
+                2.59817,
+                0,
+                0.0946074,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsTimes": [
+                2.808987855911255,
+                0.2108130306005478
+            ],
+            "pathsVolumes": [
+                11.686505317687988,
+                1.2938052415847778
+            ],
+            "pumpsForPaths": [
+                0,
+                1
+            ],
+            "reagentsForPaths": [
+                1,
+                1
+            ],
+            "totalFlowRate": 8
+        },
+        "ExternalTriggers": {
+            "triggersActive": [
+                false,
+                false,
+                false
+            ],
+            "triggersTimes": [
+                -1,
+                -1,
+                -1
+            ]
+        },
+        "Loading": {
+            "asRack1Code": 0,
+            "cleanAtStart": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "doNotFill": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "fillLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "loadingWithAS": true,
+            "partialLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "sampleDescription": [
+                "Sample A Desc",
+                "Sample B Desc",
+                "Sample C Desc",
+                "Sample D Desc"
+            ],
+            "siteForLoading": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "siteForLoadingReagBottle": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "Pumps": {
+            "activePumpsVector": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "flowRateWhenLoad": 4,
+            "loopVolumes": [
+                1000,
+                1000,
+                1000,
+                0,
+                1000,
+                1000,
+                1000,
+                1000
+            ],
+            "postWashFR": 1,
+            "postWashVolume": 1,
+            "preWashFR": 1,
+            "preWashVolume": 0,
+            "pumpsAdvRet": [
+                0,
+                2.59817,
+                0,
+                0.0946074,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pumpsDeadVolumes": [
+                0.85,
+                0.9,
+                0,
+                0,
+                0,
+                0.55,
+                0.55,
+                0
+            ],
+            "pumpsFR": [
+                4,
+                4,
+                1,
+                0,
+                1,
+                1,
+                1,
+                1
+            ],
+            "pumpsFlowSpecification": 0,
+            "pumpsForHeatAndCool": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPostWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPreWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsReagConcent": [
+                0.5,
+                0.5,
+                0,
+                0.5,
+                0,
+                0,
+                0,
+                0
+            ],
+            "reagentVolume": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "sampleLoopPumpsVector": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "stoichiometricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "volumeForCleaning": 10,
+            "volumetricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        "Reaction Results": {
+            "bprPressure": 0,
+            "cleaningTime": 2.5,
+            "concModelTime": 0.6038751602172852,
+            "finalSampleLoopWash": false,
+            "flowRateWhenCleaning": 4,
+            "flowRateWhenCooling": 0.1,
+            "flowRateWhenHeating": 0.25,
+            "flowRateWhenLoading": 4,
+            "m_frForIndReactors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_frForReactors": [
+                4,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpChannelPerIndReactor0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor0": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor2": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsExtraFR0": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR1": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR2": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR3": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR4": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR5": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR6": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR7": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "newRack": false,
+            "numberOfVials": 1,
+            "postWashTime": 0,
+            "preWashTime": 0,
+            "pumpsMFCGasType": [
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            "pumpsMFCType": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnBPRMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnFRMode": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnGasMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsType": [
+            ],
+            "pumpsWStaticValve": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "reactorsPossitions": [
+                0,
+                2
+            ],
+            "reactorsTempSet": [
+                40,
+                60
+            ],
+            "skipHeatingEnable": false,
+            "start5percentTime": 2.633112907409668,
+            "startFrom": 2,
+            "switchBackMult": 1,
+            "timeFCWash1": 0,
+            "timeFCWash2": 0,
+            "timePerVial": 0.6038751602172852
+        },
+        "Reactors": {
+            "RTimeCalc": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "RTimeCalcInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "active": [
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "activeInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "chillersAvailable": [
+            ],
+            "chillersSetPoint": [
+            ],
+            "densityCorrection": [
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1
+            ],
+            "indVolumes": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "ionAvailable": -1,
+            "ionCurrent": 0,
+            "ionNoChannel": false,
+            "ionVoltage": 0,
+            "residenceTime": 2.5,
+            "tempSet": [
+                40,
+                25,
+                60,
+                25,
+                25,
+                25,
+                25,
+                25,
+                0,
+                0,
+                0,
+                0,
+                25,
+                25,
+                0
+            ],
+            "vbfrAvailable": false,
+            "vbfrColumnSize": 0,
+            "volumeForReactorPaths0": [
+                10
+            ],
+            "volumeForReactorPaths1": [
+                0
+            ],
+            "volumeForReactorPaths2": [
+                0
+            ],
+            "volumeForReactorPaths3": [
+                10
+            ],
+            "volumeForReactorPaths4": [
+                0
+            ],
+            "volumeForReactorPaths5": [
+                0
+            ],
+            "volumeForReactorPaths6": [
+                0
+            ],
+            "volumeForReactorPaths7": [
+                0
+            ],
+            "volumes": [
+                10,
+                0,
+                10,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "data": [
+            0,
+            4,
+            40,
+            60,
+            3,
+            1
+        ],
+        "executableReaction": true,
+        "execute": true,
+        "name": "r3"
+    },
+    "\u0003": {
+        "Collection": {
+            "5percentStartTime": 10.185033798217773,
+            "5percentStopTime": 11.90639877319336,
+            "95percentStartTime": 10.512700080871582,
+            "95percentStopTime": 11.627848625183105,
+            "asAvailable": false,
+            "asCollectorMode": false,
+            "asInjectorMode": false,
+            "asNozzleWashVol": 1.8e-322,
+            "asPattern": 257,
+            "asRack2Code": 0,
+            "asRack3Code": 0,
+            "asType": 1,
+            "collectAll": true,
+            "collectFor": 1.721364974975586,
+            "collectStartTime": 10.185033798217773,
+            "collectSteadyState": false,
+            "collectStopTime": 11.90639877319336,
+            "divertToWasteFor": 10.185033798217773,
+            "doNotCollect": false,
+            "fcAvailable": false,
+            "fcNozzleWashVol": 6.91069713201003e-310,
+            "fcPattern": 10,
+            "fcRackCode": 96,
+            "fcType": 0,
+            "injectToReagentBottle": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "numberOfVials": 1,
+            "startFrom": 3,
+            "totalCollVolume": 10.328189849853516,
+            "useOpticalDetector": false,
+            "uv150Available": false,
+            "uvDeadBandTime": 0.08333333333333333,
+            "uvDeadBandVolume": 0.5,
+            "uvFullScaleIntensity": 1,
+            "uvMaxCollVolume": 1,
+            "uvStartThreshPercent": 25,
+            "uvStopThreshPercent": 50,
+            "uvdAvailable": false,
+            "uvdType": 1,
+            "uvpower": 50,
+            "volumePerVial": 10.328189849853516
+        },
+        "Data and Results": {
+            "dispModelForPath": [
+                0,
+                0,
+                0
+            ],
+            "pathsDeadVolTimes": [
+                0.6375000000000001,
+                0.675,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsFlowRates": [
+                3,
+                2,
+                1
+            ],
+            "pathsReagentBottleTimes": [
+            ],
+            "pathsReagentTimes": [
+                0.05000000000000001,
+                0,
+                0,
+                0.9,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsSolventTimes": [
+                4.043406995137532,
+                0.8112905442714691,
+                0,
+                10.861799240112305,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsStartTimes": [
+                6.64096,
+                10.0921,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsTimes": [
+                3.760073661804199,
+                0.3612905442714691,
+                10.861799240112305
+            ],
+            "pathsVolumes": [
+                11.686505317687988,
+                1.2938052415847778,
+                11.243805885314941
+            ],
+            "pumpsForPaths": [
+                0,
+                1,
+                3
+            ],
+            "reagentsForPaths": [
+                1,
+                0.9,
+                0.9
+            ],
+            "totalFlowRate": 6
+        },
+        "ExternalTriggers": {
+            "triggersActive": [
+                false,
+                false,
+                false
+            ],
+            "triggersTimes": [
+                -1,
+                -1,
+                -1
+            ]
+        },
+        "Loading": {
+            "asRack1Code": 0,
+            "cleanAtStart": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "doNotFill": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "fillLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "loadingWithAS": true,
+            "partialLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "sampleDescription": [
+                "Sample A Desc",
+                "Sample B Desc",
+                "Sample C Desc",
+                "Sample D Desc"
+            ],
+            "siteForLoading": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "siteForLoadingReagBottle": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "Pumps": {
+            "activePumpsVector": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "flowRateWhenLoad": 4,
+            "loopVolumes": [
+                1000,
+                900,
+                1000,
+                333.3333432674408,
+                1000,
+                1000,
+                1000,
+                1000
+            ],
+            "postWashFR": 1,
+            "postWashVolume": 1,
+            "preWashFR": 1,
+            "preWashVolume": 0,
+            "pumpsAdvRet": [
+                6.64096,
+                10.0921,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pumpsDeadVolumes": [
+                0.85,
+                0.9,
+                0,
+                0,
+                0,
+                0.55,
+                0.55,
+                0
+            ],
+            "pumpsFR": [
+                3,
+                2,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "pumpsFlowSpecification": 0,
+            "pumpsForHeatAndCool": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPostWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPreWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsReagConcent": [
+                0.5,
+                0.5,
+                0,
+                0.5,
+                0,
+                0,
+                0,
+                0
+            ],
+            "reagentVolume": [
+                1,
+                0.9,
+                1,
+                0.9,
+                1,
+                1,
+                1,
+                1
+            ],
+            "sampleLoopPumpsVector": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "stoichiometricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "volumeForCleaning": 10,
+            "volumetricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        "Reaction Results": {
+            "bprPressure": 0,
+            "cleaningTime": 2.5,
+            "concModelTime": 1.721364974975586,
+            "finalSampleLoopWash": false,
+            "flowRateWhenCleaning": 4,
+            "flowRateWhenCooling": 0.1,
+            "flowRateWhenHeating": 0.25,
+            "flowRateWhenLoading": 4,
+            "m_frForIndReactors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_frForReactors": [
+                3,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpChannelPerIndReactor0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor0": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor2": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsExtraFR0": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR1": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR2": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR3": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR4": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR5": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR6": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR7": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "newRack": false,
+            "numberOfVials": 1,
+            "postWashTime": 0,
+            "preWashTime": 0,
+            "pumpsMFCGasType": [
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            "pumpsMFCType": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnBPRMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnFRMode": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnGasMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsType": [
+            ],
+            "pumpsWStaticValve": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "reactorsPossitions": [
+                0,
+                2
+            ],
+            "reactorsTempSet": [
+                50,
+                50
+            ],
+            "skipHeatingEnable": false,
+            "start5percentTime": 10.185033798217773,
+            "startFrom": 3,
+            "switchBackMult": 1,
+            "timeFCWash1": 0,
+            "timeFCWash2": 0,
+            "timePerVial": 1.721364974975586
+        },
+        "Reactors": {
+            "RTimeCalc": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "RTimeCalcInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "active": [
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "activeInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "chillersAvailable": [
+            ],
+            "chillersSetPoint": [
+            ],
+            "densityCorrection": [
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1
+            ],
+            "indVolumes": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "ionAvailable": -1,
+            "ionCurrent": 0,
+            "ionNoChannel": false,
+            "ionVoltage": 0,
+            "residenceTime": 3.3333333333333335,
+            "tempSet": [
+                50,
+                25,
+                50,
+                25,
+                25,
+                25,
+                25,
+                25,
+                0,
+                0,
+                0,
+                0,
+                25,
+                25,
+                0
+            ],
+            "vbfrAvailable": false,
+            "vbfrColumnSize": 0,
+            "volumeForReactorPaths0": [
+                10
+            ],
+            "volumeForReactorPaths1": [
+                0
+            ],
+            "volumeForReactorPaths2": [
+                0
+            ],
+            "volumeForReactorPaths3": [
+                10
+            ],
+            "volumeForReactorPaths4": [
+                0
+            ],
+            "volumeForReactorPaths5": [
+                0
+            ],
+            "volumeForReactorPaths6": [
+                0
+            ],
+            "volumeForReactorPaths7": [
+                0
+            ],
+            "volumes": [
+                10,
+                0,
+                10,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "data": [
+            1,
+            3,
+            50,
+            50,
+            3,
+            1
+        ],
+        "executableReaction": true,
+        "execute": true,
+        "name": "r4"
+    },
+    "\u0004": {
+        "Collection": {
+            "5percentStartTime": 3.5293169021606445,
+            "5percentStopTime": 4.29764986038208,
+            "95percentStartTime": 3.814314126968384,
+            "95percentStopTime": 4.010647296905518,
+            "asAvailable": false,
+            "asCollectorMode": false,
+            "asInjectorMode": false,
+            "asNozzleWashVol": 1.8e-322,
+            "asPattern": 1919906915,
+            "asRack2Code": 0,
+            "asRack3Code": 0,
+            "asType": 1634030194,
+            "collectAll": true,
+            "collectFor": 0.7683329582214355,
+            "collectStartTime": 3.5293169021606445,
+            "collectSteadyState": false,
+            "collectStopTime": 4.29764986038208,
+            "divertToWasteFor": 3.5293169021606445,
+            "doNotCollect": false,
+            "fcAvailable": false,
+            "fcNozzleWashVol": 4.269584022883425e+257,
+            "fcPattern": 13683,
+            "fcRackCode": 1752457552,
+            "fcType": 1919906915,
+            "injectToReagentBottle": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "numberOfVials": 1,
+            "startFrom": 4,
+            "totalCollVolume": 4.609997749328613,
+            "useOpticalDetector": false,
+            "uv150Available": false,
+            "uvDeadBandTime": 0.08333333333333333,
+            "uvDeadBandVolume": 0.5,
+            "uvFullScaleIntensity": 1,
+            "uvMaxCollVolume": 1,
+            "uvStartThreshPercent": 25,
+            "uvStopThreshPercent": 50,
+            "uvdAvailable": false,
+            "uvdType": 1,
+            "uvpower": 50,
+            "volumePerVial": 4.609997749328613
+        },
+        "Data and Results": {
+            "dispModelForPath": [
+                0,
+                0
+            ],
+            "pathsDeadVolTimes": [
+                0.425,
+                0.45,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsFlowRates": [
+                3,
+                3
+            ],
+            "pathsReagentBottleTimes": [
+            ],
+            "pathsReagentTimes": [
+                0.05000000000000001,
+                0.033333333333333326,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsSolventTimes": [
+                4.02865031560262,
+                0.5810840606689454,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsStartTimes": [
+                0,
+                3.46423,
+                0,
+                0.126143,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pathsTimes": [
+                3.745316982269287,
+                0.2810840606689453
+            ],
+            "pathsVolumes": [
+                11.686505317687988,
+                1.2938052415847778
+            ],
+            "pumpsForPaths": [
+                0,
+                1
+            ],
+            "reagentsForPaths": [
+                1,
+                1
+            ],
+            "totalFlowRate": 6
+        },
+        "ExternalTriggers": {
+            "triggersActive": [
+                false,
+                false,
+                false
+            ],
+            "triggersTimes": [
+                -1,
+                -1,
+                -1
+            ]
+        },
+        "Loading": {
+            "asRack1Code": 0,
+            "cleanAtStart": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "doNotFill": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "fillLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "loadingWithAS": true,
+            "partialLoop": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "sampleDescription": [
+                "Sample A Desc",
+                "Sample B Desc",
+                "Sample C Desc",
+                "Sample D Desc"
+            ],
+            "siteForLoading": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "siteForLoadingReagBottle": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "Pumps": {
+            "activePumpsVector": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "flowRateWhenLoad": 4,
+            "loopVolumes": [
+                1000,
+                1000,
+                1000,
+                0,
+                1000,
+                1000,
+                1000,
+                1000
+            ],
+            "postWashFR": 1,
+            "postWashVolume": 1,
+            "preWashFR": 1,
+            "preWashVolume": 0,
+            "pumpsAdvRet": [
+                0,
+                3.46423,
+                0,
+                0.126143,
+                0,
+                0,
+                0,
+                0
+            ],
+            "pumpsDeadVolumes": [
+                0.85,
+                0.9,
+                0,
+                0,
+                0,
+                0.55,
+                0.55,
+                0
+            ],
+            "pumpsFR": [
+                3,
+                3,
+                1,
+                0,
+                1,
+                1,
+                1,
+                1
+            ],
+            "pumpsFlowSpecification": 0,
+            "pumpsForHeatAndCool": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPostWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsForPreWash": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsReagConcent": [
+                0.5,
+                0.5,
+                0,
+                0.5,
+                0,
+                0,
+                0,
+                0
+            ],
+            "reagentVolume": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "sampleLoopPumpsVector": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "stoichiometricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ],
+            "volumeForCleaning": 10,
+            "volumetricRatio": [
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ]
+        },
+        "Reaction Results": {
+            "bprPressure": 0,
+            "cleaningTime": 2.5,
+            "concModelTime": 0.7683329582214355,
+            "finalSampleLoopWash": false,
+            "flowRateWhenCleaning": 4,
+            "flowRateWhenCooling": 0.1,
+            "flowRateWhenHeating": 0.25,
+            "flowRateWhenLoading": 4,
+            "m_frForIndReactors": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_frForReactors": [
+                3,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpChannelPerIndReactor0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerIndReactor2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor0": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor2": [
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpChannelPerReactor7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly0": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly1": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly2": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly3": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly4": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly5": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly6": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsAsociatedToReagOnly7": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "m_pumpsExtraFR0": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR1": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR2": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR3": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR4": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR5": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR6": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "m_pumpsExtraFR7": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "newRack": false,
+            "numberOfVials": 1,
+            "postWashTime": 0,
+            "preWashTime": 0,
+            "pumpsMFCGasType": [
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1,
+                -1
+            ],
+            "pumpsMFCType": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnBPRMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnFRMode": [
+                true,
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsOnGasMode": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "pumpsType": [
+            ],
+            "pumpsWStaticValve": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "reactorsPossitions": [
+                0,
+                2
+            ],
+            "reactorsTempSet": [
+                40,
+                40
+            ],
+            "skipHeatingEnable": false,
+            "start5percentTime": 3.5293169021606445,
+            "startFrom": 4,
+            "switchBackMult": 1,
+            "timeFCWash1": 0,
+            "timeFCWash2": 0,
+            "timePerVial": 0.7683329582214355
+        },
+        "Reactors": {
+            "RTimeCalc": [
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "RTimeCalcInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "active": [
+                true,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "activeInd": [
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false
+            ],
+            "chillersAvailable": [
+            ],
+            "chillersSetPoint": [
+            ],
+            "densityCorrection": [
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1,
+                0.1
+            ],
+            "indVolumes": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ],
+            "ionAvailable": -1,
+            "ionCurrent": 0,
+            "ionNoChannel": false,
+            "ionVoltage": 0,
+            "residenceTime": 3.3333333333333335,
+            "tempSet": [
+                40,
+                25,
+                40,
+                25,
+                25,
+                25,
+                25,
+                25,
+                0,
+                0,
+                0,
+                0,
+                25,
+                25,
+                0
+            ],
+            "vbfrAvailable": false,
+            "vbfrColumnSize": 0,
+            "volumeForReactorPaths0": [
+                10
+            ],
+            "volumeForReactorPaths1": [
+                0
+            ],
+            "volumeForReactorPaths2": [
+                0
+            ],
+            "volumeForReactorPaths3": [
+                10
+            ],
+            "volumeForReactorPaths4": [
+                0
+            ],
+            "volumeForReactorPaths5": [
+                0
+            ],
+            "volumeForReactorPaths6": [
+                0
+            ],
+            "volumeForReactorPaths7": [
+                0
+            ],
+            "volumes": [
+                10,
+                0,
+                10,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "data": [
+            0,
+            3,
+            40,
+            40,
+            3,
+            1
+        ],
+        "executableReaction": true,
+        "execute": true,
+        "name": "r5"
+    },
+    "CSVDecimalPoint": ".",
+    "CSVStringSeparator": ";",
+    "count": 5,
+    "experimentCollection": true,
+    "indReactorsMaxTemps": [
+        25,
+        25,
+        25,
+        25,
+        25,
+        25,
+        25
+    ],
+    "indReactorsMinTemps": [
+        25,
+        25,
+        25,
+        25,
+        25,
+        25,
+        25
+    ],
+    "reactorsMaxTemps": [
+        150,
+        25,
+        150,
+        25,
+        25,
+        25,
+        25,
+        25
+    ],
+    "reactorsMinTemps": [
+        20,
+        25,
+        20,
+        25,
+        25,
+        25,
+        25,
+        25
+    ],
+    "reagentOnlyPumps": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+    ],
+    "solventOnlyPumps": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+    ]
+}

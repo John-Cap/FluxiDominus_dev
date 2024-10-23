@@ -1,94 +1,49 @@
+import nmrglue as ng
+import matplotlib.pyplot as plt
+import numpy as np
 
-#################################
-#Database operations example
-from datetime import datetime
-import random
-import time
+#Import - class must take a directory to be used during runtime
+dataFolder = r"C:/Users/user-pc/Desktop/New folder"
+dic, raw_data = ng.jcampdx.read(dataFolder + "/nmr_fid.dx") #Class must somehow check if this file has changed
 
-from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
-from Core.UI.plutter import MqttService
-'''
-mqttService=MqttService(broker_address='146.64.91.174')
-mqttService.start()
-time.sleep(1)
-mqttService.orgId="309930"
-dbStream=DatabaseStreamer(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=mqttService)
-dbStream.connect()
-time.sleep(1)
-dbStream.mongoDb.currZeroTime=datetime.now()
-_i=15
-while _i > 0:
-    dbStream.handleStreamRequest(
-        {
-            "id":"anEvenCoolerId",
-            "labNotebookBaseRef":"WJ_TEST_11",
-            "runNr":0,
-            "deviceName":"A_BICYCLE_BUILT_FOR_TWO",
-            "timeWindow":10,
-            "nestedField":"deviceName",
-            "nestedValue":"A_BICYCLE_BUILT_FOR_TWO",
-            "setting":"exampleSetting"
-        }
-    )
-    _i-=1
-    time.sleep(5)
-'''
-from Core.Data.data import DataPointFDE, DataSetFDD
-from Core.Data.database import DatabaseOperations, MySQLDatabase, TimeSeriesDatabaseMongo
-from Core.Data.experiment import StandardExperiment
-from Core.UI.plutter import MqttService
+#Create proper data object for ng scripts to understand
+npoints = int(dic["$TD"][0])
+data = np.empty((npoints, ), dtype='complex128')
+data.real = raw_data[0][:]
+data.imag = raw_data[1][:]
 
-if __name__ == '__main__':
-    #Mqtt
-    thisThing=MqttService()
-    thisThing.start()
-    thisThing.orgId="50403"
-    #Instantiate
-    dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
-    dbOp.connect()
-    
-    '''
-    ##################################
-    #MySql
-    dbOp.createProject('MY_COOL_PROJECT_123',descript="This tells me more about 'MY_COOL_PROJECT_123'")    
-    
-    tests=dbOp.getUserRow(email='jdtoit@csir.co.za')
-    print(tests)
-    print("\n")
-    
-    tests=dbOp.getUserTests(email='jdtoit@csir.co.za')
-    print(tests)
-    print("\n")
-    
-    tests=dbOp.getTestRuns('50403_jdtoit_DSIP012A')
-    print(tests)
-    print("\n")
-    
-    tests=dbOp.getTestRuns('50403_jdtoit_PNDOS013A')
-    print(tests)
-    print("\n")
-    
-    tests=dbOp.assignProject(1,orgId=50403)
-    print(tests)
-    print("\n")
-    
-    tests=dbOp.assignProject('C1PPT53',email='jdtoit@csir.co.za')
-    print(tests)
-    print("\n")
-        
-    tests=dbOp.getUserProjects(orgId=50403)
-    print(tests)
-    print("\n")
-        
-    tests=dbOp.getProjCode(1)
-    print(tests)
-    print("\n")
-        
-    tests=dbOp.getAllExpWidgetInfo()
-    print(tests)
-    print("\n")
-    
-    tests=dbOp.createTestlistEntry(dbOp.getUserId('50403'),projId='C1PPT53',labNotebookBaseRef='WA_MBang_DING_dang1234567')
-    print(tests)
-    print("\n")
-    '''
+#Processing
+data = ng.proc_base.zf_size(data, int(dic["$TD"][0])*2) # Zerofill, now 2x of total amount of points
+data = ng.proc_base.fft(data) # Fourier transformation
+data = ng.proc_base.ps(data, p0=float(dic["$PHC0"][0]), p1=float(dic["$PHC1"][0])) # Phasing, values taken from dx file
+data = ng.proc_base.di(data)#.tolist() # Removal of imaginairy part
+
+# Set correct PPM scaling
+udic = ng.jcampdx.guess_udic(dic, data)
+udic[0]['car'] = (float(dic["$BF1"][0]) - float(dic["$SF"][0])) * 1000000 # center of spectrum, set manually by using "udic[0]['car'] = float(dic["$SF"][0]) * x", where x is a ppm value
+udic[0]['sw'] = float(dic["$SW"][0]) * float(dic["$BF1"][0])
+uc = ng.fileiobase.uc_from_udic(udic)
+ppm_scale = uc.ppm_scale().tolist()
+data=data.tolist()
+length=len(ppm_scale)
+
+#Reduce resolution to ppm range 0 - 15
+_ppmScale=[]
+_data=[]
+_i=0
+_ret=[]
+while _i < length:
+    if (ppm_scale[_i] > 0 and ppm_scale[_i] < 15):
+        _ppmScale.append(ppm_scale[_i])
+        _data.append(data[_i])
+        _ret.append([ppm_scale[_i],data[_i]])
+    _i+=3
+print(len(_ret))
+# Plot spectrum
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(_ppmScale,_data)
+plt.xlim((15,0)) # plot as we are used to, from positive to negative
+fig.savefig(dataFolder + "/Spectrum.png")
+
+print(max(data))

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>R-Series OPC UA Python API’s documentation &#8212; R-Series OPC Python API Reference 2.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=514cf933" />
+    
+    <script src="_static/documentation_options.js?v=c4a36953"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="rseriesopc" href="rseriesopc.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="rseriesopc.html" title="rseriesopc"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">R-Series OPC Python API Reference 2.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">R-Series OPC UA Python API’s documentation</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="r-series-opc-ua-python-api-s-documentation">
+<h1>R-Series OPC UA Python API’s documentation<a class="headerlink" href="#r-series-opc-ua-python-api-s-documentation" title="Link to this heading">¶</a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>The R-Series OPC UA Python Client is an API to connect the Vapourtec R-Series flow
+chemistry controller into an OPC UA network. This allows the user to write and
+run Python scripts.</p>
+<p>The Python script could be a way to automate the process and control the R-Series
+flow chemistry controller in a remote way through the OPC UA network.</p>
+<p>The R-Series OPC UA Python client is based on the freeopcua Python package.
+For further information about this package, see <a class="reference external" href="https://python-opcua.readthedocs.io/en/latest/">https://python-opcua.readthedocs.io/en/latest/</a>.</p>
+<section id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Link to this heading">¶</a></h3>
+<p>To run and install the R-Series OPC UA Python Client, the system must have installed a Python 3 version.</p>
+<p>Because the Python’s popularity, there are a lot of environments for python script developing and execution.
+For this explanation, we use the Anaconda environment under Windows OS, and the Spyder IDE with is provided
+in installing Anaconda.</p>
+<p>You can feel free to use your favourite Python IDE and environment manager.</p>
+<p>For downloading and installing Anaconda, check its website: www.anaconda.com</p>
+</section>
+</section>
+<section id="r-series-opc-ua-client">
+<h2>R-Series OPC UA Client<a class="headerlink" href="#r-series-opc-ua-client" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">R-Series OPC UA Client</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="rseriesopc.html">rseriesopc</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rseriesopc.html#client">client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rseriesopc.html#model-package">model package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="rseriesopc.model.html">model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="rseriesopc.model.devices.html">devices package</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#autosampler">autosampler</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#azura">azura</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#chiller">chiller</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#detector">detector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#factories">factories</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#flowchemistry">flowChemistry</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#ion">ion</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#manualcontrol">manualControl</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#mfc">mfc</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#module">module</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#pump">pump</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#r2">r2</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#r4">r4</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#reactor">reactor</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#sf10">sf10</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#syringe">syringe</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#uv150">uv150</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.devices.html#vbfr">vbfr</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="rseriesopc.model.experiment.html">experiment package</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.experiment.html#experiment">experiment</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.experiment.html#experimentsetup">experimentSetup</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.experiment.html#experimentstatistics">experimentStatistics</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.experiment.html#reactionmanager">reactionManager</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="rseriesopc.model.identification.html">identification package</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.identification.html#identification">identification</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.identification.html#equipmentidentification">equipmentIdentification</a></li>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.identification.html#softwareidentification">softwareIdentification</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="rseriesopc.model.monitoring.html">monitoring package</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.monitoring.html#monitoring">monitoring</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="rseriesopc.model.notification.html">notification package</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="rseriesopc.model.notification.html#notification">notification</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="rseriesopc.model.html#base">base</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rseriesopc.model.html#factories">factories</a></li>
+<li class="toctree-l4"><a class="reference internal" href="rseriesopc.model.html#reaction">reaction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="rseriesopc.html#utils">utils</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="#">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">R-Series OPC UA Python API’s documentation</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a><ul>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#r-series-opc-ua-client">R-Series OPC UA Client</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="rseriesopc.html"
+                          title="next chapter">rseriesopc</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="rseriesopc.html" title="rseriesopc"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">R-Series OPC Python API Reference 2.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">R-Series OPC UA Python API’s documentation</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2022, Edwin Barragan for Emtech S.A..
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

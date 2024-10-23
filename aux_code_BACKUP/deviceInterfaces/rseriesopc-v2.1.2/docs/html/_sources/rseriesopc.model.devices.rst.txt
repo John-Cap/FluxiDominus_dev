@@ -1,0 +1,115 @@
+devices package
+===============
+
+.. .. automodule:: rseriesopc.model.devices
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
+
+autosampler
+-----------
+
+.. automodule:: rseriesopc.model.devices.autosampler
+   :members:
+
+azura
+-----
+
+.. automodule:: rseriesopc.model.devices.azura
+   :members:
+
+chiller
+-------
+
+.. automodule:: rseriesopc.model.devices.chiller
+   :members:
+
+detector
+--------
+
+.. automodule:: rseriesopc.model.devices.detector
+   :members:
+
+factories
+---------
+
+.. automodule:: rseriesopc.model.devices.factories
+   :members:
+
+flowChemistry
+-------------
+
+.. automodule:: rseriesopc.model.devices.flowChemistry
+   :members:
+
+ion
+---
+
+.. automodule:: rseriesopc.model.devices.ion
+   :members:
+
+manualControl
+-------------
+
+.. automodule:: rseriesopc.model.devices.manualControl
+   :members:
+
+mfc
+---
+
+.. automodule:: rseriesopc.model.devices.mfc
+   :members:
+
+module
+------
+
+.. automodule:: rseriesopc.model.devices.module
+   :members:
+
+pump
+----
+
+.. automodule:: rseriesopc.model.devices.pump
+   :members:
+
+r2
+--
+
+.. automodule:: rseriesopc.model.devices.r2
+   :members:
+
+r4
+--
+
+.. automodule:: rseriesopc.model.devices.r4
+   :members:
+
+reactor
+-------
+
+.. automodule:: rseriesopc.model.devices.reactor
+   :members:
+
+sf10
+----
+
+.. automodule:: rseriesopc.model.devices.sf10
+   :members:
+
+syringe
+-------
+
+.. automodule:: rseriesopc.model.devices.syringe
+   :members:
+
+uv150
+-----
+
+.. automodule:: rseriesopc.model.devices.uv150
+   :members:
+
+vbfr
+----
+
+.. automodule:: rseriesopc.model.devices.vbfr
+   :members:

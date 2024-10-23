@@ -1,0 +1,23 @@
+rseriesopc
+==========
+
+client 
+------
+
+.. automodule:: rseriesopc.client
+   :members:
+   
+model package
+-------------
+
+.. toctree::
+   :maxdepth: 6
+
+   rseriesopc.model
+
+utils
+-----
+
+.. automodule:: rseriesopc.utils
+   :members:
+

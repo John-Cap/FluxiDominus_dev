@@ -1,0 +1,29 @@
+model
+=====
+
+.. toctree::
+   :maxdepth: 4
+
+   rseriesopc.model.devices
+   rseriesopc.model.experiment
+   rseriesopc.model.identification
+   rseriesopc.model.monitoring
+   rseriesopc.model.notification
+
+base
+----
+
+.. automodule:: rseriesopc.model.base
+   :members:
+
+factories
+---------
+
+.. automodule:: rseriesopc.model.factories
+   :members:
+
+reaction
+--------
+
+.. automodule:: rseriesopc.model.reaction
+   :members:

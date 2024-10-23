@@ -1,0 +1,43 @@
+.. R-Series OPC Python API documentation master file, created by
+   sphinx-quickstart on Fri Sep 16 13:51:26 2022.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+==========================================
+R-Series OPC UA Python API's documentation
+==========================================
+
+Introduction
+------------
+
+The R-Series OPC UA Python Client is an API to connect the Vapourtec R-Series flow 
+chemistry controller into an OPC UA network. This allows the user to write and 
+run Python scripts.
+
+The Python script could be a way to automate the process and control the R-Series
+flow chemistry controller in a remote way through the OPC UA network.
+
+The R-Series OPC UA Python client is based on the freeopcua Python package.
+For further information about this package, see https://python-opcua.readthedocs.io/en/latest/.
+
+Requirements
+^^^^^^^^^^^^
+
+To run and install the R-Series OPC UA Python Client, the system must have installed a Python 3 version.
+
+Because the Python's popularity, there are a lot of environments for python script developing and execution.
+For this explanation, we use the Anaconda environment under Windows OS, and the Spyder IDE with is provided 
+in installing Anaconda.
+
+You can feel free to use your favourite Python IDE and environment manager.
+
+For downloading and installing Anaconda, check its website: www.anaconda.com
+
+R-Series OPC UA Client
+----------------------
+
+.. toctree::
+   :maxdepth: 6
+   :caption: R-Series OPC UA Client
+
+   rseriesopc

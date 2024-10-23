@@ -1,0 +1,548 @@
+{
+    "DefaultFlowrate": {
+        "flowrateWhenCooling": 0.1,
+        "flowrateWhenHeating": 0.25,
+        "posWashFlowrate": 1,
+        "posWashVolume": 1,
+        "preWashFlowrate": 1,
+        "preWashVolume": 0,
+        "sampleLoopSwitchVolume": 1.3,
+        "sampleLoopWashReactions": 0,
+        "sysLimitforCleaning": 4,
+        "sysLimitforLoading": 4,
+        "volSolventCleaningAfterExperiment": 10
+    },
+    "ExternalChiller\u0000": {
+        "autorun": false,
+        "chillerType": "Julabo",
+        "running": false,
+        "sensorType": 0,
+        "visibility": false
+    },
+    "ExternalChiller\u0001": {
+        "autorun": false,
+        "chillerType": "Julabo",
+        "running": false,
+        "sensorType": 0,
+        "visibility": false
+    },
+    "ExternalTriggers": {
+        "Controller": {
+            "BaudRate": 9600
+        },
+        "Enable": false,
+        "Message1": "",
+        "Message2": "",
+        "Message3": ""
+    },
+    "FractionCollector": {
+        "codeRactype": 0,
+        "connectionState": 0,
+        "gsiocID": 0
+    },
+    "ION": {
+        "ionAction": 0,
+        "ionCurrent": 0,
+        "ionVoltage": 0
+    },
+    "ModuleFive": {
+        "moduleData": {
+            "automaticDetection": true,
+            "connectionState": 0,
+            "enable": false,
+            "r2Settings": {
+                "PumpA": {
+                    "deadVolume": 0.85,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.85,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": true,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "PumpB": {
+                    "deadVolume": 0.9,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.9,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": false,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "SystemType": "",
+                "firmVersion": "",
+                "hasGasCfg": false,
+                "hasZeroPressure": true,
+                "maxPressLimit": 42,
+                "moduleType": 0,
+                "pLossDetection": true,
+                "pressMode": -1,
+                "pumpsCount": 2,
+                "serNumber": ""
+            },
+            "valveState": {
+                "pumpAValveLI": false,
+                "pumpAValveSR": false,
+                "pumpBValveLI": false,
+                "pumpBValveSR": false,
+                "systemValveWC": false
+            }
+        },
+        "type": 0
+    },
+    "ModuleFour": {
+        "moduleData": {
+            "automaticDetection": true,
+            "connectionState": 0,
+            "enable": true,
+            "r2Settings": {
+                "PumpA": {
+                    "deadVolume": 0.85,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.85,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": true,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "PumpB": {
+                    "deadVolume": 0.9,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.9,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": false,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "SystemType": "",
+                "firmVersion": "",
+                "hasGasCfg": false,
+                "hasZeroPressure": true,
+                "maxPressLimit": 42,
+                "moduleType": 0,
+                "pLossDetection": true,
+                "pressMode": -1,
+                "pumpsCount": 2,
+                "serNumber": ""
+            },
+            "valveState": {
+                "pumpAValveLI": false,
+                "pumpAValveSR": false,
+                "pumpBValveLI": false,
+                "pumpBValveSR": false,
+                "systemValveWC": false
+            }
+        },
+        "type": 0
+    },
+    "ModuleSeven": {
+        "moduleData": {
+            "automaticDetection": true,
+            "connectionState": 0,
+            "enable": false,
+            "r2Settings": {
+                "PumpA": {
+                    "deadVolume": 2.45,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.85,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": true,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "PumpB": {
+                    "deadVolume": 2.55,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.9,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": false,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "SystemType": "",
+                "firmVersion": "",
+                "hasGasCfg": false,
+                "hasZeroPressure": true,
+                "maxPressLimit": 42,
+                "moduleType": 0,
+                "pLossDetection": true,
+                "pressMode": -1,
+                "pumpsCount": 2,
+                "serNumber": ""
+            },
+            "valveState": {
+                "pumpAValveLI": false,
+                "pumpAValveSR": false,
+                "pumpBValveLI": false,
+                "pumpBValveSR": false,
+                "systemValveWC": false
+            }
+        },
+        "type": 0
+    },
+    "ModuleSix": {
+        "moduleData": {
+            "automaticDetection": true,
+            "connectionState": 0,
+            "enable": false,
+            "r2Settings": {
+                "PumpA": {
+                    "deadVolume": 2.45,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.85,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": true,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "PumpB": {
+                    "deadVolume": 2.55,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.9,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": false,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "SystemType": "",
+                "firmVersion": "",
+                "hasGasCfg": false,
+                "hasZeroPressure": true,
+                "maxPressLimit": 42,
+                "moduleType": 0,
+                "pLossDetection": false,
+                "pressMode": -1,
+                "pumpsCount": 2,
+                "serNumber": ""
+            },
+            "valveState": {
+                "pumpAValveLI": false,
+                "pumpAValveSR": false,
+                "pumpBValveLI": false,
+                "pumpBValveSR": false,
+                "systemValveWC": false
+            }
+        },
+        "type": 0
+    },
+    "ModuleThree": {
+        "moduleData": {
+            "automaticDetection": true,
+            "connectionState": 0,
+            "enable": true,
+            "r2Settings": {
+                "PumpA": {
+                    "deadVolume": 0.85,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.85,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": true,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "PumpB": {
+                    "deadVolume": 0.9,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.9,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": false,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "SystemType": "",
+                "firmVersion": "",
+                "hasGasCfg": false,
+                "hasZeroPressure": true,
+                "maxPressLimit": 42,
+                "moduleType": 0,
+                "pLossDetection": true,
+                "pressMode": -1,
+                "pumpsCount": 2,
+                "serNumber": ""
+            },
+            "valveState": {
+                "pumpAValveLI": false,
+                "pumpAValveSR": false,
+                "pumpBValveLI": false,
+                "pumpBValveSR": false,
+                "systemValveWC": false
+            }
+        },
+        "type": 0
+    },
+    "R2Primary": {
+        "automaticDetection": true,
+        "connectionState": 0,
+        "enable": true,
+        "r2Settings": {
+            "PumpA": {
+                "deadVolume": 0.93,
+                "deadVolumeMax": 5,
+                "defaultReagentDeadVolume": 0.85,
+                "hasDefReagDeadVolume": true,
+                "hasHFReagDeadVolume": false,
+                "hasLiquidTypeCfg": false,
+                "hasPistonHeadSizeCfg": true,
+                "hasTubeCfg": false,
+                "hasZeroPressureOption": false,
+                "highFlowReagentDeadVolume": 0,
+                "liquidType": 0,
+                "maxFRLimit": 10,
+                "minFRLimit": 0.05,
+                "pistonHeadSize": 0,
+                "pumpColor": 0,
+                "syringeSize": 0,
+                "tubeCalibration": 5,
+                "tubeColor": 0
+            },
+            "PumpB": {
+                "deadVolume": 0.93,
+                "deadVolumeMax": 5,
+                "defaultReagentDeadVolume": 0.9,
+                "hasDefReagDeadVolume": true,
+                "hasHFReagDeadVolume": false,
+                "hasLiquidTypeCfg": false,
+                "hasPistonHeadSizeCfg": false,
+                "hasTubeCfg": false,
+                "hasZeroPressureOption": false,
+                "highFlowReagentDeadVolume": 0,
+                "liquidType": 0,
+                "maxFRLimit": 10,
+                "minFRLimit": 0.05,
+                "pistonHeadSize": 0,
+                "pumpColor": 2,
+                "syringeSize": 0,
+                "tubeCalibration": -5,
+                "tubeColor": 2
+            },
+            "SystemType": "",
+            "firmVersion": "",
+            "hasGasCfg": false,
+            "hasZeroPressure": true,
+            "maxPressLimit": 42,
+            "moduleType": 0,
+            "pLossDetection": true,
+            "pressMode": -1,
+            "pumpsCount": 2,
+            "serNumber": ""
+        },
+        "valveState": {
+            "pumpAValveLI": false,
+            "pumpAValveSR": false,
+            "pumpBValveLI": false,
+            "pumpBValveSR": false,
+            "systemValveWC": false
+        }
+    },
+    "R2Secondary": {
+        "moduleData": {
+            "automaticDetection": true,
+            "connectionState": 0,
+            "enable": true,
+            "r2Settings": {
+                "PumpA": {
+                    "deadVolume": 2.45,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.85,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": true,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "PumpB": {
+                    "deadVolume": 2.55,
+                    "deadVolumeMax": 5,
+                    "defaultReagentDeadVolume": 0.9,
+                    "hasDefReagDeadVolume": true,
+                    "hasHFReagDeadVolume": false,
+                    "hasLiquidTypeCfg": false,
+                    "hasPistonHeadSizeCfg": false,
+                    "hasTubeCfg": false,
+                    "hasZeroPressureOption": false,
+                    "highFlowReagentDeadVolume": 0,
+                    "liquidType": 0,
+                    "maxFRLimit": 10,
+                    "minFRLimit": 0.05,
+                    "pistonHeadSize": 0,
+                    "pumpColor": 0,
+                    "syringeSize": 0,
+                    "tubeCalibration": 30,
+                    "tubeColor": 0
+                },
+                "SystemType": "",
+                "firmVersion": "",
+                "hasGasCfg": false,
+                "hasZeroPressure": true,
+                "maxPressLimit": 42,
+                "moduleType": 0,
+                "pLossDetection": true,
+                "pressMode": -1,
+                "pumpsCount": 2,
+                "serNumber": ""
+            },
+            "valveState": {
+                "pumpAValveLI": false,
+                "pumpAValveSR": false,
+                "pumpBValveLI": false,
+                "pumpBValveSR": false,
+                "systemValveWC": false
+            }
+        },
+        "type": 0
+    },
+    "R4Primary": {
+        "enable": true,
+        "overTripTemp": 8
+    },
+    "R4Secondary": {
+        "enable": false,
+        "overTripTemp": 8
+    },
+    "UV150": {
+        "cooledOrHeated": false,
+        "lampSetpoint": 99
+    },
+    "UVD": {
+        "moduleData": {
+            "Wavelength1": 450,
+            "Wavelength2": 450,
+            "Wavelength3": 450,
+            "Wavelength4": 450,
+            "wlEnable1": false,
+            "wlEnable2": false,
+            "wlEnable3": false,
+            "wlEnable4": false
+        },
+        "type": 0
+    },
+    "VBFR": {
+        "ColumnSize": 0,
+        "DeadBandAttack": 500,
+        "DeadBandRelease": 500,
+        "ManualStart": false,
+        "MaxPistonLimit": 50,
+        "MinPistonLimit": -50,
+        "RegulatorPressure": 1
+    }
+}

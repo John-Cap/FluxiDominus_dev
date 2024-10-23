@@ -2,7 +2,7 @@ import ast
 from datetime import datetime
 import threading
 import time
-from bson import utc
+from pytz import utc
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
@@ -118,7 +118,7 @@ class MqttService:
         if "deviceName" in _msgContents:
             #Add to db streaming queue? Minimum wait passed?
             if self.runTest:
-                if (self.currTestrunId and self.currTestlistId and self.logData):
+                if (self.currTestlistId != None  and self.currTestrunId != None and self.logData):
                     if "tele" in _msgContents:
                         if not _msgContents["deviceName"] in self.lastReceivedTime:
                             self.lastReceivedTime[_msgContents["deviceName"]]=time.perf_counter()
