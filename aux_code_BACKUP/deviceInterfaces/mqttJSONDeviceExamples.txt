@@ -174,8 +174,8 @@ SET			["settings": {"command":"SET", "subDevice":"Reactor2Temp", "value": 3.4}]
 SET			["settings": {"command":"SET", "subDevice":"Reactor3Temp", "value": 3.4}]
 SET			["settings": {"command":"SET", "subDevice":"Reactor4Temp", "value": 3.4}]
 SET			["settings": {"command":"SET", "subDevice":"valveASR", "value": true}]
-SET			["settings": {"command":"SET", "subDevice":"valveASR", "value": true}]
-SET			["settings": {"command":"SET", "subDevice":"valveBIL", "value": true}]
+SET			["settings": {"command":"SET", "subDevice":"valveBSR", "value": true}]
+SET			["settings": {"command":"SET", "subDevice":"valveAIL", "value": true}]
 SET			["settings": {"command":"SET", "subDevice":"valveBIL", "value": true}]
 SET			["settings": {"command":"SET", "subDevice":"valveCSR", "value": true}]
 SET			["settings": {"command":"SET", "subDevice":"valveCIL", "value": true}]
@@ -190,5 +190,6 @@ subflow/vapourtecR4P1700/cmnd
 
 
 subflow/vapourtecR4P1700/tele
-	{"deviceName": "vapourtecR4P1700", "deviceType": "NMR", "inUse": true, "remoteEnabled": false, "connDetails": {"ipCom": {"addr": "192.168.1.52", "port": 13000}}, "tele": {"cmnd": "RUN_QUICKSHIM", "cmndResp": "b'<Message>\\n  <StatusNotification timestamp=\"12:35:19\">\\n    <Progress protocol=\"SHIM\" percentage=\"96\" secondsRemaining=\"14\" />\\n  </StatusNotification>\\n</Message>'", "settings": {"folder": ""}, "state": {"protocol": "SHIM", "status": "Running", "dataFolder": "", "percentage": "96", "secondsRemaining": "14", "error": "Could not detect a single peak.\nAre you sure that you inserted the reference sample?"}, "timestamp": ""}}
+{"deviceName": "vapourtecR4P1700", "deviceType": "PumpValveHeater", "inUse": true, "remoteEnabled": true, "connDetails": {"ipCom": {"addr": "192.168.1.53", "port": 43344}}, "tele": {"cmnd": "POLL", "cmndResp": "", "settings": {"valveASR": false, "valveBSR": false, "valveCSR": false, "valveDSR": false, "valveAIL": false, "valveBIL": false, "valveCIL": false, "valveDIL": false, "valveWC": false, "flowRatePumpA": 0.0, "flowRatePumpB": 0.0, "flowRatePumpC": 0.0, "flowRatePumpD": 0.0, "pressSystem": 0.0, "pressPumpA": 0.0, "pressPumpB": 0.0, "pressSystem2": 0.0, "pressPumpC": 0.0, "pressPumpD": 0.0, "tempReactor1": 0.0, "tempReactor2": 0.0, "tempReactor3": 0.0, "tempReactor4": 0.0}, "state": {"valveASR": false, "valveBSR": false, "valveCSR": false, "valveDSR": false, "valveAIL": false, "valveBIL": false, "valveCIL": false, "valveDIL": false, "valveWC": false, "flowRatePumpA": 0, "flowRatePumpB": 0, "flowRatePumpC": 0, "flowRatePumpD": 0, "pressSystem": 0.03999999910593033, "pressPumpA": 0.23999999463558197, "pressPumpB": 0.33000001311302185, "pressSystem2": 0.0, "pressPumpC": 0.0, "pressPumpD": 0.0, "tempReactor1": -100.0, "tempReactor2": -100.0, "tempReactor3": -100.0, "tempReactor4": -100.0}, "timestamp": ""}}
 
+["tele",]
