@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import random
 import time
 
-from bson import utc
 import bson
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseOperations, DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo

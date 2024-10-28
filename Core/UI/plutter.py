@@ -2,10 +2,10 @@ import ast
 from datetime import datetime
 import threading
 import time
-from bson import utc
+from pytz import utc
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
-from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
+from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
 from Core.UI.brokers_and_topics import MqttTopics
@@ -118,7 +118,7 @@ class MqttService:
         if "deviceName" in _msgContents:
             #Add to db streaming queue? Minimum wait passed?
             if self.runTest:
-                if (self.currTestrunId and self.currTestlistId and self.logData):
+                if (self.currTestlistId != None  and self.currTestrunId != None and self.logData):
                     if "tele" in _msgContents:
                         if not _msgContents["deviceName"] in self.lastReceivedTime:
                             self.lastReceivedTime[_msgContents["deviceName"]]=time.perf_counter()
@@ -129,6 +129,7 @@ class MqttService:
                                 if not _msgContents["deviceName"] in self.registeredTeleDevices:
                                     self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
                                     self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                                    print('WJ - Adding tele source "' + _msgContents["deviceName"] + '"!')
                                 #print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
                                 self.dataQueue.addDataPoint(
                                     DataPointFDE(

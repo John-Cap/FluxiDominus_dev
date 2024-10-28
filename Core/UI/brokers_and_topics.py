@@ -6,7 +6,8 @@ class MqttTopics:
         #"hotchip2": "subflow/hotchip2/cmnd",
         "hotcoil1": "subflow/hotcoil1/cmnd",
         #"hotcoil2": "subflow/hotcoil2/cmnd",
-        "reactIR702L1": "subflow/reactIR702L1/cmnd"
+        "reactIR702L1": "subflow/reactIR702L1/cmnd",
+        "vapourtecR4P1700": "subflow/vapourtecR4P1700/cmnd"
     }
 
     topicsTele = {
@@ -16,7 +17,8 @@ class MqttTopics:
         #"hotchip2": "subflow/hotchip2/tele",
         "hotcoil1": "subflow/hotcoil1/tele",
         #"hotcoil2": "subflow/hotcoil2/tele",
-        "reactIR702L1": "subflow/reactIR702L1/tele"
+        "reactIR702L1": "subflow/reactIR702L1/tele",
+        "vapourtecR4P1700": "subflow/vapourtecR4P1700/tele"
     }
 
     topicsUI = {

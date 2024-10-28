@@ -1,0 +1,26 @@
+experiment package
+===================
+
+experiment
+----------
+
+.. automodule:: rseriesopc.model.experiment.experiment
+   :members:
+
+experimentSetup
+---------------
+
+.. automodule:: rseriesopc.model.experiment.experimentSetup
+   :members:
+
+experimentStatistics
+--------------------
+
+.. automodule:: rseriesopc.model.experiment.experimentStatistics
+   :members:
+
+reactionManager
+---------------
+
+.. automodule:: rseriesopc.model.experiment.reactionManager
+   :members:

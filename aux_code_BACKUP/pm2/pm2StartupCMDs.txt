@@ -1,0 +1,13 @@
+Node-Red
+--------
+pm2 start node-red --name node-red
+
+
+Mosquitto MQTT Broker
+---------------------
+pm2 start mosquitto --name MQTTBroker -- -c  /home/FluxiDominus_Pi_1/FluxiDominus/mosquitto/mosquitto.conf
+
+ifHotCoil1.py
+-------------
+pm2 start ifHotCoil1.py --name ifHotCoil1 --interpreter python3
+

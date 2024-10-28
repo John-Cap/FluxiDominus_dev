@@ -1,0 +1,11 @@
+README.txt
+pyproject.toml
+setup.py
+src/rseriesopc/__init__.py
+src/rseriesopc/client.py
+src/rseriesopc/utils.py
+src/rseriesopc.egg-info/PKG-INFO
+src/rseriesopc.egg-info/SOURCES.txt
+src/rseriesopc.egg-info/dependency_links.txt
+src/rseriesopc.egg-info/requires.txt
+src/rseriesopc.egg-info/top_level.txt

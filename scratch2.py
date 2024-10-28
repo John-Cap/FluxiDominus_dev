@@ -1,12 +1,13 @@
 
 from ast import literal_eval
 import json
-from bson import utc
 import mysql.connector
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 import time
 import threading
+
+from pytz import utc
 
 from Config.Data.hardcoded_command_templates import HardcodedTeleAddresses
 from Core.Data.experiment import StandardExperiment

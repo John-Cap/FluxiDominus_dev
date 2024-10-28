@@ -1,9 +1,9 @@
 
 from ast import literal_eval
 import json
-from bson import utc
 import mysql.connector
 from pymongo import MongoClient
+from pytz import utc
 from datetime import datetime, timedelta
 import time
 import threading

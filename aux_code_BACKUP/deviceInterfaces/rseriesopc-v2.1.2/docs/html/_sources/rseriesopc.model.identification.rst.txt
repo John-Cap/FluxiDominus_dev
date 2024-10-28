@@ -1,0 +1,20 @@
+identification package
+======================
+
+identification
+--------------
+
+.. automodule:: rseriesopc.model.identification.identification
+   :members:
+
+equipmentIdentification
+-----------------------
+
+.. automodule:: rseriesopc.model.identification.equipmentIdentification
+   :members:
+
+softwareIdentification
+----------------------
+
+.. automodule:: rseriesopc.model.identification.softwareIdentification
+   :members:

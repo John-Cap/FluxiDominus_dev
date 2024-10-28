@@ -1,0 +1,8 @@
+monitoring package
+==================
+
+monitoring
+----------
+
+.. automodule:: rseriesopc.model.monitoring.monitoring
+   :members:

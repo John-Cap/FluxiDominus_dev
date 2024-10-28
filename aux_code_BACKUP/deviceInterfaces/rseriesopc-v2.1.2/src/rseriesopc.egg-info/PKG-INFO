@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: rseriesopc
+Version: 2.1.2
+Summary: RSeries client for OPC-UA communication
+Home-page: http://www.emtech.com.ar
+Author: Edwin Barragan
+Author-email: ebarragan@emtech.com.ar
+License: LICENSE.txt
+Requires-Python: >=3.7
+Requires-Dist: opcua

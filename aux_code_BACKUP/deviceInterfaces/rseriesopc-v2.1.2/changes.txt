@@ -1,0 +1,13 @@
+13/06/2023
+ - IONType addition
+ - files structure changes
+ - addition to pyptoject.toml for standard pip installing deprecation of setup.py
+ - importCsvFiles example added
+ - fixing on AutoSamplerType method's input arguments
+
+23/06/2023 - v2.1.1
+ - Removing typing hints for compatibility reasons
+
+24/06/2024 - v2.1.2
+
+ - Fixed Issue 141. Import reaction quantity
