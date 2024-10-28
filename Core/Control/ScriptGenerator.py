@@ -621,10 +621,10 @@ class FlowChemAutomation:
                 "svcw":self.commandTemplates["vapourtecR4P1700_svcw"],
                 "svasr":self.commandTemplates["vapourtecR4P1700_svasr"],
                 "svbsr":self.commandTemplates["vapourtecR4P1700_svbsr"],
-                "temp1":self.commandTemplates["vapourtecR4P1700_r1temp"],
-                "temp2":self.commandTemplates["vapourtecR4P1700_r2temp"],
-                "temp3":self.commandTemplates["vapourtecR4P1700_r3temp"],
-                "temp4":self.commandTemplates["vapourtecR4P1700_r4temp"]
+                "r1temp":self.commandTemplates["vapourtecR4P1700_r1temp"],
+                "r2temp":self.commandTemplates["vapourtecR4P1700_r2temp"],
+                "r3temp":self.commandTemplates["vapourtecR4P1700_r3temp"],
+                "r4temp":self.commandTemplates["vapourtecR4P1700_r4temp"]
             }
         }
 

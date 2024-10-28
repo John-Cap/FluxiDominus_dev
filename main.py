@@ -7,7 +7,7 @@ from pytz import utc
 
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
-from Core.Control.ScriptGenerator_tempMethod import FlowChemAutomation
+from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.UI.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
@@ -127,6 +127,36 @@ while True:
             "value": 0
         }
     }))
+    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({
+        "deviceName": "vapourtecR4P1700",
+        "inUse": True,
+        "connDetails": {
+            "ipCom": {
+            "addr": "192.168.1.53",
+            "port": 80
+            }
+        },
+        "settings": {
+            "command": "SET",
+            "subDevice": "PumpAFlowRate",
+            "value": 0
+        }
+    }))
+    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({
+        "deviceName": "vapourtecR4P1700",
+        "inUse": True,
+        "connDetails": {
+            "ipCom": {
+            "addr": "192.168.1.53",
+            "port": 80
+            }
+        },
+        "settings": {
+            "command": "SET",
+            "subDevice": "PumpBFlowRate",
+            "value": 0
+        }
+    }))
     updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0}}))
     updater.client.publish("subflow/sf10Vapourtec1/cmnd",json.dumps({
         "deviceName": "sf10Vapourtec1",
@@ -212,8 +242,7 @@ while True:
             updater.runTest=False
             updater.abort=False
         continue
-    print(f'WJ - ctrid {updater.currTestrunId}')
-    print(f'WJ - ctlstid {updater.currTestlistId}')
+
     if updater.currTestlistId != None  and updater.currTestrunId != None:
         print('WJ - currTestlistId and currTestrunId')
         noTestDetails=False
@@ -238,66 +267,108 @@ while True:
         })
     )
     #TODO - Hardcoded streaming example
-    '''
-    _thisRef=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId)
-    _thisTstrn=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId)
-    updater.client.publish(
-        topic="ui/dbCmnd/in",payload=json.dumps({
-            "instructions":{
-                "function":"handleStreamRequest",
-                "params":{
-                    "id":"hotcoil1_temp",
-                    "labNotebookBaseRef":_thisRef,
-                    "runNr":_thisTstrn,
-                    "timeWindow":1000,
-                    "deviceName":"hotcoil1",
-                    "setting":"temp"
+    if not noTestDetails:
+        _thisRef=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId)
+        _thisTstrn=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId)
+        updater.client.publish(
+            topic="ui/dbCmnd/in",payload=json.dumps({
+                "instructions":{
+                    "function":"handleStreamRequest",
+                    "params":{
+                        "id":"hotcoil1_temp",
+                        "labNotebookBaseRef":_thisRef,
+                        "runNr":_thisTstrn,
+                        "timeWindow":1000,
+                        "deviceName":"hotcoil1",
+                        "setting":"temp"
+                    }
                 }
-            }
-        }))
-    updater.client.publish(
-        topic="ui/dbCmnd/in",payload=json.dumps({
-            "instructions":{
-                "function":"handleStreamRequest",
-                "params":{
-                    "id":"flowsynmaxi2_pressA",
-                    "labNotebookBaseRef":_thisRef,
-                    "runNr":_thisTstrn,
-                    "timeWindow":1000,
-                    "deviceName":"flowsynmaxi2",
-                    "setting":"pressA"
+            }))
+        updater.client.publish(
+            topic="ui/dbCmnd/in",payload=json.dumps({
+                "instructions":{
+                    "function":"handleStreamRequest",
+                    "params":{
+                        "id":"flowsynmaxi2_pressA",
+                        "labNotebookBaseRef":_thisRef,
+                        "runNr":_thisTstrn,
+                        "timeWindow":1000,
+                        "deviceName":"flowsynmaxi2",
+                        "setting":"pressA"
+                    }
                 }
-            }
-        }))
-    updater.client.publish(
-        topic="ui/dbCmnd/in",payload=json.dumps({
-            "instructions":{
-                "function":"handleStreamRequest",
-                "params":{
-                    "id":"flowsynmaxi2_pressB",
-                    "labNotebookBaseRef":_thisRef,
-                    "runNr":_thisTstrn,
-                    "timeWindow":1000,
-                    "deviceName":"flowsynmaxi2",
-                    "setting":"pressB"
+            }))
+        updater.client.publish(
+            topic="ui/dbCmnd/in",payload=json.dumps({
+                "instructions":{
+                    "function":"handleStreamRequest",
+                    "params":{
+                        "id":"flowsynmaxi2_pressB",
+                        "labNotebookBaseRef":_thisRef,
+                        "runNr":_thisTstrn,
+                        "timeWindow":1000,
+                        "deviceName":"flowsynmaxi2",
+                        "setting":"pressB"
+                    }
                 }
-            }
-        }))
-    updater.client.publish(
-        topic="ui/dbCmnd/in",payload=json.dumps({
-            "instructions":{
-                "function":"handleStreamRequest",
-                "params":{
-                    "id":"flowsynmaxi2_pressSystem",
-                    "labNotebookBaseRef":_thisRef,
-                    "runNr":_thisTstrn,
-                    "timeWindow":1000,
-                    "deviceName":"flowsynmaxi2",
-                    "setting":"pressSys"
+            }))
+        updater.client.publish(
+            topic="ui/dbCmnd/in",payload=json.dumps({
+                "instructions":{
+                    "function":"handleStreamRequest",
+                    "params":{
+                        "id":"flowsynmaxi2_pressSystem",
+                        "labNotebookBaseRef":_thisRef,
+                        "runNr":_thisTstrn,
+                        "timeWindow":1000,
+                        "deviceName":"flowsynmaxi2",
+                        "setting":"pressSys"
+                    }
                 }
-            }
         }))
-    '''
+        updater.client.publish(
+            topic="ui/dbCmnd/in",payload=json.dumps({
+                "instructions":{
+                    "function":"handleStreamRequest",
+                    "params":{
+                        "id":"vapourtecR4P1700_pressA",
+                        "labNotebookBaseRef":_thisRef,
+                        "runNr":_thisTstrn,
+                        "timeWindow":1000,
+                        "deviceName":"vapourtecR4P1700",
+                        "setting":"pressA"
+                    }
+                }
+        }))
+        updater.client.publish(
+            topic="ui/dbCmnd/in",payload=json.dumps({
+                "instructions":{
+                    "function":"handleStreamRequest",
+                    "params":{
+                        "id":"vapourtecR4P1700_pressB",
+                        "labNotebookBaseRef":_thisRef,
+                        "runNr":_thisTstrn,
+                        "timeWindow":1000,
+                        "deviceName":"vapourtecR4P1700",
+                        "setting":"pressB"
+                    }
+                }
+        }))
+        updater.client.publish(
+            topic="ui/dbCmnd/in",payload=json.dumps({
+                "instructions":{
+                    "function":"handleStreamRequest",
+                    "params":{
+                        "id":"vapourtecR4P1700_pressSystem",
+                        "labNotebookBaseRef":_thisRef,
+                        "runNr":_thisTstrn,
+                        "timeWindow":1000,
+                        "deviceName":"vapourtecR4P1700",
+                        "setting":"pressSys"
+                    }
+                }
+        }))
+    
     while (not updater.abort):
         #dbConnection ping
         if time.time() - lstPngTime > mySqlPngDelay:

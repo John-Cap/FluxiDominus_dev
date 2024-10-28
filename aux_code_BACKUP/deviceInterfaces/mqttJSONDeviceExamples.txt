@@ -184,9 +184,10 @@ SET			["settings": {"command":"SET", "subDevice":"valveDIL", "value": true}]
 SET			["settings": {"command":"SET", "subDevice":"valveCW", "value": true}]
 REMOTEDIS		["settings": {"command":"REMOTEDIS"}]
 
-
 subflow/vapourtecR4P1700/cmnd
-	{"deviceName":"vapourtecR4P1700","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.53", "port": 43344}}, "settings":{"command":"SET","subDevice":"PumpAFlowRate"}}
+{"deviceName":"vapourtecR4P1700","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.53", "port": 43344}},"settings": {"command":"REMOTEEN"}}
+
+{"deviceName":"vapourtecR4P1700","inUse":true,"connDetails":{"ipCom":{"addr":"192.168.1.53","port":43344}},"settings":{"command":"SET","subDevice":"PumpAFlowRate","value":1},"topic":"subflow/vapourtecR4P1700/cmnd","client":"client"}{"deviceName":"vapourtecR4P1700","inUse":true,"connDetails":{"ipCom":{"addr":"192.168.1.53","port":43344}},"settings":{"command":"SET","subDevice":"PumpBFlowRate","value":1},"topic":"subflow/vapourtecR4P1700/cmnd","client":"client"}
 
 
 subflow/vapourtecR4P1700/tele
