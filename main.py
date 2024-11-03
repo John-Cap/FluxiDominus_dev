@@ -93,9 +93,33 @@ mySqlPngDelay=30;
 lstPngTime=time.time();
 # Main loop!
 while True:
+    #TODO - Smarter way to manage this:
+    updater.currTestlistId=None
+    updater.currTestrunId=None
     #Send back test not started confirmation
     updater.client.publish("ui/dbCmnd/ret",json.dumps({"runTest":False}))
 
+    ##########################################################
+    #Wake everything up 1
+    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.53","port":43344}},"settings":{"command":"REMOTEEN"}}))
+    updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "connDetails": {
+            "ipCom": {
+            "addr": "192.168.1.201",
+            "port": 80
+            }
+        },
+        "settings": {
+            "command": "REMOTEEN"
+        }
+    }))
+    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"REMOTEEN"}}))
+
+    time.sleep(1)
+
+    ##########################################################
     #Set setup to safe state
     updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
         "deviceName": "flowsynmaxi2",
@@ -127,6 +151,7 @@ while True:
             "value": 0
         }
     }))
+
     updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({
         "deviceName": "vapourtecR4P1700",
         "inUse": True,
@@ -157,7 +182,7 @@ while True:
             "value": 0
         }
     }))
-    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0}}))
+    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0.0}}))
     updater.client.publish("subflow/sf10Vapourtec1/cmnd",json.dumps({
         "deviceName": "sf10Vapourtec1",
         "inUse": True,
@@ -255,6 +280,26 @@ while True:
         print('WJ - No test details!')
         
     print('WJ - Here we go!')
+
+    ##########################################################
+    #Wake everything up 2
+    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.53","port":43344}},"settings":{"command":"REMOTEEN"}}))
+    updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+        "deviceName": "flowsynmaxi2",
+        "inUse": True,
+        "connDetails": {
+            "ipCom": {
+            "addr": "192.168.1.201",
+            "port": 80
+            }
+        },
+        "settings": {
+            "command": "REMOTEEN"
+        }
+    }))
+    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"REMOTEEN"}}))
+
+    time.sleep(1)
 
     #
     #Inform UI of test start and provide zerotime

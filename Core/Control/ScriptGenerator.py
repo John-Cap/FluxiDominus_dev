@@ -723,13 +723,7 @@ class FlowChemAutomation:
 # Example usage
 if __name__ == "__main__":
     automation = FlowChemAutomation()
-    print(1)
-    automation.addBlockElement("block_1","sf10vapourtec1","fr",1.0)
-    print(2)
-    automation.addBlockElement("block_1","WaitUntil","timeout",50.0)
-    print(3)
-    automation.addBlockElement("block_1","flowsynmaxi1","sva",False)
-    print(4)
+
     automation.addBlockElement("block_2","sf10vapourtec2","fr",1.0)
     automation.addBlockElement("block_2","flowsynmaxi2","pbfr",1.0)
     automation.addBlockElement("block_3","Delay","sleepTime",100.0)
