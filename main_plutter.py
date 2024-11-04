@@ -7,7 +7,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -27,7 +27,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -47,7 +47,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -67,7 +67,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -87,7 +87,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -107,7 +107,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -127,7 +127,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -147,7 +147,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -167,7 +167,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -187,7 +187,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },
@@ -207,7 +207,7 @@
         "inUse": True,
         "connDetails": {
           "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 43344
           }
         },

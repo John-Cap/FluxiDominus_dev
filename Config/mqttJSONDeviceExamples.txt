@@ -186,7 +186,7 @@ REMOTEDIS		["settings": {"command":"REMOTEDIS"}]
 
 
 subflow/vapourtecR4P1700/cmnd
-	{"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.53", "port": 43344}}, "settings":{"command":"SET","subDevice":"PumpAFlowRate"}}
+	{"deviceName":"nmr1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.51", "port": 43344}}, "settings":{"command":"SET","subDevice":"PumpAFlowRate"}}
 
 
 subflow/vapourtecR4P1700/tele

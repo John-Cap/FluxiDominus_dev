@@ -368,7 +368,7 @@ class FlowChemAutomation:
                     "inUse":True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -387,7 +387,7 @@ class FlowChemAutomation:
                     "inUse":True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -407,7 +407,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -423,7 +423,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -438,7 +438,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -458,7 +458,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -473,7 +473,7 @@ class FlowChemAutomation:
                     "inUse": True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -488,7 +488,7 @@ class FlowChemAutomation:
                     "inUse":True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -507,7 +507,7 @@ class FlowChemAutomation:
                     "inUse":True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -526,7 +526,7 @@ class FlowChemAutomation:
                     "inUse":True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -545,7 +545,7 @@ class FlowChemAutomation:
                     "inUse":True,
                     "connDetails": {
                         "ipCom": {
-                            "addr": "192.168.1.53",
+                            "addr": "192.168.1.51",
                             "port": 43344
                         }
                     },
@@ -633,19 +633,23 @@ class FlowChemAutomation:
         for key, val in blocks.items():
             for cmnd in val:
                 #print("Adding " + str(cmnd) + " to block " + key)
-                if isinstance(cmnd["value"],int):
+                if isinstance(cmnd["value"],bool):
+                    pass
+                elif isinstance(cmnd["value"],int):
+                    #print('WJ - ' + str(cmnd["value"]) + ' is an int')
                     cmnd["value"]=float(cmnd["value"])
                 self.addBlockElement(key,cmnd["device"],cmnd["setting"],cmnd["value"])
         return (self.parseToScript())
 
     def parseBlockElement(self,device,setting,val):
         if not device in self.commandTemplatesNested:
-            #throw
+            print('WJ - Device not found!!')
             return
         setThis=copy.deepcopy(self.commandTemplatesNested[device][setting])
         #Valid setting?
         for key in self.varBrackets: #TODO - this is stupid
             if key in setThis:
+                #print('WJ - Val is ' + str(val))
                 if isinstance(val,self.varBrackets[key]):
                     return ((setThis.replace(key,str(val))).replace(" ","")).replace("\n","")
                 else:

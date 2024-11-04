@@ -101,7 +101,7 @@ while True:
 
     ##########################################################
     #Wake everything up 1
-    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.53","port":43344}},"settings":{"command":"REMOTEEN"}}))
+    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.51","port":43344}},"settings":{"command":"REMOTEEN"}}))
     updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
         "deviceName": "flowsynmaxi2",
         "inUse": True,
@@ -157,7 +157,7 @@ while True:
         "inUse": True,
         "connDetails": {
             "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 80
             }
         },
@@ -172,7 +172,7 @@ while True:
         "inUse": True,
         "connDetails": {
             "ipCom": {
-            "addr": "192.168.1.53",
+            "addr": "192.168.1.51",
             "port": 80
             }
         },
@@ -283,7 +283,7 @@ while True:
 
     ##########################################################
     #Wake everything up 2
-    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.53","port":43344}},"settings":{"command":"REMOTEEN"}}))
+    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.51","port":43344}},"settings":{"command":"REMOTEEN"}}))
     updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
         "deviceName": "flowsynmaxi2",
         "inUse": True,
