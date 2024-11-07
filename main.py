@@ -164,7 +164,7 @@ while True:
         "settings": {
             "command": "SET",
             "subDevice": "PumpAFlowRate",
-            "value": 0
+            "value": 0.05
         }
     }))
     updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({
@@ -179,7 +179,7 @@ while True:
         "settings": {
             "command": "SET",
             "subDevice": "PumpBFlowRate",
-            "value": 0
+            "value": 0.05
         }
     }))
     updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0.0}}))
@@ -441,7 +441,7 @@ while True:
                 updater.dataQueue.dataPoints=[]
             _reportDelay=Delay(_reportSleep)
 
-        time.sleep(0.1)
+        time.sleep(0.15)
         
     #TODO - in own thread
     if updater.logData and not noTestDetails:
