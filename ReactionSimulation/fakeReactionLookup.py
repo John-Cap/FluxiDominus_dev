@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 class ReactionLookup:
-    def __init__(self, filename=r"ReactionSimulation\tables\reaction_lookup_table.csv"):
+    def __init__(self, filename=r"ReactionSimulation/tables/max_at_34_10_1.csv"):
         # Load the lookup table from the file in the current working directory
         self.file_path = Path(filename)
         if not self.file_path.exists():
