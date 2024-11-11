@@ -9,7 +9,7 @@ class Optimizer:
 
         Args:
             startParams (List[float]): Initial values of parameters.
-            paramNames (List[str]): Names of parameters (e.g., ["temp", "fr", "equ"]).
+            paramNames (List[str]): Names of parameters (e.g., ["temp", "fr", "equiv"]).
             brackets (Dict[str, tuple]): Bounds for each parameter, e.g., {"temp": (50, 100), "fr": (0.1, 1.0)}.
             model: Trained machine learning model for recommending parameter updates.
             objFunc (Callable): Objective function to evaluate the parameters.
@@ -91,8 +91,8 @@ def dummyObjFunc(params):
 
 # Example usage
 startParams = [0.5, 0.8, 0.2]
-paramNames = ["temp", "fr", "equ"]
-brackets = {"temp": (0.4, 1.0), "fr": (0.6, 1.0), "equ": (0.1, 0.3)}
+paramNames = ["temp", "fr", "equiv"]
+brackets = {"temp": (0.4, 1.0), "fr": (0.6, 1.0), "equiv": (0.1, 0.3)}
 model = DummyModel()
 stopVal = 0.9
 
