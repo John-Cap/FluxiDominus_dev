@@ -12,6 +12,7 @@ class PumpFlowrates:
         self.globalCumulative=30 #TODO - Hardcoded
         self.adhereToGroupCumulative={}
         self.maxCumulativesSet={}
+        self.minCumulativesSet={}
         
         self._groupCounter=1
         
@@ -20,6 +21,7 @@ class PumpFlowrates:
         pumps=pumpFlowrates.keys()
         #TODO - check if sum is below globalCumulative
         for x in pumps:
+            print("Here 1")
             if not self.pumpGroups[x] in groups:
                 groups.append(self.pumpGroups[x])
         for grp in groups:
@@ -31,25 +33,34 @@ class PumpFlowrates:
             minGrpCumulative=self.allowedMinCumulative(grp)
             for pmp in grpPmps:
                 if pmp.pumpName in pumpFlowrates:
-                    fr=pmp.flowrate
-                    if frUsed > frAvail: #TODO - Not enough fr left!
+                    print("Here 2")
+                    fr=pumpFlowrates[pmp.pumpName]
+                    if fr > frAvail: #TODO - Not enough fr left!
+                        print("Here 3")
                         pass
                         if fr <= pmp.flowrateMax and fr >= pmp.flowrateMin:
+                            print("Here 4")
                             pass
                         elif snapToMinMax and fr <= pmp.flowrateMax:
+                            print("Here 5")
                             pass
                         elif snapToMinMax and fr >= pmp.flowrateMin:
+                            print("Here 6")
                             pass
                     elif frAvail >= fr:
                         if fr <= pmp.flowrateMax and fr >= pmp.flowrateMin:
+                            print("Here 7")
                             pmp.flowrate=fr
                         elif snapToMinMax and fr >= pmp.flowrateMax:
+                            print("Here 8")
                             pmp.flowrate=pmp.flowrateMax
                         elif snapToMinMax and fr <= pmp.flowrateMin:
+                            print("Here 9")
                             pmp.flowrate=pmp.flowrateMin
                     frUsed+=pmp.flowrate
                     frAvail-=pmp.flowrate
                 else:
+                    print("Here 10")
                     notAltered.append(pmp)
             if len(notAltered)==0:
                 return self.groupCumulativeFlowrate(grp)
@@ -73,9 +84,9 @@ class PumpFlowrates:
         #self.pumpLimits[pumpName]=pumpLimits
         self.pumpGroups[pumpName]=pumpGroup
         self.pumps[pumpName]=pump
-        
+
         return pump
-        
+
     def addPumpGroup(self,groupName=None,pumps=[],allowedMaxCumulative=None,adhereToAllowedMaxCumulative=True):
         
         if (not groupName):
@@ -120,6 +131,23 @@ class PumpFlowrates:
         else:
             return None
                 
+    def setDesiredMinCumulative(self,group,flowrate,snapTo=True):
+        if not group in self.groups:
+            return None
+        min=self.allowedMinCumulative(group)
+        max=self.allowedMaxCumulative(group)
+        self.minCumulativesSet[group]=None
+        
+        if min <= flowrate and max >= flowrate:
+            self.minCumulativesSet[group]=flowrate
+        else:
+            if min >= flowrate and snapTo:
+                self.minCumulativesSet[group]=min
+            elif max <= flowrate and snapTo:
+                self.minCumulativesSet[group]=max
+                
+        return self.minCumulativesSet[group]
+                    
     def setDesiredMaxCumulative(self,group,flowrate,snapTo=True):
         if not group in self.groups:
             return None
@@ -148,7 +176,7 @@ if __name__ == "__main__":
         pumpName="Pump1",
         pumpAlias="Alias1",
         pumpGroup="Group1",
-        pumpLimits=[5, 20],  # Min flowrate 5, Max flowrate 20
+        pumpLimits=[3, 20],  # Min flowrate 5, Max flowrate 20
         pressureMax=100
     )
     
@@ -158,30 +186,58 @@ if __name__ == "__main__":
         pumpName="Pump2",
         pumpAlias="Alias2",
         pumpGroup="Group1",
-        pumpLimits=[10, 25],  # Min flowrate 10, Max flowrate 25
+        pumpLimits=[3, 25],  # Min flowrate 10, Max flowrate 25
+        pressureMax=120
+    )
+    
+    pump3 = pump_flowrates.addPump(
+        deviceName="Device3",
+        settingName="Setting2",
+        pumpName="Pump3",
+        pumpAlias="Alias3",
+        pumpGroup="Group1",
+        pumpLimits=[3, 25],  # Min flowrate 10, Max flowrate 25
         pressureMax=120
     )
 
     # Test cumulative flowrate in Group1
+    for b in pump_flowrates.pumps.values():
+        print(b.flowrate)
+    print("Initial cumulative flowrate for Group1:", pump_flowrates.groupCumulativeFlowrate("Group1"))
+
+    pump1.flowrate=11.5
+    pump2.flowrate=3.5
+    pump3.flowrate=5
+
+    # Test cumulative flowrate in Group1
+    for b in pump_flowrates.pumps.values():
+        print(b.flowrate)
     print("Initial cumulative flowrate for Group1:", pump_flowrates.groupCumulativeFlowrate("Group1"))
 
     # Set desired maximum cumulative flowrate for Group1 and check result
-    desired_flowrate = pump_flowrates.setDesiredMaxCumulative("Group1", flowrate=35)
+    desired_flowrate = pump_flowrates.setDesiredMinCumulative("Group1", flowrate=2)
+    print("Desired min cumulative flowrate set for Group1:", desired_flowrate)
+    desired_flowrate = pump_flowrates.setDesiredMaxCumulative("Group1", flowrate=30)
     print("Desired max cumulative flowrate set for Group1:", desired_flowrate)
 
     # Check allowed min and max cumulative flowrate for Group1
-    print("Allowed max cumulative flowrate for Group1:", pump_flowrates.allowedMaxCumulative("Group1"))
     print("Allowed min cumulative flowrate for Group1:", pump_flowrates.allowedMinCumulative("Group1"))
+    print("Allowed max cumulative flowrate for Group1:", pump_flowrates.allowedMaxCumulative("Group1"))
 
     # Set specific flowrates for pumps and shift to maintain cumulative balance
     pump_flowrates.shiftKeepCumulative(
-        pumpFlowrates={"Pump1": 15, "Pump2": 20},
+        pumpFlowrates={"Pump1": 5, "Pump2": 2},
         snapToMinMax=True
     )
     
     # Print updated flowrates
     print(f"Updated flowrate for Pump1: {pump1.flowrate}")
     print(f"Updated flowrate for Pump2: {pump2.flowrate}")
+    print(f"Updated flowrate for Pump3: {pump3.flowrate}")
 
     # Check final cumulative flowrate for Group1
     print("Final cumulative flowrate for Group1:", pump_flowrates.groupCumulativeFlowrate("Group1"))
+
+    # Test cumulative flowrate in Group1
+    for b in pump_flowrates.pumps.values():
+        print(b.flowrate)
