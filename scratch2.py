@@ -62,8 +62,8 @@ class PumpFlowrates:
                 pmp.flowrate=div
         cum_2=self.groupCumulativeFlowrate(grp)
         if abs(cum_2-cum_1) > 0.0005: # TODO - Vra vir moeilikheid
-            if cum_2 < cum_1 and cum_2 != 0:
-                print("*Scaling flowrates up for group "+grp)
+            if cum_1 != 0  and cum_2 != 0:
+                print("*Scaling flowrates for group "+grp+" from "+str(cum_2)+" back to "+str(cum_1))
                 rat=cum_1/cum_2
                 for pmp in self.pumps.values():
                     pmp.flowrate=pmp.flowrate*rat
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     # Set desired maximum cumulative flowrate for Group1 and check result
     desired_flowrate = pump_flowrates.setDesiredMinCumulative("Group1", flowrate=12)
     print("Desired min cumulative flowrate set for Group1:", desired_flowrate)
-    desired_flowrate = pump_flowrates.setDesiredMaxCumulative("Group1", flowrate=30)
+    desired_flowrate = pump_flowrates.setDesiredMaxCumulative("Group1", flowrate=15)
     print("Desired max cumulative flowrate set for Group1:", desired_flowrate)
 
     # Check allowed min and max cumulative flowrate for Group1
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     print("Allowed max cumulative flowrate for Group1:", pump_flowrates.allowedMaxCumulative("Group1"))
 
     # Test cumulative flowrate in Group1
-    _adjustments=[{"Pump1":7,"Pump2":2},{"Pump1":3,"Pump2":4},{"Pump1":3,"Pump3":4},{"Pump1":3,"Pump2":4,"Pump3":3},{"Pump1":5,"Pump2":5,"Pump3":5},{"Pump1":2,"Pump2":3,"Pump3":3,"Pump4":7},{"Pump1":5,"Pump2":5,"Pump3":5},{"Pump1":7,"Pump2":7,"Pump3":7,"Pump4":7},{"Pump1":2,"Pump2":3,"Pump3":2,"Pump4":3}]
+    _adjustments=[{"Pump1":7,"Pump2":2},{"Pump1":3,"Pump2":4},{"Pump1":3,"Pump3":4},{"Pump1":3,"Pump2":4,"Pump3":3},{"Pump1":5,"Pump2":5,"Pump3":5},{"Pump1":2,"Pump2":3,"Pump3":3,"Pump4":7},{"Pump1":5,"Pump2":5,"Pump3":5},{"Pump1":7,"Pump2":7,"Pump3":7,"Pump4":7},{"Pump1":2,"Pump2":3,"Pump3":2,"Pump4":3},{"Pump1":1,"Pump2":1.5,"Pump3":1,"Pump4":1.5},{"Pump1":6,"Pump2":9,"Pump3":6,"Pump4":9}]
     for _ad in _adjustments:
         
         print('#########################')
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         print('Cumulative: ' + str(pump_flowrates.groupCumulativeFlowrate("Group1")))
         for b in pump_flowrates.pumps.values():
             print(b.pumpName + ": " + str(b.flowrate))
-        print('---')
+        print(' ')
         pump_flowrates.shiftKeepCumulative(
             grp="Group1",
             pumpFlowrates=_ad,
