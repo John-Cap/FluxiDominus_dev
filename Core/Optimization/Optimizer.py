@@ -1,97 +1,18 @@
+
 import keras
 import numpy as np
-from typing import Callable, Dict, List
 
 from ReactionSimulation.fakeReactionLookup import ReactionLookup
 
-class Optimizer:
-    def __init__(self, startParams: List[float], paramNames: List[str], 
-                 brackets: Dict[str, tuple], model, objFunc: Callable, stopVal: float = 0.9):
-        """
-        Initialize the optimizer with starting parameters and bounds.
-
-        Args:
-            startParams (List[float]): Initial values of parameters.
-            paramNames (List[str]): Names of parameters (e.g., ["temp", "fr", "equiv"]).
-            brackets (Dict[str, tuple]): Bounds for each parameter, e.g., {"temp": (50, 100), "fr": (0.1, 1.0)}.
-            model: Trained machine learning model for recommending parameter updates.
-            objFunc (Callable): Objective function to evaluate the parameters.
-            stopVal (float): Stop optimization when objective function value exceeds this threshold.
-        """
-        self.params = dict(zip(paramNames, startParams))
-        self.brackets = brackets
-        self.model = model
-        self.objFunc = objFunc
-        self.stopVal = stopVal
-        
-        # Logging and tracking
-        self.attemptedParams = []
-        self.objFuncVals = []
-        self.cycleNumber = 0
-        self.optimize = True
-        
-        self.objectiveFunc=ReactionLookup() #Nothing done with this yet, has method .get_yield that returns value between 0-1 from recommended x, y
-
-    def checkBounds(self, params: Dict[str, float]) -> bool:
-        """Check if parameters are within the defined bounds."""
-        for name, value in params.items():
-            if not (self.brackets[name][0] <= value <= self.brackets[name][1]):
-                return False
-        return True
-
-    def getNextParams(self) -> Dict[str, float]:
-        """Use the model to predict the next set of parameters."""
-        # Assuming model.predict takes current cycle as input and returns new params
-        predictedParams = self.model.predict(self.cycleNumber)
-        recommendedParams = dict(zip(self.params.keys(), predictedParams))
-        
-        # Check bounds and adjust if necessary
-        for param, value in recommendedParams.items():
-            minVal, maxVal = self.brackets[param]
-            recommendedParams[param] = np.clip(value, minVal, maxVal)
-        
-        return recommendedParams
-
-    def runCycle(self):
-        """Run a single cycle of optimization."""
-        # Step 1: Get recommended next parameters
-        recommendedParams = self.getNextParams()
-        
-        # Step 2: Check if recommended parameters are within bounds
-        if not self.checkBounds(recommendedParams):
-            print("Recommended parameters out of bounds, skipping cycle.")
-            return
-        
-        # Step 3: Attempt the new parameters
-        self.attemptedParams.append(recommendedParams)
-        self.params = recommendedParams
-        
-        # Step 4: Evaluate objective function
-        objVal = self.objFunc(self.params)
-        self.objFuncVals.append(objVal)
-        
-        # Step 5: Update cycle number and stop condition
-        self.cycleNumber += 1
-        if objVal >= self.stopVal:
-            self.optimize = False
-
-    def optimizeLoop(self):
-        """Main optimization loop."""
-        while self.optimize:
-            self.runCycle()
-        
-        # Return the best set of parameters
-        bestIndex = np.argmax(self.objFuncVals)
-        return self.attemptedParams[bestIndex], self.objFuncVals[bestIndex]
-
 class LSTMOptimizer:
-    def __init__(self, startParams, paramNames, brackets, reaction_lookup, stopVal=0.99, sequence_length=5):
+    def __init__(self, startParams, paramNames, brackets, reaction_lookup, stopVal=0.99, sequence_length=5, sequence_length_interval=5):
         self.params = dict(zip(paramNames, startParams))
         self.paramNames = paramNames
         self.brackets = brackets
         self.reaction_lookup = reaction_lookup
         self.stopVal = stopVal
         self.sequence_length = sequence_length
+        self.sequence_length_interval = sequence_length_interval
         self.cycleNumber = 0
         self.optimize = True
 
@@ -140,10 +61,10 @@ class LSTMOptimizer:
             print("Recommended parameters out of bounds, skipping cycle.")
             return
         
-        # Get yield from the ReactionLookup function
+        # Get yield from the ReactionLookup function (objective function)
         x, y = params_dict['temp'], params_dict['time']
         yield_val = self.reaction_lookup.get_yield(x, y)
-        
+        print('Predicted params for cycle ' + str(self.cycleNumber) + ': ' + str(recommended_params) + ', yield: ' + str(yield_val*100))        
         # Log data for training
         self.attemptedParams.append([x, y])
         self.yields.append(yield_val)
@@ -155,16 +76,17 @@ class LSTMOptimizer:
             print("Target yield achieved.")
             return
 
-        # Incrementally train the LSTM model with new data
+        # Train the LSTM model with exploration data only if we have enough data points
         if len(self.attemptedParams) > self.sequence_length:
             self.trainLSTMModel()
+            self.sequence_length+=self.sequence_length_interval
 
     def trainLSTMModel(self):
         """Train the LSTM model on all recorded sequences."""
         # Prepare the training data
         X = np.array([self.attemptedParams[i:i+self.sequence_length] for i in range(len(self.attemptedParams) - self.sequence_length)])
         y = np.array(self.attemptedParams[self.sequence_length:])
-        self.model.fit(X, y, epochs=1, verbose=0)
+        self.model.fit(X, y, epochs=5, verbose=0)
 
     def optimizeLoop(self):
         """Main optimization loop."""
@@ -178,14 +100,14 @@ class LSTMOptimizer:
 # Example usage
 if __name__ == "__main__":
     # Define some dummy values for the parameters
-    startParams = [25.0, 5.0]
+    startParams = [5.0, 5.0]
     paramNames = ["temp", "time"]
-    brackets = {"temp": (10, 50), "time": (1, 20)}
+    brackets = {"temp": (4, 100), "time": (1, 60)}
     
     # Create the optimizer instance
     reaction_lookup = ReactionLookup()
-    optimizer = LSTMOptimizer(startParams=startParams, paramNames=paramNames, brackets=brackets, reaction_lookup=reaction_lookup, stopVal=0.99)
+    optimizer = LSTMOptimizer(startParams=startParams, paramNames=paramNames, brackets=brackets, sequence_length=10, sequence_length_interval=10, reaction_lookup=reaction_lookup, stopVal=0.99)
     
     # Run optimization
     bestParams, bestYield = optimizer.optimizeLoop()
-    print(f"Best parameters: {bestParams} with yield: {bestYield}")
+    print(f"Best parameters: {bestParams} with yield: {bestYield*100} obtained in {optimizer.cycleNumber} cycles!")
