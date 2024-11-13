@@ -1,158 +1,205 @@
-Some classes:
+This is the skeleton for a flow chemistry optimizer:
 
-from Core.Components import Pump
+---------------------------
+---------------------------
+Optimizer.py:
+-------------
+import numpy as np
+from typing import Callable, Dict, List
+
+from ReactionSimulation.fakeReactionLookup import ReactionLookup
+
+class Optimizer:
+    def __init__(self, startParams: List[float], paramNames: List[str], 
+                 brackets: Dict[str, tuple], model, objFunc: Callable, stopVal: float = 0.9):
+        """
+        Initialize the optimizer with starting parameters and bounds.
+
+        Args:
+            startParams (List[float]): Initial values of parameters.
+            paramNames (List[str]): Names of parameters (e.g., ["temp", "fr", "equiv"]).
+            brackets (Dict[str, tuple]): Bounds for each parameter, e.g., {"temp": (5, 100), "time": (10, 50)}.
+            model: Trained machine learning model for recommending parameter updates.
+            objFunc (Callable): Objective function to evaluate the parameters.
+            stopVal (float): Stop optimization when objective function value exceeds this threshold.
+        """
+        self.params = dict(zip(paramNames, startParams))
+        self.brackets = brackets
+        self.model = model
+        self.objFunc = objFunc
+        self.stopVal = stopVal
+        
+        # Logging and tracking
+        self.attemptedParams = []
+        self.objFuncVals = []
+        self.cycleNumber = 0
+        self.optimize = True
+        
+        self.objectiveFunc=ReactionLookup().get_yield #Nothing done with this yet, has method .get_yield(x,y) that returns value between 0-1 from recommended x, y
+
+    def checkBounds(self, params: Dict[str, float]) -> bool:
+        """Check if parameters are within the defined bounds."""
+        for name, value in params.items():
+            if not (self.brackets[name][0] <= value <= self.brackets[name][1]):
+                return False
+        return True
+
+    def getNextParams(self) -> Dict[str, float]:
+        """Use the model to predict the next set of parameters."""
+        # Assuming model.predict takes current cycle as input and returns new params
+        predictedParams = self.model.predict(self.cycleNumber)
+        recommendedParams = dict(zip(self.params.keys(), predictedParams))
+        
+        # Check bounds and adjust if necessary
+        for param, value in recommendedParams.items():
+            minVal, maxVal = self.brackets[param]
+            recommendedParams[param] = np.clip(value, minVal, maxVal)
+        
+        return recommendedParams
+
+    def runCycle(self):
+        """Run a single cycle of optimization."""
+        # Step 1: Get recommended next parameters
+        recommendedParams = self.getNextParams()
+        
+        # Step 2: Check if recommended parameters are within bounds
+        if not self.checkBounds(recommendedParams):
+            print("Recommended parameters out of bounds, skipping cycle.")
+            return
+        
+        # Step 3: Attempt the new parameters
+        self.attemptedParams.append(recommendedParams)
+        self.params = recommendedParams
+        
+        # Step 4: Evaluate objective function
+        objVal = self.objFunc(self.params)
+        self.objFuncVals.append(objVal)
+        
+        # Step 5: Update cycle number and stop condition
+        self.cycleNumber += 1
+        if objVal >= self.stopVal:
+            self.optimize = False
+
+    def optimizeLoop(self):
+        """Main optimization loop."""
+        while self.optimize:
+            self.runCycle()
+        
+        # Return the best set of parameters
+        bestIndex = np.argmax(self.objFuncVals)
+        return self.attemptedParams[bestIndex], self.objFuncVals[bestIndex]
+
+# Dummy model and objective function for testing purposes
+class DummyModel:
+    def predict(self, cycleNumber):
+        # This is just a placeholder function that returns some dummy predictions
+        return [0.5, 0.8, 0.2]  # replace with actual predictions
+
+def dummyObjFunc(params):
+    # Placeholder objective function that could be based on the parameters
+    return np.random.rand()  # replace with actual evaluation logic
+
+# Example usage
+startParams = [0.5, 0.8, 0.2]
+paramNames = ["temp", "fr", "equiv"]
+brackets = {"temp": (0.4, 1.0), "fr": (0.6, 1.0), "equiv": (0.1, 0.3)}
+model = DummyModel()
+stopVal = 0.9
+
+optimizer = Optimizer(startParams=startParams, paramNames=paramNames, 
+                      brackets=brackets, model=model, objFunc=dummyObjFunc, 
+                      stopVal=stopVal)
+
+bestParams, bestObjVal = optimizer.optimizeLoop()
+print(f"Best parameters: {bestParams} with objective function value: {bestObjVal}")
 
 
-class PumpFlowrates:
-    def __init__(self) -> None:
-        self.pumps={}
-        self.groups={}
-        self.pumpGroups={}
-        self.globalCumulative=30 #TODO - Hardcoded
-        
-        self._groupCounter=1
-        
-    def shiftKeepCumulative(self,pumpFlowrates={},snapToMinMax=True):
-        groups=[]
-        pumps=pumpFlowrates.keys
-        #TODO - check if sum is below globalCumulative
-        for x in pumps:
-            if not self.pumpGroups[x] in groups:
-                groups.append(self.pumpGroups[x])
-        for grp in groups:
-            grpPmps=self.groups[grp]
-            frUsed=0
-            frAvail=self.groupCumulativeFlowrate(grp)
-            notAltered=[]
-            maxGrpCumulative=self.allowedMaxCumulative()
-            minGrpCumulative=self.allowedMinCumulative()
-            for pmp in grpPmps:
-                if pmp.pumpName in pumpFlowrates:
-                    fr=pmp.flowrate
-                    if frUsed > frAvail: #TODO - Not enough fr left!
-                        pass
-                        if fr <= self.pumpLimits[1] and fr >= self.pumpLimits[0]:
-                            pass
-                        elif snapToMinMax and fr <= pmp.flowrateMax:
-                            pass
-                        elif snapToMinMax and fr >= pmp.flowrateMin:
-                            pass
-                    elif frAvail >= fr:
-                        if fr <= pmp.flowrateMax and fr >= pmp.flowrateMin:
-                            pmp.flowrate=fr
-                        elif snapToMinMax and fr >= pmp.flowrateMax:
-                            pmp.flowrate=pmp.flowrateMax
-                        elif snapToMinMax and fr <= pmp.flowrateMin:
-                            pmp.flowrate=pmp.flowrateMin
-                    frUsed+=pmp.flowrate
-                    frAvail-=pmp.flowrate
-                else:
-                    del pumpFlowrates[pmp.pumpName]
-            if len(pumpFlowrates)==0:
-                return self.groupCumulativeFlowrate(grp)
-            div=frAvail/(len(pumpFlowrates))
-            for pmp in notAltered:
-                pmp.flowrate=div
-            return self.groupCumulativeFlowrate(grp)
-                            
-    def addPump(self,deviceName,settingName,pumpName=None,pumpAlias="",pumpGroup=None,pumpLimits=[None,None],pressureMax=None):
-        
-        pump=Pump(deviceName,settingName,pumpName=pumpName,flowrateMin=pumpLimits[0],flowrateMax=pumpLimits[1],pressureMax=pressureMax,pumpName=pumpName,pumpAlias=pumpAlias)
+For the purposes of testing, the following class acts as objective function to return 
+------------------------------
+------------------------------
+fakeReactionLookup.py:
+----------------------
+import threading
+from time import sleep
+import pandas as pd
+import numpy as np
+from pathlib import Path
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.interpolate import griddata
 
-        if (not pumpGroup):
-            self.addPumpGroup(groupName=pumpGroup,pumps=[pump])
-        else:
-            if not pumpGroup in self.groups:
-                self.addPumpGroup(pumpGroup,pumps=[pump])
-            else:
-                self.groups[pumpGroup].append(pump)
-            
-        self.pumpLimits[pumpName]=pumpLimits
-        self.pumpGroups[pumpName]=pumpGroup
-        self.pumps[pumpName]=pump
+class ReactionLookup:
+    def __init__(self, filename=r"ReactionSimulation/tables/max_at_34_10_1.csv"):
+        # Load the lookup table from the file
+        self.file_path = Path(filename)
+        if not self.file_path.exists():
+            raise FileNotFoundError(f"{filename} not found in the current directory.")
         
-        return pump
+        self.lookup_table = pd.read_csv(self.file_path)
         
-    def addPumpGroup(self,groupName=None,pumps=[],allowedMaxCumulative=None,adhereToAllowedMaxCumulative=True):
+        self.loopGraphUpdates=True
+        self.updateThread=None
         
-        if (not groupName):
-            groupName="pumpGroup_"+self._groupCounter
-            self._groupCounter+=1
+        self.fig=None
+        
+        self.doUpdate=False
+        
+        # Create a numpy array from the lookup table data
+        self.data = self.lookup_table[['X', 'Y', 'Z']].values
 
-        self.groups[groupName]=pumps
+    def get_yield(self, x, y):
+        # Find the closest point in the lookup table to the given (x, y)
+        closest_idx = ((self.lookup_table['X'] - x)**2 + (self.lookup_table['Y'] - y)**2).idxmin()
+        closest_row = self.lookup_table.iloc[closest_idx]
+        
+        # Return the Z value at the closest (X, Y) point
+        return closest_row['Z']
+
+    def plot_surface(self):
+        # Extract X, Y, and Z from the data
+        x = self.data[:, 0]
+        y = self.data[:, 1]
+        z = self.data[:, 2]
+        
+        # Create a grid for X and Y values
+        xi = np.linspace(x.min(), x.max(), 100)
+        yi = np.linspace(y.min(), y.max(), 100)
+        X, Y = np.meshgrid(xi, yi)
+        
+        # Interpolate Z values on the grid using griddata
+        Z = griddata((x, y), z, (X, Y), method='cubic')
+        
+        # Plotting
+        fig = plt.figure()
+        self.fig=fig
+        ax = fig.add_subplot(111, projection='3d')
+        surf = ax.plot_surface(X, Y, Z, cmap='viridis', edgecolor='k', alpha=0.7)
+        
+        # Add color bar and labels
+        fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Yield (Z)")
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Yield (Z)')
+        ax.set_title('Reaction Yield Surface Plot')
+        
+        # Print only, without showing the plot
+        print("Plot prepared but not displayed.")
     
-        if allowedMaxCumulative == 0:
-            allowedMaxCumulative=None
-        self.maxGroupCumulatives[groupName]=allowedMaxCumulative
-            
-        self.adhereToGroupCumulative[groupName]=adhereToAllowedMaxCumulative
-        
-    def groupCumulativeFlowrate(self,group):
-        if group in self.groups:
-            cum=0
-            pumps=self.groups[group]
-            for pmp in pumps:
-                cum+=pmp.flowrate
-            return cum
-        else:
-            return None
-                
-    def allowedMaxCumulative(self,group):
-        if group in self.groups:
-            cum=0
-            pumps=self.groups[group]
-            for pmp in pumps:
-                cum+=pmp.flowrateMax
-            return cum
-        else:
-            return None
-        
-    def allowedMinCumulative(self,group):
-        if group in self.groups:
-            cum=0
-            pumps=self.groups[group]
-            for pmp in pumps:
-                cum+=pmp.flowrateMin
-            return cum
-        else:
-            return None
-                
-    def setDesiredMaxCumulative(self,group,flowrate,snapTo=True):
-        if not group in self.groups:
-            return None
-        min=self.allowedMinCumulative(group)
-        max=self.allowedMaxCumulative(group)
-        self.maxCumulativesSet[group]=None
-        
-        if min <= flowrate and max >= flowrate:
-            self.maxCumulativesSet[group]=flowrate
-        else:
-            if min >= flowrate and snapTo:
-                self.maxCumulativesSet[group]=min
-            elif max <= flowrate and snapTo:
-                self.maxCumulativesSet[group]=max
-                
-        return self.maxCumulativesSet[group]
+    def _updateLoop(self):
+        while True:
+            self.doUpdate=True
+            while not self.doUpdate:
+                sleep(0.1)
+# Example usage
+if __name__ == "__main__": #Max yield at around x: 33, y: 10
+    lookup = ReactionLookup()
+    print(lookup.get_yield(33,10))
+    lookup.plot_surface()
+    while True:
+        while lookup.doUpdate:
+            plt.pause(1)
+        #plt.pause(1)
+        sleep(1)
+    print('Here')
 
-class PumpBase:
-    def __init__(self,deviceName,settingName,pumpName=None,pumpAlias="",flowrateMax = None,flowrateMin = None,pressureMax = None) -> None:
-        self.deviceName=deviceName
-        self.settingName=settingName
-        self.pumpAlias=pumpAlias
-        self.flowrate = 0
-        self.flowrateMax = flowrateMax
-        self.flowrateMin = flowrateMin
-        self.pressureMax = pressureMax #TODO - Class Pressure
-        self.status = False #TODO - false -> off, true -> available
-        
-        if not pumpName:
-            self.pumpName=deviceName + "_" + settingName
-
-    def setFlowrate(self,rate):
-        self.flowrate = rate
-
-class Pump(PumpBase):
-    def __init__(self, deviceName, settingName, pumpName=None, pumpAlias="", flowrateMax=None, flowrateMin=None, pressureMax=None) -> None:
-        super().__init__(deviceName, settingName, pumpName, pumpAlias, flowrateMax, flowrateMin, pressureMax)
-
-Write a __main__ function that tests some stuff for class PumpFlowrates only :)
+I want to demonstrate unsupervised training from a blank LSTM that finds the ideal parameters x/y (temp ~ 34, time ~ 10) that will return max yield > 0.99. Log attempted parameters and yield for each cycle

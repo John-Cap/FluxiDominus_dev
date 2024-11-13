@@ -21,6 +21,8 @@ class ReactionLookup:
         
         self.fig=None
         
+        self.doUpdate=False
+        
         # Create a numpy array from the lookup table data
         self.data = self.lookup_table[['X', 'Y', 'Z']].values
 
@@ -47,12 +49,13 @@ class ReactionLookup:
         Z = griddata((x, y), z, (X, Y), method='cubic')
         
         # Plotting
-        self.fig = plt.figure()
-        ax = self.fig.add_subplot(111, projection='3d')
+        fig = plt.figure()
+        self.fig=fig
+        ax = fig.add_subplot(111, projection='3d')
         surf = ax.plot_surface(X, Y, Z, cmap='viridis', edgecolor='k', alpha=0.7)
         
         # Add color bar and labels
-        self.fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Yield (Z)")
+        fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Yield (Z)")
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Yield (Z)')
@@ -62,19 +65,18 @@ class ReactionLookup:
         print("Plot prepared but not displayed.")
     
     def _updateLoop(self):
-
-        plt.pause(1)
-        sleep(0.5)
-        pass
-
+        while True:
+            self.doUpdate=True
+            while not self.doUpdate:
+                sleep(0.1)
 # Example usage
-if __name__ == "__main__":
+if __name__ == "__main__": #Max yield at around x: 33, y: 10
     lookup = ReactionLookup()
-    lookup.plot_surface()        # Prepare the plot (does not display it)
-    #lookup.save_figure()
-    #lookup.updateThread=threading.Thread(target=lookup._updateLoop) # Save the prepared plot as an image file
-    #lookup.updateThread.start()
+    print(lookup.get_yield(33,10))
+    lookup.plot_surface()
     while True:
-        lookup.plot_surface()
-        plt.pause(1)
+        while lookup.doUpdate:
+            plt.pause(1)
+        #plt.pause(1)
+        sleep(1)
     print('Here')

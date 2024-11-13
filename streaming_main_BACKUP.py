@@ -1,119 +1,113 @@
-from datetime import datetime, timedelta
-import random
-import time
 
-import bson
-from Core.Data.data import DataPointFDE, DataSetFDD
-from Core.Data.database import DatabaseOperations, DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
-from Core.UI.plutter import MqttService
+import keras
+import numpy as np
 
+from ReactionSimulation.fakeReactionLookup import ReactionLookup
 
-if __name__ == '__main__':
-    #Mqtt
-    thisThing=MqttService(broker_address='146.64.91.174')
-    thisThing.start()
-    thisThing.orgId="50403"
-    #Instantiate
-    #dbOp=DatabaseOperations(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
-    dbOp=DatabaseStreamer(mySqlDb=MySQLDatabase(host='146.64.91.174'),mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mqttService=thisThing)
-    dbOp.connect()
-    
-    ##################################
-    #MySql
-    '''
-    tests=dbOp.getUserTests()
-    print(tests)
-    print("\n")
-    #Get unique id of testlist entry
-    thisTest=dbOp.getTestlistId("WJ_Disprin")
-    print(thisTest)
-    print("\n")
-    #Get id's of all thisTest's replicate runs
-    theseTests=dbOp.getReplicateIds("50403_jdtoit_DSIP012A")
-    print(theseTests)
-    print('\n') #[116, 120, 121, 124, 131] #[118, 122, 123, 127, 128, 129, 130]
-  
-    #dbOp.createReplicate("WJ_Disprin")
-    theseTests=dbOp.getReplicateIds("50403_jdtoit_DSIP013A")
-    print(theseTests)
-    print('\n')
-    '''
-    ##################################
-    #Mongo
-    ##timestamp_1='2024-09-26T04:21:53.485144'
-    ##timestamp_1=datetime.fromisoformat(timestamp_1)
-    ##dbOp.setZeroTime(120,timestamp_1)
-    
-    '''
-    dataSet=[]
-    _i=60
-    while _i > 0:
-        _tstlstId=random.choice([
-            296
-        ])
-        timestamp_1 = timestamp_1 + timedelta(seconds=random.choice([1]))
-        dataSet.append(
-            DataPointFDE(
-                testlistId=_tstlstId,
-                testrunId=random.choice([
-                    120
-                ]),
-                data={
-                    'deviceName':random.choice(['flowsynmaxi2']),
-                    'settings':{'someSettings':[
-                        1,
-                        2,
-                        3
-                    ]},
-                    'state':{
-                        'pressFlowSynA':random.choice([1,2,3])
-                    }
-                },
-                timestamp=timestamp_1
-            ).toDict()
-        )
-        _i-=1
+class LSTMOptimizer:
+    def __init__(self, startParams, paramNames, brackets, reaction_lookup, stopVal=0.99, sequence_length=5, sequence_length_interval=5):
+        self.params = dict(zip(paramNames, startParams))
+        self.paramNames = paramNames
+        self.brackets = brackets
+        self.reaction_lookup = reaction_lookup
+        self.stopVal = stopVal
+        self.sequence_length = sequence_length
+        self.sequence_length_interval = sequence_length_interval
+        self.cycleNumber = 0
+        self.optimize = True
+
+        # Data storage for LSTM training
+        self.attemptedParams = []  # Stores past parameter sets
+        self.yields = []  # Stores yields corresponding to each parameter set
+
+        # Initialize LSTM model
+        self.model = self.build_lstm_model((self.sequence_length, len(paramNames)))
+
+    def build_lstm_model(self, input_shape):
+        """Build the LSTM model."""
+        model = keras.Sequential()
+        model.add(keras.layers.LSTM(64, input_shape=input_shape))
+        model.add(keras.layers.Dense(len(self.paramNames)))  # Output layer with units matching paramNames length
+        model.compile(optimizer='adam', loss='mse')
+        return model
+
+    def checkBounds(self, params):
+        """Check if parameters are within the defined bounds."""
+        for name, value in params.items():
+            if not (self.brackets[name][0] <= value <= self.brackets[name][1]):
+                return False
+        return True
+
+    def getNextParams(self):
+        """Predict the next parameters using the LSTM model."""
+        if len(self.attemptedParams) < self.sequence_length:
+            # Random initialization if not enough history for a full sequence
+            return [np.random.uniform(self.brackets[name][0], self.brackets[name][1]) for name in self.paramNames]
         
-    timestamp_1 = timestamp_1 + timedelta(seconds=random.choice([1]))    
-    thisData=DataSetFDD(
-        dataSet
-    )
-    for _x in thisData.dataPoints:
-        dbOp.mongoDb.insertDataPoint(_x)
+        # Prepare the sequence data for the LSTM model
+        recent_sequence = np.array(self.attemptedParams[-self.sequence_length:]).reshape(1, self.sequence_length, len(self.paramNames))
+        predicted_params = self.model.predict(recent_sequence)[0]
         
-    '''
-        
-    ##dbOp.setStopTime(120,timestamp_1)
-    
-    dbOp.mongoDb.currZeroTime=datetime.now()
-    #dbOp.setStreamingBracket(labNotebookBaseRef="50403_jdtoit_DSIP012A",runNr=11)
-    #self.currTestrunId and self.currTestlistId and self.logData
-    thisThing.currTestlistId=296
-    thisThing.currTestrunId=143
-    #thisThing.logData=True
-    time.sleep(1)
-    dbOp.mongoDb.fetchTimeSeriesData(296,139,startTime=(datetime.fromisoformat('2024-10-09T06:58:12.001+00:00')),endTime=(datetime.fromisoformat('2024-10-09T06:59:12.001+00:00')),nestedField='data.deviceName',nestedValue='flowsynmaxi2')
-    print('\n')
-    time.sleep(1)
-    dbOp.mongoDb.prevZeroTime=(datetime.fromisoformat('2024-10-09T06:57:12.001+00:00'))
-    dbOp.mongoDb.streamTimeBracket(296,139,timeWindowInSeconds=120,nestedField='data.deviceName',nestedValue='flowsynmaxi2')
-    
-    '''
-    Message from Flutter
-    '''    
-    print(
-        dbOp.handleStreamRequest(
-            {
-                "id":"120A3",
-                "labNotebookBaseRef":"50403_jdtoit_DSIP012A",
-                "runNr":16,
-                "timeWindow":1200, #Get all desired datapoints from now to 45 seconds in future
-                "deviceName":"hotcoil1",
-                "setting":'temp'
-            }
-        )
-    )
+        # Clip predictions to parameter bounds
+        return [np.clip(predicted_params[i], self.brackets[self.paramNames[i]][0], self.brackets[self.paramNames[i]][1]) for i in range(len(self.paramNames))]
 
-    time.sleep(15)
+    def runCycle(self):
+        """Run a single optimization cycle."""
+        recommended_params = self.getNextParams()
+        
+        # Check bounds
+        params_dict = dict(zip(self.paramNames, recommended_params))
+        if not self.checkBounds(params_dict):
+            print("Recommended parameters out of bounds, skipping cycle.")
+            return
+        
+        # Get yield from the ReactionLookup function (objective function)
+        x, y = params_dict['temp'], params_dict['time']
+        yield_val = self.reaction_lookup.get_yield(x, y)
+        print('Predicted params for cycle ' + str(self.cycleNumber) + ': ' + str(recommended_params) + ', yield: ' + str(yield_val*100))        
+        # Log data for training
+        self.attemptedParams.append([x, y])
+        self.yields.append(yield_val)
+        
+        # Check stop condition
+        self.cycleNumber += 1
+        if yield_val >= self.stopVal:
+            self.optimize = False
+            print("Target yield achieved.")
+            return
+
+        # Train the LSTM model with exploration data only if we have enough data points
+        if len(self.attemptedParams) > self.sequence_length:
+            self.trainLSTMModel()
+            self.sequence_length+=self.sequence_length_interval
+
+    def trainLSTMModel(self):
+        """Train the LSTM model on all recorded sequences."""
+        # Prepare the training data
+        X = np.array([self.attemptedParams[i:i+self.sequence_length] for i in range(len(self.attemptedParams) - self.sequence_length)])
+        y = np.array(self.attemptedParams[self.sequence_length:])
+        self.model.fit(X, y, epochs=5, verbose=0)
+
+    def optimizeLoop(self):
+        """Main optimization loop."""
+        while self.optimize:
+            self.runCycle()
+        
+        # Return the best set of parameters and corresponding yield
+        best_index = np.argmax(self.yields)
+        return self.attemptedParams[best_index], self.yields[best_index]
+
+# Example usage
+if __name__ == "__main__":
+    # Define some dummy values for the parameters
+    startParams = [5.0, 5.0]
+    paramNames = ["temp", "time"]
+    brackets = {"temp": (4, 100), "time": (1, 60)}
     
-    dbOp.mongoDb.kill()
+    # Create the optimizer instance
+    reaction_lookup = ReactionLookup()
+    optimizer = LSTMOptimizer(startParams=startParams, paramNames=paramNames, brackets=brackets, sequence_length=10, sequence_length_interval=10, reaction_lookup=reaction_lookup, stopVal=0.99)
+    
+    # Run optimization
+    bestParams, bestYield = optimizer.optimizeLoop()
+    print(f"Best parameters: {bestParams} with yield: {bestYield*100} obtained in {optimizer.cycleNumber} cycles!")
