@@ -44,7 +44,7 @@ SET		["settings": {"command":"SET",????? Future ????]
 REMOTEDIS		["settings": {"command":"REMOTEDIS"}]
 
 subflow/reactIR702L1/cmnd
-	{"deviceName":"reactIR702L1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.55", "port": 80}},"settings": {"command":"REMOTEEN"}}
+	{"deviceName":"reactIR702L1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.50", "port": 62552}},"settings": {"command":"REMOTEEN"}}
 
 subflow/reactIR702L1/tele
 

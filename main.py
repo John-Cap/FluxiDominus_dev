@@ -298,7 +298,7 @@ while True:
         }
     }))
     updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"REMOTEEN"}}))
-
+    updater.client.publish("subflow/reactIR702L1/cmnd",json.dumps({"deviceName":"reactIR702L1","inUse":True, "connDetails":{"ipCom" : {"addr": "192.168.1.50", "port": 62552}},"settings": {"command":"REMOTEEN"}}))
     time.sleep(1)
 
     #
@@ -323,7 +323,7 @@ while True:
                         "id":"hotcoil1_temp",
                         "labNotebookBaseRef":_thisRef,
                         "runNr":_thisTstrn,
-                        "timeWindow":1000,
+                        "timeWindow":10000,
                         "deviceName":"hotcoil1",
                         "setting":"temp"
                     }
@@ -337,7 +337,7 @@ while True:
                         "id":"flowsynmaxi2_pressA",
                         "labNotebookBaseRef":_thisRef,
                         "runNr":_thisTstrn,
-                        "timeWindow":1000,
+                        "timeWindow":10000,
                         "deviceName":"flowsynmaxi2",
                         "setting":"pressA"
                     }
@@ -351,7 +351,7 @@ while True:
                         "id":"flowsynmaxi2_pressB",
                         "labNotebookBaseRef":_thisRef,
                         "runNr":_thisTstrn,
-                        "timeWindow":1000,
+                        "timeWindow":10000,
                         "deviceName":"flowsynmaxi2",
                         "setting":"pressB"
                     }
@@ -365,7 +365,7 @@ while True:
                         "id":"flowsynmaxi2_pressSystem",
                         "labNotebookBaseRef":_thisRef,
                         "runNr":_thisTstrn,
-                        "timeWindow":1000,
+                        "timeWindow":10000,
                         "deviceName":"flowsynmaxi2",
                         "setting":"pressSys"
                     }
@@ -379,7 +379,7 @@ while True:
                         "id":"vapourtecR4P1700_pressA",
                         "labNotebookBaseRef":_thisRef,
                         "runNr":_thisTstrn,
-                        "timeWindow":1000,
+                        "timeWindow":10000,
                         "deviceName":"vapourtecR4P1700",
                         "setting":"pressA"
                     }
@@ -393,7 +393,7 @@ while True:
                         "id":"vapourtecR4P1700_pressB",
                         "labNotebookBaseRef":_thisRef,
                         "runNr":_thisTstrn,
-                        "timeWindow":1000,
+                        "timeWindow":10000,
                         "deviceName":"vapourtecR4P1700",
                         "setting":"pressB"
                     }
@@ -407,7 +407,7 @@ while True:
                         "id":"vapourtecR4P1700_pressSystem",
                         "labNotebookBaseRef":_thisRef,
                         "runNr":_thisTstrn,
-                        "timeWindow":1000,
+                        "timeWindow":10000,
                         "deviceName":"vapourtecR4P1700",
                         "setting":"pressSys"
                     }
