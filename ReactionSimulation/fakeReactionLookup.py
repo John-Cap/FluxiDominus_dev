@@ -10,11 +10,11 @@ from scipy.interpolate import griddata
 class ReactionLookup:
     def __init__(self, filename=r"ReactionSimulation/tables/max_at_34_10_1.csv"):
         # Load the lookup table from the file
-        self.file_path = Path(filename)
-        if not self.file_path.exists():
+        self.filePath = Path(filename)
+        if not self.filePath.exists():
             raise FileNotFoundError(f"{filename} not found in the current directory.")
         
-        self.lookup_table = pd.read_csv(self.file_path)
+        self.lookupTable = pd.read_csv(self.filePath)
         
         self.loopGraphUpdates=True
         self.updateThread=None
@@ -24,17 +24,17 @@ class ReactionLookup:
         self.doUpdate=False
         
         # Create a numpy array from the lookup table data
-        self.data = self.lookup_table[['X', 'Y', 'Z']].values
+        self.data = self.lookupTable[['X', 'Y', 'Z']].values
 
-    def get_yield(self, x, y):
+    def getYield(self, x, y):
         # Find the closest point in the lookup table to the given (x, y)
-        closest_idx = ((self.lookup_table['X'] - x)**2 + (self.lookup_table['Y'] - y)**2).idxmin()
-        closest_row = self.lookup_table.iloc[closest_idx]
+        closestIdx = ((self.lookupTable['X'] - x)**2 + (self.lookupTable['Y'] - y)**2).idxmin()
+        closestRow = self.lookupTable.iloc[closestIdx]
         
         # Return the Z value at the closest (X, Y) point
-        return closest_row['Z']
+        return closestRow['Z']
 
-    def plot_surface(self):
+    def plotSurface(self):
         # Extract X, Y, and Z from the data
         x = self.data[:, 0]
         y = self.data[:, 1]

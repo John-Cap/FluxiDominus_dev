@@ -98,3 +98,23 @@ class DataLogger:
             logLine = f"{timestamp}, {value}, {arrayStr}\n"
             logFile.write(logLine)
             logFile.flush()  # Ensure the data is written to the file immediately
+            
+class Bracketer:
+    def __init__(self, minValue, maxValue):
+        """
+        Initializes the Bracketer with a given range [minValue, maxValue].
+        """
+        self.minValue = minValue
+        self.maxValue = maxValue
+
+    def fromBracket(self, value):
+        """
+        Scales the given value from the range [minValue, maxValue] to [0, 1].
+        """
+        return (value - self.minValue) / (self.maxValue - self.minValue)
+
+    def toBracket(self, bracketValue):
+        """
+        Converts a scaled value in the range [0, 1] back to the original range [minValue, maxValue].
+        """
+        return bracketValue * (self.maxValue - self.minValue) + self.minValue

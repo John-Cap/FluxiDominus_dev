@@ -1,5 +1,52 @@
+    
+    def runMultiModelCycle(self, models=None):
+        if not models:
+            models = self.models
+        if not models:
+            print("No available models!")
+            return
 
-    startParams_3 = [5.0, 5.0]
-    paramNames_3 = ["temp", "time"]
-    brackets_3 = {"temp": (4, 100), "time": (5, 60)}
-    info_3=(startParams_3,paramNames_3,brackets_3)
+        for model in models.values():
+            paramNames = self.modelParamNames[model.name]
+            recommended_params = self.getNextParams(model)
+            params_dict = dict(zip(paramNames, recommended_params))
+
+            if not self.checkBounds(model, params_dict):
+                print("Recommended parameters out of bounds, skipping cycle.")
+                continue
+
+            x, y = params_dict['temp'], params_dict['time']
+            predictedYield = model.predict([x, y])[0]  # Use the model's prediction
+            yield_val = self.reaction_lookup.get_yield(x, y) * 100 if self.training else None
+
+            print(f"Cycle {self.cycleNumber}: Model {model.name}")
+            print(f"Predicted yield: {predictedYield}, true yield: {yield_val}")
+
+            self.modelAttemptedParams[model.name].append([x, y, yield_val])
+            self.modelYields[model.name].append(yield_val)
+
+            # Train the model after sufficient data is available
+            if len(self.modelAttemptedParams[model.name]) > self.sequence_length and self.training:
+                self.trainLSTMModel(model, self.modelAttemptedParams[model.name])
+
+        self.cycleNumber += 1
+
+gives:
+
+Model Bob initialized.
+Model Sam initialized.
+Model Oprah initialized.
+Traceback (most recent call last):
+  File "c:\Projects\python\FluxiDominus_dev\streaming_main_BACKUP.py", line 156, in <module>
+    bestParams, bestYield = optimizer.optimizeLoop()
+                            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Projects\python\FluxiDominus_dev\streaming_main_BACKUP.py", line 112, in optimizeLoop
+    self.runMultiModelCycle()
+  File "c:\Projects\python\FluxiDominus_dev\streaming_main_BACKUP.py", line 81, in runMultiModelCycle
+    predictedYield = model.predict([x, y])[0]  # Use the model's prediction
+                     ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Projects\python\FluxiDominus_dev\.venv\Lib\site-packages\keras\src\utils\traceback_utils.py", line 122, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "C:\Projects\python\FluxiDominus_dev\.venv\Lib\site-packages\keras\src\trainers\data_adapters\__init__.py", line 120, in get_data_adapter   
+    raise ValueError(f"Unrecognized data type: x={x} (of type {type(x)})")
+ValueError: Unrecognized data type: x=[60.3637859555807, 30.62099531560964] (of type <class 'list'>)
