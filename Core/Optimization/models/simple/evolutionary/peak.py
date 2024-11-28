@@ -140,21 +140,31 @@ class ReactionGAOptimizer:
 if __name__ == "__main__":
     # Load the reaction surface
     lookup = ReactionLookup("ReactionSimulation/tables/max_at_34_10_1.csv")
+    time_per_exp=15 #sec
 
     # Initialize the GA optimizer
     optimizer = ReactionGAOptimizer(
         reactionLookup=lookup, 
         pop_size=15, 
-        ngen=5, 
-        restart_threshold=10
+        ngen=15, 
+        restart_threshold=5
     )
 
+    best_yield_global=0
+    best_xy_global=0
     # Run optimization
     while True:
+        optimizer.best_yield=0
         best_x, best_y, best_yield = optimizer.optimize()
+        if best_yield > best_yield_global:
+            best_yield_global=best_yield
+            best_xy_global=[best_x,best_y]
         print(f'No experiments: {optimizer.experiment_counter}')
         print(f"Optimal parameters: X={best_x:.2f}, Y={best_y:.2f}")
         print(f"Maximum yield: {best_yield:.4f}")
+        print(f"Current global maximum: {best_yield_global}, with parameters {best_xy_global}")
+        print(f"Experiment is {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes into optimization")
+        #TODO - Add logic here that flags local maxima for the solver to avoid
         if best_yield > optimizer.targetYield:
             print("We done here!")
             exit()

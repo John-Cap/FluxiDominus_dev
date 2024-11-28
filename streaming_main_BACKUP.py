@@ -8,7 +8,7 @@ from scipy.interpolate import griddata
 from ReactionSimulation.fakeReactionLookup import ReactionLookup
 
 class ReactionGAOptimizer:
-    def __init__(self, reactionLookup, pop_size=100, cxpb=0.7, mutpb=0.3, ngen=100, restart_threshold=10):
+    def __init__(self, reactionLookup, pop_size=100, cxpb=0.7, mutpb=0.3, ngen=100, restart_threshold=10, local_maxima_exclDist=5):
         """
         Enhanced ReactionGAOptimizer with visualization and progress tracking.
         """
@@ -18,6 +18,9 @@ class ReactionGAOptimizer:
         self.mutpb = mutpb
         self.ngen = ngen
         self.restart_threshold = restart_threshold
+        
+        self.local_maxima_exclDist=local_maxima_exclDist
+        self.local_maxima_exclDist_max=10
         
         self.targetYield=0.90
 
@@ -41,17 +44,49 @@ class ReactionGAOptimizer:
         # Visualization setup
         self.fig, self.ax = plt.subplots()
         self.surf = None
+        
+    def mutate(self, individual):
+        """
+        Mutate the individual, ensuring they avoid regions near local maxima.
+        """
+        self.toolbox.mutate(individual)
+        if self.is_near_local_maxima(individual[0], individual[1]):
+            # If mutated individual is near a local maximum, try again
+            self.toolbox.mutate(individual)
+        return individual,
 
     def evaluate(self, individual):
         """
-        Evaluate the yield of an individual.
-        Increment the experiment counter for each evaluation.
+        Evaluate the yield of an individual, and detect if it's a local maximum.
         """
         x, y = individual
         self.experiment_counter += 1  # Increment the experiment counter
         yield_value = self.reactionLookup.getYield(x, y)
+
+        # Check if this yield is a local maximum compared to neighboring individuals
+        is_local_max = self.is_local_maxima(x, y, yield_value)
+        if is_local_max:
+            self.local_maxima.append((x, y, yield_value))
+
         return yield_value,  # DEAP expects a tuple
 
+    def is_local_maxima(self, x, y, yield_value):
+        """
+        Check if a given point is a local maximum by comparing it to nearby points.
+        """
+        for other_x, other_y, other_yield in self.local_maxima:
+            distance = np.sqrt((x - other_x)**2 + (y - other_y)**2)
+            if distance < self.local_maxima_exclDist:  # Define a neighborhood radius to consider
+                if yield_value < other_yield:
+                    self.local_maxima_exclDist=self.local_maxima_exclDist*-0.05 + self.local_maxima_exclDist
+                    if self.local_maxima_exclDist < 0:
+                        self.local_maxima_exclDist=0
+                    return False
+        #self.local_maxima_exclDist=self.local_maxima_exclDist*0.05 + self.local_maxima_exclDist
+        if self.local_maxima_exclDist_max < self.local_maxima_exclDist:
+            self.local_maxima_exclDist=self.local_maxima_exclDist_max
+        return True
+    
     def restart_population(self, population):
         """
         Restart the population by generating new random individuals.
@@ -85,12 +120,12 @@ class ReactionGAOptimizer:
         self.ax.set_ylabel("Y (Time)")
         self.ax.legend()
         plt.pause(0.1)
-
+        
     def optimize(self):
         """
-        Perform optimization with visualization and progress tracking.
-        Returns the best individual and its yield.
+        Perform optimization with visualization, local maxima detection, and progress tracking.
         """
+        self.local_maxima = []  # Reset local maxima list
         population = self.toolbox.population(n=self.pop_size)
         self.best_yield = -float("inf")
         best_solution = None
@@ -135,26 +170,66 @@ class ReactionGAOptimizer:
         print(f"Total Experiments: {self.experiment_counter}")
         return best_solution[0], best_solution[1], self.best_yield
 
+    def select(self, population):
+        """
+        Modify the selection process to penalize individuals near local maxima.
+        """
+        # Filter individuals that are too close to any local maxima
+        penalized_population = []
+        for ind in population:
+            x, y = ind
+            if self.is_near_local_maxima(x, y):
+                # Apply a penalty by assigning a low fitness value
+                ind.fitness.values = (-float('inf'),)
+            else:
+                # Keep original fitness
+                ind.fitness.values = self.evaluate(ind)
+            penalized_population.append(ind)
+        
+        # Return the selection based on the penalized individuals
+        return tools.selTournament(penalized_population, tournsize=3)
+
+    def is_near_local_maxima(self, x, y):
+        """
+        Check if the individual is near any local maxima.
+        """
+        for local_x, local_y, _ in self.local_maxima:
+            distance = np.sqrt((x - local_x)**2 + (y - local_y)**2)
+            if distance < self.local_maxima_exclDist:  # Threshold distance to consider it close to a local maximum
+                return True
+        return False
+
 
 # Example Usage
 if __name__ == "__main__":
     # Load the reaction surface
     lookup = ReactionLookup("ReactionSimulation/tables/max_at_34_10_1.csv")
+    time_per_exp=15 #sec
 
     # Initialize the GA optimizer
     optimizer = ReactionGAOptimizer(
         reactionLookup=lookup, 
-        pop_size=15, 
-        ngen=5, 
+        pop_size=25, 
+        ngen=10, 
         restart_threshold=10
     )
 
+    best_yield_global=0
+    best_xy_global=0
     # Run optimization
     while True:
+        optimizer.best_yield=0
+        optimizer.local_maxima_exclDist=1
         best_x, best_y, best_yield = optimizer.optimize()
+        if best_yield > best_yield_global:
+            best_yield_global=best_yield
+            best_xy_global=[best_x,best_y]
         print(f'No experiments: {optimizer.experiment_counter}')
         print(f"Optimal parameters: X={best_x:.2f}, Y={best_y:.2f}")
         print(f"Maximum yield: {best_yield:.4f}")
+        print(f"Current global maximum: {best_yield_global}, with parameters {best_xy_global}")
+        print(f"Experiment is {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes into optimization")
+        #TODO - Add logic here that flags local maxima for the solver to avoid
         if best_yield > optimizer.targetYield:
             print("We done here!")
             exit()
