@@ -5,26 +5,32 @@ import matplotlib.pyplot as plt
 from time import sleep
 from scipy.interpolate import griddata
 
+from Core.Utils.Utils import Bracketer
 from ReactionSimulation.fakeReactionLookup import ReactionLookup
 class ReactionGAOptimizer:
     def __init__(self, reactionLookup, pop_size=100, cxpb=0.7, mutpb=0.3, ngen=100, 
-                 restart_threshold=10, local_maxima_exclDist=5, 
-                 x_min=0, x_max=100, y_min=0, y_max=100):
+                 restart_threshold=10, local_maxima_exclDist=5, bracketer=None, paramNames=["temp","time"]):
         self.reactionLookup = reactionLookup
         self.pop_size = pop_size
         self.cxpb = cxpb
         self.mutpb = mutpb
         self.ngen = ngen
         self.restart_threshold = restart_threshold
+        self.local_maxima = []  # Local maxima list
         self.local_maxima_exclDist = local_maxima_exclDist
         self.local_maxima_exclDist_max = 10
         self.targetYield = 0.90
-
+        
         # Ranges for X and Y
-        self.x_min = x_min
-        self.x_max = x_max
-        self.y_min = y_min
-        self.y_max = y_max
+        self.paramNames=paramNames
+        self.x_min = None
+        self.x_max = None
+        self.y_min = None
+        self.y_max = None
+        
+        self._bracketCounters={}
+        self._currBracket=None
+        self.bracketer=bracketer if bracketer else (Bracketer(setName="DEFAULT"))
 
         self.experiment_counter = 0
 
@@ -34,10 +40,71 @@ class ReactionGAOptimizer:
 
         # Register attributes with separate ranges
         self.toolbox = base.Toolbox()
-        self.toolbox.register("attr_x", random.uniform, self.x_min, self.x_max)
-        self.toolbox.register("attr_y", random.uniform, self.y_min, self.y_max)
+        
+        # Visualization setup
+        self.fig, self.ax = plt.subplots()
+        self.surf = None
+
+    def selectBracket(self,paramName,idx):
+        if not (paramName in self.bracketer.brackets):
+            print(f"Unknown bracket paramName {paramName}")
+        if len(self.bracketer.brackets[paramName])==0:
+            print("No brackets set!")
+            return None
+        elif not (idx in self.bracketer.brackets[paramName]):
+            print(f"Bracket with index '{idx}' not found!")
+            return None
+        elif len(self.bracketer.brackets[paramName])==1 and idx != self.brackets.keys()[paramName][0]:
+            print(f"Unknown bracket '{idx}', switching to default")
+            return None
+
+    def nextBracket(self):
+        for param in self.paramNames:
+            if not param in self._bracketCounters:
+                self._bracketCounters[param]=0
+                
+                # TODO - Hardcoded for now
+                if param == "temp":
+                    self.x_min=self.bracketer.brackets[param][0].minValue
+                    self.x_max=self.bracketer.brackets[param][0].maxValue
+                else:
+                    self.y_min=self.bracketer.brackets[param][0].minValue
+                    self.y_max=self.bracketer.brackets[param][0].maxValue
+            else:
+                self._bracketCounters[param]+=1
+                
+                # TODO - Hardcoded for now
+                if self._bracketCounters[param] in self.bracketer.brackets[param]:
+                    if param == "temp":
+                        self.x_min=self.bracketer.brackets[param][self._bracketCounters[param]].minValue
+                        self.x_max=self.bracketer.brackets[param][self._bracketCounters[param]].maxValue
+                    else:
+                        self.y_min=self.bracketer.brackets[param][self._bracketCounters[param]].minValue
+                        self.y_max=self.bracketer.brackets[param][self._bracketCounters[param]].maxValue
+                else:
+                    print(f"Bracket with index '{self._bracketCounters[param]}' for '{param}' not found! Resetting brackets")
+                    self._bracketCounters={}
+                    
+        # Register attributes with separate ranges
+        self.toolbox.register(
+            "attr_x",
+            #random number...
+            random.uniform,
+            #...between these two values:
+            self.bracketer.brackets[param][self._bracketCounters["temp"]].minValue,
+            self.bracketer.brackets[param][self._bracketCounters["temp"]].maxValue
+        )
+        self.toolbox.register(
+            "attr_y",
+            #random number...
+            random.uniform,
+            #...between these two values:
+            self.bracketer.brackets[param][self._bracketCounters["time"]].minValue,
+            self.bracketer.brackets[param][self._bracketCounters["time"]].maxValue
+        )
+        
         self.toolbox.register("individual", tools.initCycle, creator.Individual, 
-                              (self.toolbox.attr_x, self.toolbox.attr_y), n=1)
+                                (self.toolbox.attr_x, self.toolbox.attr_y), n=1)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
         # GA operations
@@ -45,11 +112,7 @@ class ReactionGAOptimizer:
         self.toolbox.register("mate", tools.cxBlend, alpha=0.5)
         self.toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=10, indpb=0.2)
         self.toolbox.register("select", tools.selTournament, tournsize=3)
-        
-        # Visualization setup
-        self.fig, self.ax = plt.subplots()
-        self.surf = None
-        
+    
     def mutate(self, individual):
         self.toolbox.mutate(individual)
         # Clip each axis to its defined range
@@ -66,13 +129,13 @@ class ReactionGAOptimizer:
         yield_value = self.reactionLookup.getYield(x, y)
 
         # Check if this yield is a local maximum compared to neighboring individuals
-        is_local_max = self.is_local_maxima(x, y, yield_value)
+        is_local_max = self.is_local_maximum(x, y, yield_value)
         if is_local_max:
             self.local_maxima.append((x, y, yield_value))
 
         return yield_value,  # DEAP expects a tuple
 
-    def is_local_maxima(self, x, y, yield_value):
+    def is_local_maximum(self, x, y, yield_value):
         """
         Check if a given point is a local maximum by comparing it to nearby points.
         """
@@ -127,7 +190,9 @@ class ReactionGAOptimizer:
         """
         Perform optimization with visualization, local maxima detection, and progress tracking.
         """
-        self.local_maxima = []  # Reset local maxima list
+        #Set brackets
+        self.nextBracket()
+        
         population = self.toolbox.population(n=self.pop_size)
         self.best_yield = -float("inf")
         best_solution = None
@@ -180,7 +245,7 @@ class ReactionGAOptimizer:
         penalized_population = []
         for ind in population:
             x, y = ind
-            if self.is_near_local_maxima(x, y):
+            if self.is_near_local_maximum(x, y):
                 # Apply a penalty by assigning a low fitness value
                 ind.fitness.values = (-float('inf'),)
             else:
@@ -191,7 +256,7 @@ class ReactionGAOptimizer:
         # Return the selection based on the penalized individuals
         return tools.selTournament(penalized_population, tournsize=3)
 
-    def is_near_local_maxima(self, x, y):
+    def is_near_local_maximum(self, x, y):
         """
         Check if the individual is near any local maxima.
         """
@@ -208,13 +273,25 @@ if __name__ == "__main__":
     lookup = ReactionLookup("ReactionSimulation/tables/max_at_34_10_1.csv")
     time_per_exp=15 #sec
 
-    # Initialize the GA optimizer
     optimizer = ReactionGAOptimizer(
-        reactionLookup=lookup, 
-        pop_size=25, 
-        ngen=10, 
+        reactionLookup=lookup,
+        pop_size=25,
+        ngen=10,
         restart_threshold=10
     )
+    
+    optimizer.bracketer.addBracket("temp",[45,65])
+    optimizer.bracketer.addBracket("temp",[5,30])
+    
+    optimizer.bracketer.addBracket("time",[20,25])
+    optimizer.bracketer.addBracket("time",[5,10])
+    
+    print(f"Brackets for {(str(optimizer.paramNames).replace('[','').replace(']',''))}:")
+    _i=0
+    for x in optimizer.bracketer.brackets.items():
+        print(f"{optimizer.paramNames[_i]}:")
+        for y in x[1].values():
+            print(f"    {[y.minValue,y.maxValue]}")
 
     best_yield_global=0
     best_xy_global=0

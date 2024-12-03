@@ -106,10 +106,11 @@ class Bracketer:
         self._bracketCounters={}
 
     def addBracket(self,paramName,bracket):
-        if isinstance(bracket,list):
+        if isinstance(bracket,list) or isinstance(bracket,tuple):
             bracket=Bracket(minValue=min(bracket),maxValue=max(bracket),name=paramName)
         if not (paramName in self.brackets):
             self._bracketCounters[paramName]=1
+            self.brackets[paramName]={}
             self.brackets[paramName][0]=bracket
         else:
             self.brackets[paramName][self._bracketCounters[paramName]]=bracket
@@ -135,3 +136,15 @@ class Bracket:
         Converts a scaled value in the range [0, 1] back to the original range [minValue, maxValue].
         """
         return bracketValue * (self.maxValue - self.minValue) + self.minValue
+
+if __name__ == "__main__":
+    bracketer=Bracketer(setName="expSet")
+    bracketer.addBracket("temp",[0,150])
+    bracketer.addBracket("temp",[60,70])
+    bracketer.addBracket("time",[5,15])
+    bracketer.addBracket("time",[15,55])
+    bracketer.addBracket("time",[105,55])
+    
+    for _x in bracketer.brackets.values():
+        for _y in _x.values():
+            print([_y.minValue,_y.maxValue])
