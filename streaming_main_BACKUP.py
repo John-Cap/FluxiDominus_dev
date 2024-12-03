@@ -6,53 +6,79 @@ from time import sleep
 from scipy.interpolate import griddata
 
 from ReactionSimulation.fakeReactionLookup import ReactionLookup
-
 class ReactionGAOptimizer:
-    def __init__(self, reactionLookup, pop_size=100, cxpb=0.7, mutpb=0.3, ngen=100, restart_threshold=10, local_maxima_exclDist=5):
-        """
-        Enhanced ReactionGAOptimizer with visualization and progress tracking.
-        """
+    def __init__(self, reactionLookup, pop_size=100, cxpb=0.7, mutpb=0.3, ngen=100, 
+                 restart_threshold=10, local_maxima_exclDist=5, 
+                 x_min=0, x_max=100, y_min=0, y_max=100):
         self.reactionLookup = reactionLookup
         self.pop_size = pop_size
         self.cxpb = cxpb
         self.mutpb = mutpb
         self.ngen = ngen
         self.restart_threshold = restart_threshold
-        
-        self.local_maxima_exclDist=local_maxima_exclDist
-        self.local_maxima_exclDist_max=10
-        
-        self.targetYield=0.90
+        self.local_maxima = []  # Local maxima list
+        self.local_maxima_exclDist = local_maxima_exclDist
+        self.local_maxima_exclDist_max = 10
+        self.targetYield = 0.90
 
-        self.experiment_counter = 0  # Track the number of experiments performed
+        # Ranges for X and Y
+        self.x_min = x_min
+        self.x_max = x_max
+        self.y_min = y_min
+        self.y_max = y_max
+        
+        self._bracketCounter=0
+        self._currBracket=None
+        self.brackets={}
+
+        self.experiment_counter = 0
 
         # GA setup using DEAP
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMax)
 
+        # Register attributes with separate ranges
         self.toolbox = base.Toolbox()
-        self.toolbox.register("attr_float", random.uniform, 0, 100)  # Adjust X and Y ranges as needed
-        self.toolbox.register("individual", tools.initRepeat, creator.Individual, self.toolbox.attr_float, n=2)
+        self.toolbox.register("attr_x", random.uniform, self.x_min, self.x_max)
+        self.toolbox.register("attr_y", random.uniform, self.y_min, self.y_max)
+        self.toolbox.register("individual", tools.initCycle, creator.Individual, 
+                              (self.toolbox.attr_x, self.toolbox.attr_y), n=1)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
-        # Evaluation, selection, crossover, and mutation
+        # GA operations
         self.toolbox.register("evaluate", self.evaluate)
         self.toolbox.register("mate", tools.cxBlend, alpha=0.5)
         self.toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=10, indpb=0.2)
         self.toolbox.register("select", tools.selTournament, tournsize=3)
-
+        
         # Visualization setup
         self.fig, self.ax = plt.subplots()
         self.surf = None
         
+    def addBracket(self,bracket,bracketName=None): #bracket = {"x": (4, 100), "y": (1, 60)}
+        if bracketName is None:
+            bracketName=self._bracketCounter
+            self._bracketCounter+=1
+        self.brackets[bracketName]=bracket
+        return bracketName
+
+    def selectBracket(self,idx):
+        if len(self.brackets)==0:
+            print("No brackets set!")
+            return None
+        elif not (idx in self.brackets):
+            print(f"Bracket with index '{idx}' not found!")
+            return None
+        elif len(self.brackets)==1 and idx != self.brackets.keys()[0]:
+            print(f"Unknown bracket '{idx}', switching to default")
+            return None
+        
+                
     def mutate(self, individual):
-        """
-        Mutate the individual, ensuring they avoid regions near local maxima.
-        """
         self.toolbox.mutate(individual)
-        if self.is_near_local_maxima(individual[0], individual[1]):
-            # If mutated individual is near a local maximum, try again
-            self.toolbox.mutate(individual)
+        # Clip each axis to its defined range
+        individual[0] = max(self.x_min, min(self.x_max, individual[0]))  # X-axis
+        individual[1] = max(self.y_min, min(self.y_max, individual[1]))  # Y-axis
         return individual,
 
     def evaluate(self, individual):
@@ -64,13 +90,13 @@ class ReactionGAOptimizer:
         yield_value = self.reactionLookup.getYield(x, y)
 
         # Check if this yield is a local maximum compared to neighboring individuals
-        is_local_max = self.is_local_maxima(x, y, yield_value)
+        is_local_max = self.is_local_maximum(x, y, yield_value)
         if is_local_max:
             self.local_maxima.append((x, y, yield_value))
 
         return yield_value,  # DEAP expects a tuple
 
-    def is_local_maxima(self, x, y, yield_value):
+    def is_local_maximum(self, x, y, yield_value):
         """
         Check if a given point is a local maximum by comparing it to nearby points.
         """
@@ -125,7 +151,8 @@ class ReactionGAOptimizer:
         """
         Perform optimization with visualization, local maxima detection, and progress tracking.
         """
-        self.local_maxima = []  # Reset local maxima list
+        #Set brackets
+        
         population = self.toolbox.population(n=self.pop_size)
         self.best_yield = -float("inf")
         best_solution = None
@@ -208,9 +235,9 @@ if __name__ == "__main__":
 
     # Initialize the GA optimizer
     optimizer = ReactionGAOptimizer(
-        reactionLookup=lookup, 
-        pop_size=25, 
-        ngen=10, 
+        reactionLookup=lookup,
+        pop_size=25,
+        ngen=10,
         restart_threshold=10
     )
 

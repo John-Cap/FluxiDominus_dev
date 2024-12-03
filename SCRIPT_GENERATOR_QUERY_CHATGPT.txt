@@ -34,7 +34,7 @@ class LSTMOptimizer:
         self.cycleNumber = 0
         self.optimize = True
         
-        self.modelBracketers = {}
+        self.modelBrackets = {}
         
         self.modelSequenceLenghts = {}
         
@@ -69,9 +69,9 @@ class LSTMOptimizer:
         self.modelSequenceLenghts[model.name]=sequenceLength
         
         self.modelBrackets[model.name]=bracket
-        self.modelBracketers[model.name]={}
+        self.modelBrackets[model.name]={}
         for key in self.modelBrackets[model.name].keys():
-            self.modelBracketers[model.name][key]=Utils.Bracketer(minValue=bracket[key][0],maxValue=bracket[key][1])
+            self.modelBrackets[model.name][key]=Utils.Bracket(minValue=bracket[key][0],maxValue=bracket[key][1])
         
         model.add(keras.layers.LSTM(64, input_shape=inputShape))
         model.add(keras.layers.Dense(len(paramNames),activation='relu'))  # Output layer with units matching paramNames length
@@ -84,7 +84,7 @@ class LSTMOptimizer:
         # model.name=str(model)
         # params=self.modelParams[model.name]
         bracket=self.modelBrackets[model.name]
-        bracketer=self.modelBracketers[model.name]
+        bracketer=self.modelBrackets[model.name]
         """Check if parameters are within the defined bounds."""
         for name, value in params.items():
             print(f'BJ - {[bracket[name][0],bracketer[name].toBracket(value),bracket[name][1],(bracket[name][0] <= bracketer[name].toBracket(value) <= bracket[name][1])]}')
@@ -106,7 +106,7 @@ class LSTMOptimizer:
             # _i=0
             # # print(f'WJ - {init}')
             # for key in bracket:
-            #     init[_i]=self.modelBracketers[model.name][key].toBracket(init[_i])
+            #     init[_i]=self.modelBrackets[model.name][key].toBracket(init[_i])
             #     _i+=1
             # #print(f'WJ - {init}')
             return np.array([np.random.uniform(0, 1) for name in paramNames])
@@ -152,8 +152,8 @@ class LSTMOptimizer:
             
             # Get yield from the ReactionLookup function (objective function)
             x, y, predictedYield = paramsDict['temp'], paramsDict['time'], paramsDict['yieldPrev']
-            xProc=self.modelBracketers[model.name]['temp'].toBracket(x)
-            yProc=self.modelBracketers[model.name]['time'].toBracket(y)
+            xProc=self.modelBrackets[model.name]['temp'].toBracket(x)
+            yProc=self.modelBrackets[model.name]['time'].toBracket(y)
             if len(self.modelAttemptedParams[model.name]) < self.sequenceLengthGlobal:
                 yieldVal=(self.reactionLookup.getYield(xProc, yProc))
                 predictedYield=yieldVal
@@ -164,20 +164,20 @@ class LSTMOptimizer:
             # Log data for training
             
             if len(self.modelAttemptedParams[model.name]) < self.sequenceLengthGlobal:
-                self.modelAttemptedParams[model.name].append([x, y, self.modelBracketers[model.name]['yieldPrev'].fromBracket(yieldVal)])
+                self.modelAttemptedParams[model.name].append([x, y, self.modelBrackets[model.name]['yieldPrev'].fromBracket(yieldVal)])
                 self.modelYields[model.name].append(yieldVal)
             elif abs(predictedYield - yieldVal) < 0.05:
                 del self.modelAttemptedParams[model.name][0]
-                self.modelAttemptedParams[model.name].append([x, y, self.modelBracketers[model.name]['yieldPrev'].fromBracket(yieldVal)])
+                self.modelAttemptedParams[model.name].append([x, y, self.modelBrackets[model.name]['yieldPrev'].fromBracket(yieldVal)])
                 self.modelYields[model.name].append(yieldVal)
             elif not self.initialTraining:
-                self.modelAttemptedParams[model.name].append([x, y, self.modelBracketers[model.name]['yieldPrev'].fromBracket(yieldVal)])
+                self.modelAttemptedParams[model.name].append([x, y, self.modelBrackets[model.name]['yieldPrev'].fromBracket(yieldVal)])
                 self.modelYields[model.name].append(yieldVal)
                 self.initialTraining=True
             else:
                 print('We here')
                 # del self.modelAttemptedParams[model.name][0]
-                # self.modelAttemptedParams[model.name].append([x, y, self.modelBracketers[model.name]['yieldPrev'].fromBracket(yieldVal)])
+                # self.modelAttemptedParams[model.name].append([x, y, self.modelBrackets[model.name]['yieldPrev'].fromBracket(yieldVal)])
                 # self.modelYields[model.name].append(yieldVal)
             
             # Check stop condition

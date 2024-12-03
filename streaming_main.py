@@ -23,7 +23,7 @@ class LSTMOptimizer:
         self.sequenceLengthIntervalGlobal = sequenceLengthIntervalGlobal
         self.cycleNumber = 0
         self.optimize = True
-        self.modelBracketers = {}
+        self.modelBrackets = {}
         self.modelSequenceLengths = {}
         self.training = False
         self.models = {}
@@ -41,8 +41,8 @@ class LSTMOptimizer:
         sequenceLength = sequenceLength or self.sequenceLengthGlobal
         self.modelSequenceLengths[model.name] = sequenceLength
         self.modelBrackets[model.name] = bracket
-        self.modelBracketers[model.name] = {
-            key: Utils.Bracketer(minValue=bracket[key][0], maxValue=bracket[key][1])
+        self.modelBrackets[model.name] = {
+            key: Utils.Bracket(minValue=bracket[key][0], maxValue=bracket[key][1])
             for key in bracket.keys()
         }
         
@@ -55,7 +55,7 @@ class LSTMOptimizer:
     def checkBounds(self, model, params):
         """Check if parameters are within the defined bounds."""
         bracket = self.modelBrackets[model.name]
-        bracketer = self.modelBracketers[model.name]
+        bracketer = self.modelBrackets[model.name]
         for name, value in params.items():
             if not (bracket[name][0] <= bracketer[name].toBracket(value) <= bracket[name][1]):
                 return False
@@ -91,8 +91,8 @@ class LSTMOptimizer:
                 return
             
             x, y, predictedYield = paramsDict["temp"], paramsDict["time"], paramsDict["yieldPrev"]
-            xProc = self.modelBracketers[model.name]["temp"].toBracket(x)
-            yProc = self.modelBracketers[model.name]["time"].toBracket(y)
+            xProc = self.modelBrackets[model.name]["temp"].toBracket(x)
+            yProc = self.modelBrackets[model.name]["time"].toBracket(y)
 
             if len(self.modelAttemptedParams[model.name]) < self.sequenceLengthGlobal:
                 yieldVal = self.reactionLookup.getYield(xProc, yProc)

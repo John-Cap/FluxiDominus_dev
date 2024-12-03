@@ -98,12 +98,29 @@ class DataLogger:
             logLine = f"{timestamp}, {value}, {arrayStr}\n"
             logFile.write(logLine)
             logFile.flush()  # Ensure the data is written to the file immediately
-            
+
 class Bracketer:
-    def __init__(self, minValue, maxValue):
+    def __init__(self, setName):
+        self.name=setName
+        self.brackets={} #{"unitName (eg. temp)":{0:[Bracket(x1,x2),Bracket(y1,y2)],1:[Bracket(x3,x4),Bracket(y3,y4)]}}
+        self._bracketCounters={}
+
+    def addBracket(self,paramName,bracket):
+        if isinstance(bracket,list):
+            bracket=Bracket(minValue=min(bracket),maxValue=max(bracket),name=paramName)
+        if not (paramName in self.brackets):
+            self._bracketCounters[paramName]=1
+            self.brackets[paramName][0]=bracket
+        else:
+            self.brackets[paramName][self._bracketCounters[paramName]]=bracket
+            self._bracketCounters[paramName]+=1
+
+class Bracket:
+    def __init__(self, minValue, maxValue, name):
         """
-        Initializes the Bracketer with a given range [minValue, maxValue].
+        Initializes the Bracket with a given range [minValue, maxValue].
         """
+        self.name=name
         self.minValue = minValue
         self.maxValue = maxValue
 
