@@ -216,12 +216,9 @@ if __name__ == "__main__":
     # Set desired maximum cumulative flowrate for Group1 and check result
     desired_flowrate = pump_flowrates.setDesiredMinCumulative("Group1", flowrate=12)
     print("Desired min cumulative flowrate set for Group1:", desired_flowrate)
-    desired_flowrate = pump_flowrates.setDesiredMaxCumulative("Group1", flowrate=15)
-    print("Desired max cumulative flowrate set for Group1:", desired_flowrate)
 
     # Check allowed min and max cumulative flowrate for Group1
     print("Allowed min cumulative flowrate for Group1:", pump_flowrates.allowedMinCumulative("Group1"))
-    print("Allowed max cumulative flowrate for Group1:", pump_flowrates.allowedMaxCumulative("Group1"))
 
     # Test cumulative flowrate in Group1
     _adjustments=[{"Pump1":7,"Pump2":2},{"Pump1":3,"Pump2":4},{"Pump1":3,"Pump3":4},{"Pump1":3,"Pump2":4,"Pump3":3},{"Pump1":5,"Pump2":5,"Pump3":5},{"Pump1":2,"Pump2":3,"Pump3":3,"Pump4":7},{"Pump1":5,"Pump2":5,"Pump3":5},{"Pump1":7,"Pump2":7,"Pump3":7,"Pump4":7},{"Pump1":2,"Pump2":3,"Pump3":2,"Pump4":3},{"Pump1":1,"Pump2":1.5,"Pump3":1,"Pump4":1.5},{"Pump1":6,"Pump2":9,"Pump3":6,"Pump4":9}]

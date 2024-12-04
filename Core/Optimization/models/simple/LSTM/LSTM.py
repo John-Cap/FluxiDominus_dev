@@ -1,113 +1,132 @@
-
-import keras
 import numpy as np
+import keras
+from keras.models import Sequential
+from keras.layers import LSTM, Dense
+from keras.losses import Huber
+from time import sleep
+import uuid
 
-from ReactionSimulation.fakeReactionLookup import ReactionLookup
-
-class LSTMOptimizer:
-    def __init__(self, startParams, paramNames, brackets, reaction_lookup, stopVal=0.99, sequence_length=5, sequence_length_interval=5):
-        self.params = dict(zip(paramNames, startParams))
-        self.paramNames = paramNames
-        self.brackets = brackets
+class Optimizer:
+    def __init__(self, reaction_lookup, stop_val=0.95, sequence_length=5):
         self.reaction_lookup = reaction_lookup
-        self.stopVal = stopVal
+        self.stop_val = stop_val
         self.sequence_length = sequence_length
-        self.sequence_length_interval = sequence_length_interval
-        self.cycleNumber = 0
+        self.models = {}
         self.optimize = True
+        self.cycle_number = 0
 
-        # Data storage for LSTM training
-        self.attemptedParams = []  # Stores past parameter sets
-        self.yields = []  # Stores yields corresponding to each parameter set
-
-        # Initialize LSTM model
-        self.model = self.build_lstm_model((self.sequence_length, len(paramNames)))
-
-    def build_lstm_model(self, input_shape):
-        """Build the LSTM model."""
-        model = keras.Sequential()
-        model.add(keras.layers.LSTM(64, input_shape=input_shape))
-        model.add(keras.layers.Dense(len(self.paramNames)))  # Output layer with units matching paramNames length
-        model.compile(optimizer='adam', loss='mse')
-        return model
-
-    def checkBounds(self, params):
-        """Check if parameters are within the defined bounds."""
-        for name, value in params.items():
-            if not (self.brackets[name][0] <= value <= self.brackets[name][1]):
-                return False
-        return True
-
-    def getNextParams(self):
-        """Predict the next parameters using the LSTM model."""
-        if len(self.attemptedParams) < self.sequence_length:
-            # Random initialization if not enough history for a full sequence
-            return [np.random.uniform(self.brackets[name][0], self.brackets[name][1]) for name in self.paramNames]
+    def build_model(self, input_shape, param_names, param_bounds, name=None):
+        """Initialize an LSTM model for optimization."""
+        model = Sequential([
+            LSTM(64, input_shape=input_shape),
+            Dense(len(param_names), activation='relu')
+        ])
+        model.compile(optimizer='adam', loss=Huber())
         
-        # Prepare the sequence data for the LSTM model
-        recent_sequence = np.array(self.attemptedParams[-self.sequence_length:]).reshape(1, self.sequence_length, len(self.paramNames))
-        predicted_params = self.model.predict(recent_sequence)[0]
-        
-        # Clip predictions to parameter bounds
-        return [np.clip(predicted_params[i], self.brackets[self.paramNames[i]][0], self.brackets[self.paramNames[i]][1]) for i in range(len(self.paramNames))]
+        model_id = name or str(uuid.uuid4())
+        self.models[model_id] = {
+            'model': model,
+            'param_names': param_names,
+            'param_bounds': param_bounds,
+            'history': []
+        }
+        print(f"Model '{model_id}' created.")
+        return model_id
 
-    def runCycle(self):
+    def _normalize_params(self, params, bounds):
+        """Normalize parameters to [0, 1] based on bounds."""
+        return [(p - bounds[name][0]) / (bounds[name][1] - bounds[name][0]) for name, p in params.items()]
+
+    def _denormalize_params(self, normalized_params, bounds):
+        """Denormalize parameters from [0, 1] to original scale."""
+        return {name: norm * (bounds[name][1] - bounds[name][0]) + bounds[name][0]
+                for name, norm in zip(bounds.keys(), normalized_params)}
+
+    def get_next_params(self, model_id):
+        """Predict the next set of parameters."""
+        model_data = self.models[model_id]
+        history = model_data['history']
+        param_bounds = model_data['param_bounds']
+
+        if len(history) < self.sequence_length:
+            # Random initialization if not enough history
+            return {name: np.random.uniform(bounds[0], bounds[1]) 
+                    for name, bounds in param_bounds.items()}
+        
+        # Prepare input data for prediction
+        recent_data = np.array([entry['normalized'] for entry in history[-self.sequence_length:]])
+        recent_data = recent_data.reshape(1, self.sequence_length, -1)
+        predicted_norm = model_data['model'].predict(recent_data, verbose=0)[0]
+        return self._denormalize_params(predicted_norm, param_bounds)
+
+    def evaluate_params(self, params):
+        """Simulate the reaction to get the yield."""
+        yield_val = self.reaction_lookup.get_yield(params['temp'], params['time'])
+        return yield_val
+
+    def run_cycle(self, model_id):
         """Run a single optimization cycle."""
-        recommended_params = self.getNextParams()
-        
-        # Check bounds
-        params_dict = dict(zip(self.paramNames, recommended_params))
-        if not self.checkBounds(params_dict):
-            print("Recommended parameters out of bounds, skipping cycle.")
-            return
-        
-        # Get yield from the ReactionLookup function (objective function)
-        x, y = params_dict['temp'], params_dict['time']
-        yield_val = self.reaction_lookup.get_yield(x, y)
-        print('Predicted params for cycle ' + str(self.cycleNumber) + ': ' + str(recommended_params) + ', yield: ' + str(yield_val*100))        
-        # Log data for training
-        self.attemptedParams.append([x, y])
-        self.yields.append(yield_val)
-        
-        # Check stop condition
-        self.cycleNumber += 1
-        if yield_val >= self.stopVal:
+        model_data = self.models[model_id]
+        param_names = model_data['param_names']
+
+        params = self.get_next_params(model_id)
+        yield_val = self.evaluate_params(params)
+
+        # Record history
+        normalized_params = self._normalize_params(params, model_data['param_bounds'])
+        model_data['history'].append({
+            'params': params,
+            'normalized': normalized_params,
+            'yield': yield_val
+        })
+
+        print(f"Cycle {self.cycle_number}: Params {params}, Yield {yield_val:.2f}")
+
+        # Check if yield exceeds stop value
+        if yield_val >= self.stop_val:
             self.optimize = False
-            print("Target yield achieved.")
+            print(f"Optimization complete for {model_id}. Best Yield: {yield_val:.2f}")
+
+        return params, yield_val
+
+    def train_model(self, model_id):
+        """Train the model using the collected history."""
+        model_data = self.models[model_id]
+        history = model_data['history']
+        
+        if len(history) < self.sequence_length:
+            print(f"Not enough data to train model {model_id}.")
             return
 
-        # Train the LSTM model with exploration data only if we have enough data points
-        if len(self.attemptedParams) > self.sequence_length:
-            self.trainLSTMModel()
-            self.sequence_length+=self.sequence_length_interval
+        # Prepare training data
+        X = np.array([entry['normalized'] for entry in history[:-1]])
+        y = np.array([entry['normalized'] for entry in history[1:]])
+        X = X.reshape(-1, self.sequence_length, len(model_data['param_names']))
+        y = y.reshape(-1, len(model_data['param_names']))
 
-    def trainLSTMModel(self):
-        """Train the LSTM model on all recorded sequences."""
-        # Prepare the training data
-        X = np.array([self.attemptedParams[i:i+self.sequence_length] for i in range(len(self.attemptedParams) - self.sequence_length)])
-        y = np.array(self.attemptedParams[self.sequence_length:])
-        self.model.fit(X, y, epochs=5, verbose=0)
+        # Train the model
+        model_data['model'].fit(X, y, epochs=30, verbose=0)
+        print(f"Model {model_id} trained.")
 
-    def optimizeLoop(self):
-        """Main optimization loop."""
+    def optimize_loop(self):
+        """Run the optimization loop."""
         while self.optimize:
-            self.runCycle()
-        
-        # Return the best set of parameters and corresponding yield
-        best_index = np.argmax(self.yields)
-        return self.attemptedParams[best_index], self.yields[best_index]
+            for model_id in self.models:
+                params, yield_val = self.run_cycle(model_id)
+                self.train_model(model_id)
+            self.cycle_number += 1
+        print("Optimization loop finished.")
 
-# Example usage
-if __name__ == "__main__":
-    # Define some dummy values for the parameters
-    startParams = [5.0, 5.0]
-    paramNames = ["temp", "time"]
-    brackets = {"temp": (4, 100), "time": (1, 60)}
-    
-    # Create the optimizer instance
-    reaction_lookup = ReactionLookup()
-    optimizer = LSTMOptimizer(startParams=startParams, paramNames=paramNames, brackets=brackets, sequence_length=10, sequence_length_interval=10, reaction_lookup=reaction_lookup, stopVal=0.99)
-    
-    # Run optimization
-    bestParams, bestYield = optimizer.optimizeLoop()
-    print(f"Best parameters: {bestParams} with yield: {bestYield*100} obtained in {optimizer.cycleNumber} cycles!")
+# Reaction lookup mock
+class ReactionLookup:
+    def get_yield(self, temp, time):
+        return 1 - abs(temp - 20) * 0.05 - abs(time - 10) * 0.05  # Example surface
+
+# Initialize optimizer
+reaction_lookup = ReactionLookup()
+optimizer = Optimizer(reaction_lookup, stop_val=0.95, sequence_length=5)
+
+# Create and optimize models
+param_bounds = {"temp": (0, 40), "time": (0, 20)}
+model_id = optimizer.build_model((5, 2), ["temp", "time"], param_bounds, name="Reaction1")
+optimizer.optimize_loop()

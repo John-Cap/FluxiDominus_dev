@@ -82,7 +82,7 @@ SET		["settings":{"command":"SET", "subDevice":"Heater", "value": true}]
 REMOTEDIS	["settings": {"command":"REMOTEDIS"}]
 
 subflow/flowsynmaxi2/cmnd
-	{"deviceName":"flowsynmaxi2","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.55", "port": 80}}, "settings":{"command":"SET","subDevice":"PumpBFlowRate","value":0}}
+	{"deviceName":"flowsynmaxi2","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.201", "port": 80}}, "settings":{"command":"REMOTEEN"}}
 
 subflow/flowsynmaxi2/tele
 	{
