@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from time import sleep
 from scipy.interpolate import griddata
 
+from Core.Optimization.samplers import Sampler
 from Core.Utils.Utils import Bracketer
 from ReactionSimulation.fakeReactionLookup import ReactionLookup
 class ReactionGAOptimizer:
@@ -18,8 +19,13 @@ class ReactionGAOptimizer:
         self.restart_threshold = restart_threshold
         self.local_maxima = []  # Local maxima list
         self.local_maxima_exclDist = local_maxima_exclDist
-        self.local_maxima_exclDist_max = 10
+        self.local_maxima_exclDist_orig = local_maxima_exclDist
+        self.local_maxima_exclDist_max = 5
+        
         self.targetYield = 0.90
+        self.best_yield = -float("inf")
+        
+        self.recent_yields = []
         
         # Ranges for X and Y
         self.paramNames=paramNames
@@ -59,50 +65,102 @@ class ReactionGAOptimizer:
             return None
 
     def nextBracket(self):
+        print('Setting next bracket:')
         for param in self.paramNames:
             if not param in self._bracketCounters:
-                self._bracketCounters[param]=0
+                self._bracketCounters[param]=1
                 
                 # TODO - Hardcoded for now
                 if param == "temp":
                     self.x_min=self.bracketer.brackets[param][0].minValue
                     self.x_max=self.bracketer.brackets[param][0].maxValue
+                    print(f"Temp:")
+                    print(f"min: {self.x_min}")
+                    print(f"min: {self.x_max}")
                 else:
                     self.y_min=self.bracketer.brackets[param][0].minValue
                     self.y_max=self.bracketer.brackets[param][0].maxValue
-            else:
-                self._bracketCounters[param]+=1
+                    print(f"Time:")
+                    print(f"min: {self.y_min}")
+                    print(f"min: {self.y_max}")
+                    
+            elif self._bracketCounters[param] == 0:
                 
+                # TODO - Hardcoded for now
+                if param == "temp":
+                    self.x_min=self.bracketer.brackets[param][0].minValue
+                    self.x_max=self.bracketer.brackets[param][0].maxValue
+                    print(f"Temp:")
+                    print(f"min: {self.x_min}")
+                    print(f"min: {self.x_max}")
+                else:
+                    self.y_min=self.bracketer.brackets[param][0].minValue
+                    self.y_max=self.bracketer.brackets[param][0].maxValue
+                    print(f"Time:")
+                    print(f"min: {self.y_min}")
+                    print(f"min: {self.y_max}")
+                self._bracketCounters[param]+=1
+            else:
                 # TODO - Hardcoded for now
                 if self._bracketCounters[param] in self.bracketer.brackets[param]:
                     if param == "temp":
                         self.x_min=self.bracketer.brackets[param][self._bracketCounters[param]].minValue
                         self.x_max=self.bracketer.brackets[param][self._bracketCounters[param]].maxValue
+                        print(f"Temp:")
+                        print(f"min: {self.x_min}")
+                        print(f"min: {self.x_max}")
                     else:
                         self.y_min=self.bracketer.brackets[param][self._bracketCounters[param]].minValue
                         self.y_max=self.bracketer.brackets[param][self._bracketCounters[param]].maxValue
+                        print(f"Time:")
+                        print(f"min: {self.y_min}")
+                        print(f"min: {self.y_max}")
                 else:
                     print(f"Bracket with index '{self._bracketCounters[param]}' for '{param}' not found! Resetting brackets")
-                    self._bracketCounters={}
+                    self._bracketCounters[param]=0
                     
+                    # TODO - Hardcoded for now
+                    if param == "temp":
+                        self.x_min=self.bracketer.brackets[param][0].minValue
+                        self.x_max=self.bracketer.brackets[param][0].maxValue
+                        print(f"Temp:")
+                        print(f"min: {self.x_min}")
+                        print(f"min: {self.x_max}")
+                    else:
+                        self.y_min=self.bracketer.brackets[param][0].minValue
+                        self.y_max=self.bracketer.brackets[param][0].maxValue
+                        print(f"Time:")
+                        print(f"min: {self.y_min}")
+                        print(f"min: {self.y_max}")
+                self._bracketCounters[param]+=1
+                        
+        
+        self.recent_x = []
+        self.recent_y = []
+        self.recent_params = []
+                            
         # Register attributes with separate ranges
         self.toolbox.register(
             "attr_x",
             #random number...
-            random.uniform,
+            Sampler.trendBasedSampler,
             #...between these two values:
-            self.bracketer.brackets[param][self._bracketCounters["temp"]].minValue,
-            self.bracketer.brackets[param][self._bracketCounters["temp"]].maxValue
+            self.x_min,
+            self.x_max,
+            self.recent_yields,#min_val, max_val, recent_yields, recent_params, bias_factor=0.5)
+            self.recent_params
         )
         self.toolbox.register(
             "attr_y",
             #random number...
-            random.uniform,
+            Sampler.trendBasedSampler,
             #...between these two values:
-            self.bracketer.brackets[param][self._bracketCounters["time"]].minValue,
-            self.bracketer.brackets[param][self._bracketCounters["time"]].maxValue
+            self.y_min,
+            self.y_max,
+            self.recent_yields,#min_val, max_val, recent_yields, recent_params, bias_factor=0.5)
+            self.recent_params
         )
-        
+
         self.toolbox.register("individual", tools.initCycle, creator.Individual, 
                                 (self.toolbox.attr_x, self.toolbox.attr_y), n=1)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
@@ -119,16 +177,25 @@ class ReactionGAOptimizer:
         individual[0] = max(self.x_min, min(self.x_max, individual[0]))  # X-axis
         individual[1] = max(self.y_min, min(self.y_max, individual[1]))  # Y-axis
         return individual,
-
+    
     def evaluate(self, individual):
-        """
-        Evaluate the yield of an individual, and detect if it's a local maximum.
-        """
         x, y = individual
-        self.experiment_counter += 1  # Increment the experiment counter
+        self.experiment_counter += 1
         yield_value = self.reactionLookup.getYield(x, y)
 
-        # Check if this yield is a local maximum compared to neighboring individuals
+        # Record recent results
+        self.recent_yields.append(yield_value)
+        self.recent_x.append(x)
+        self.recent_y.append(y)
+
+        # Keep only the last N results to avoid excessive memory use
+        max_recent = 10
+        if len(self.recent_yields) > max_recent:
+            self.recent_yields.pop(0)
+            self.recent_x.pop(0)
+            self.recent_y.pop(0)
+
+        # Check for local maxima
         is_local_max = self.is_local_maximum(x, y, yield_value)
         if is_local_max:
             self.local_maxima.append((x, y, yield_value))
@@ -139,18 +206,20 @@ class ReactionGAOptimizer:
         """
         Check if a given point is a local maximum by comparing it to nearby points.
         """
+        ret=True
+        excldDist=self.local_maxima_exclDist
         for other_x, other_y, other_yield in self.local_maxima:
             distance = np.sqrt((x - other_x)**2 + (y - other_y)**2)
-            if distance < self.local_maxima_exclDist:  # Define a neighborhood radius to consider
+            if distance < excldDist:  # Define a neighborhood radius to consider
                 if yield_value < other_yield:
                     self.local_maxima_exclDist=self.local_maxima_exclDist*-0.05 + self.local_maxima_exclDist
                     if self.local_maxima_exclDist < 0:
                         self.local_maxima_exclDist=0
-                    return False
+                    ret=False
         #self.local_maxima_exclDist=self.local_maxima_exclDist*0.05 + self.local_maxima_exclDist
         if self.local_maxima_exclDist_max < self.local_maxima_exclDist:
             self.local_maxima_exclDist=self.local_maxima_exclDist_max
-        return True
+        return ret
     
     def restart_population(self, population):
         """
@@ -190,15 +259,17 @@ class ReactionGAOptimizer:
         """
         Perform optimization with visualization, local maxima detection, and progress tracking.
         """
+        self.local_maxima_exclDist = self.local_maxima_exclDist_orig
         #Set brackets
         self.nextBracket()
         
         population = self.toolbox.population(n=self.pop_size)
-        self.best_yield = -float("inf")
         best_solution = None
         no_improvement_counter = 0
+        sleep(2)
 
         for gen in range(self.ngen):
+            sleep(0.5)
             self.current_generation = gen  # Track the current generation
 
             # Apply GA operations
@@ -212,20 +283,18 @@ class ReactionGAOptimizer:
 
             # Track the best solution
             current_best = tools.selBest(population, k=1)[0]
+            if not best_solution:
+                best_solution=current_best
             current_yield = self.reactionLookup.getYield(*current_best)
 
             if current_yield > self.best_yield:
                 self.best_yield = current_yield
                 best_solution = current_best
-                no_improvement_counter = 0
+                no_improvement_counter -= 1
+                if (no_improvement_counter < 0):
+                    no_improvement_counter=0
             else:
                 no_improvement_counter += 1
-
-            # Restart if no improvement for restart_threshold generations
-            if no_improvement_counter >= self.restart_threshold:
-                print(f"Restarting population at generation {gen}")
-                population = self.restart_population(population)
-                no_improvement_counter = 0
 
             # Visualize population on the yield surface
             self.plot_population(population)
@@ -233,6 +302,13 @@ class ReactionGAOptimizer:
             if current_yield > self.targetYield:
                 print(f"Reached target yield with {current_yield*100}%!")
                 return best_solution[0], best_solution[1], self.best_yield
+
+            # Restart if no improvement for restart_threshold generations
+            if no_improvement_counter >= self.restart_threshold:
+                print(f"Restarting population at generation {gen}")
+                population = self.restart_population(population)
+                no_improvement_counter = 0
+                continue
 
         print(f"Total Experiments: {self.experiment_counter}")
         return best_solution[0], best_solution[1], self.best_yield
@@ -275,40 +351,42 @@ if __name__ == "__main__":
 
     optimizer = ReactionGAOptimizer(
         reactionLookup=lookup,
-        pop_size=25,
-        ngen=10,
-        restart_threshold=10
+        pop_size=3,
+        ngen=5,
+        restart_threshold=3
     )
     
-    optimizer.bracketer.addBracket("temp",[45,65])
-    optimizer.bracketer.addBracket("temp",[5,30])
+    optimizer.bracketer.addBracket("temp",[0,50])
+    optimizer.bracketer.addBracket("temp",[50,100])
     
-    optimizer.bracketer.addBracket("time",[20,25])
-    optimizer.bracketer.addBracket("time",[5,10])
+    optimizer.bracketer.addBracket("time",[0,15])
+    optimizer.bracketer.addBracket("time",[15,30])
     
     print(f"Brackets for {(str(optimizer.paramNames).replace('[','').replace(']',''))}:")
     _i=0
     for x in optimizer.bracketer.brackets.items():
         print(f"{optimizer.paramNames[_i]}:")
         for y in x[1].values():
-            print(f"    {[y.minValue,y.maxValue]}")
+            print(f" {[y.minValue,y.maxValue]}")
 
     best_yield_global=0
     best_xy_global=0
     # Run optimization
     while True:
-        optimizer.best_yield=0
-        optimizer.local_maxima_exclDist=1
         best_x, best_y, best_yield = optimizer.optimize()
-        if best_yield > best_yield_global:
-            best_yield_global=best_yield
-            best_xy_global=[best_x,best_y]
-        print(f'No experiments: {optimizer.experiment_counter}')
-        print(f"Optimal parameters: X={best_x:.2f}, Y={best_y:.2f}")
-        print(f"Maximum yield: {best_yield:.4f}")
-        print(f"Current global maximum: {best_yield_global}, with parameters {best_xy_global}")
-        print(f"Experiment is {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes into optimization")
-        #TODO - Add logic here that flags local maxima for the solver to avoid
         if best_yield > optimizer.targetYield:
+            print(f'No experiments: {optimizer.experiment_counter}')
+            print(f"Experiment took {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes!")
+            print(f"Optimal parameters: X={best_x:.2f} degrees, Y={best_y:.2f} minutes")
             print("We done here!")
             exit()
+        elif best_yield > best_yield_global:
+            best_yield_global=best_yield
+            best_xy_global=[best_x,best_y]
+            print(f"New global maximum!: {best_yield_global}, with parameters {best_xy_global}")
+        else:
+            print(f"Current global maximum: {best_yield_global}, with parameters {best_xy_global}")
+            
+        print(f'No experiments: {optimizer.experiment_counter}')
+        print(f"Experiment is {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes into optimization")
+        #TODO - Add logic here that flags local maxima for the solver to avoid
