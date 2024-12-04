@@ -23,6 +23,8 @@ class ReactionGAOptimizer:
         self.local_maxima_exclDist_orig = local_maxima_exclDist
         self.local_maxima_exclDist_max = 5
         
+        self.trendBiasFactor = 0.75
+        
         self.targetYield = 0.90
         self.best_yield = -float("inf")
         
@@ -149,7 +151,8 @@ class ReactionGAOptimizer:
             self.x_min,
             self.x_max,
             self.recent_yields,#min_val, max_val, recent_yields, recent_params, bias_factor=0.5)
-            self.recent_params
+            self.recent_params,
+            self.trendBiasFactor
         )
         self.toolbox.register(
             "attr_y",
@@ -159,7 +162,8 @@ class ReactionGAOptimizer:
             self.y_min,
             self.y_max,
             self.recent_yields,#min_val, max_val, recent_yields, recent_params, bias_factor=0.5)
-            self.recent_params
+            self.recent_params,
+            self.trendBiasFactor
         )
 
         self.toolbox.register("individual", tools.initCycle, creator.Individual, 
@@ -267,7 +271,6 @@ class ReactionGAOptimizer:
         population = self.toolbox.population(n=self.pop_size)
         best_solution = None
         no_improvement_counter = 0
-        sleep(2)
 
         for gen in range(self.ngen):
             self.current_generation = gen  # Track the current generation
@@ -298,7 +301,6 @@ class ReactionGAOptimizer:
 
             # Visualize population on the yield surface
             self.plot_population(population)
-            sleep(0.5)
 
             if current_yield > self.targetYield:
                 print(f"Reached target yield with {current_yield*100}%!")
@@ -352,17 +354,21 @@ if __name__ == "__main__":
 
     optimizer = ReactionGAOptimizer(
         reactionLookup=lookup,
-        pop_size=4,
-        ngen=10,
+        pop_size=10,
+        ngen=6,
         restart_threshold=4,
         local_maxima_exclDist=0.15
     )
     
-    optimizer.bracketer.addBracket("temp",[0,50])
-    optimizer.bracketer.addBracket("temp",[50,100])
+    optimizer.bracketer.addBracket("temp",[0,25])
+    optimizer.bracketer.addBracket("temp",[25,50])
+    optimizer.bracketer.addBracket("temp",[50,75])
+    optimizer.bracketer.addBracket("temp",[75,100])
     
-    optimizer.bracketer.addBracket("time",[0,15])
-    optimizer.bracketer.addBracket("time",[15,30])
+    optimizer.bracketer.addBracket("time",[0,7.5])
+    optimizer.bracketer.addBracket("time",[7.5,15])
+    optimizer.bracketer.addBracket("time",[15,22.5])
+    optimizer.bracketer.addBracket("time",[22.5,30])
     
     print(f"Brackets for {(str(optimizer.paramNames).replace('[','').replace(']',''))}:")
     _i=0

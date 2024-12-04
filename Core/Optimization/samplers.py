@@ -5,7 +5,7 @@ class Sampler:
     def __init__(self) -> None:
         pass
     
-    def trendBasedSampler(min_val, max_val, recent_yields, recent_params = [], bias_factor=0.75):
+    def trendBasedSampler(min_val, max_val, recent_yields, recent_params = [], bias_factor=0.85):
         """
         Custom sampling function that biases towards recent trends.
 
