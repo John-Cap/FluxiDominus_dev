@@ -24,7 +24,6 @@ class Sampler:
 
         # Compute the trend in the last two results
         delta_yield = recent_yields[-1] - recent_yields[-2]
-        print(f"Recent params: {recent_params}")
         target_param = recent_params[-1]
 
         if delta_yield > 0:
@@ -36,4 +35,6 @@ class Sampler:
 
         # Generate a biased sample
         sampled = random.gauss(center, (max_val - min_val) * bias_factor)
+        if sampled < 0:
+            sampled = min_val
         return max(min_val, min(max_val, sampled))  # Clip to range
