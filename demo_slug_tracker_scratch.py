@@ -1,6 +1,7 @@
 import time
 import threading
 from Core.Utils.Utils import Utils
+from collections import defaultdict, deque
 
 class FlowAddress:
     def __init__(self,name,inletsSett=[],outletsSett=[]) -> None: #inlets
@@ -44,18 +45,11 @@ class VolumeObject:
         self.id=VolumeObject.idCounter
         VolumeObject.idCounter+=1
     
-    #def addCommand(self,command=Command()):
-    #    pass
-    
-    #def setFlowrate(self,command=Command()):
-    #    pass
-
     def dispense(self,targetTerminus=None):
         if not (self.dispensing) and not self.associatedFlowPath is None:
             print(str(self.name) + " is busy dispensing!")
             self.dispensing=True
             _return=Slug(frontHost=self,tailHost=self,frontHostPos=0,tailHostPos=0,targetTerminus=targetTerminus)
-            print(_return)
             self.associatedFlowPath.slugs.append(_return)
             return _return
     def terminateDispensing(self):
@@ -65,35 +59,28 @@ class VolumeObject:
     def addInlet(self,comp,setName="DEFAULT"):
         _thisInletSet=self.getInletSet(setName)
         if len(_thisInletSet)==0:
-            print(str(self)+"InletHere1")
             self.inletSets[setName]=[comp]
             self.inlets=self.inletSets[setName]
             #print(self.inletSets)          
             self.flowrateShifted=True
-        elif len(_thisInletSet)==1 and _thisInletSet[0] is None:
-            print(str(self)+"InletHere2")            
+        elif len(_thisInletSet)==1 and _thisInletSet[0] is None:   
             self.inletSets[setName]=[comp]
             self.inlets=self.inletSets[setName]
             self.flowrateShifted=True
         else:
-            print(str(self)+"InletHere3")
             if not comp in _thisInletSet:
                 _thisInletSet.append(comp)
     def addOutlet(self,comp,setName="DEFAULT"):
         _thisOutletSet=self.getOutletSet(setName)
-        if len(_thisOutletSet)==0:
-            print(str(self)+"OutletHere1")            
+        if len(_thisOutletSet)==0:       
             _thisOutletSet.append(comp)
             self.outlets=_thisOutletSet
-            #print(self.getOutletSet(setName))
             self.flowrateShifted=True
         elif len(_thisOutletSet)==1 and _thisOutletSet[0] is None:
-            print(str(self)+"OutletHere2")
             _thisOutletSet=[(comp)]
             self.outlets=_thisOutletSet
             self.flowrateShifted=True
         else:
-            print(str(self)+"OutletHere3")
             if not comp in _thisOutletSet:
                 _thisOutletSet.append(comp)
 
@@ -126,6 +113,9 @@ class VolumeObject:
     def switchToOutlets(self,setName="DEFAULT"):
         if setName in self.outletSets:
             self.outlets=self.outletSets[setName]
+        if isinstance(self.outlets[0],FlowTerminus) and not self.associatedFlowPath.currTerminus:
+            print(f"Setting currTerminus as: {self.outlets[0]}")
+            self.associatedFlowPath.currTerminus=self.outlets[0]
 
     def getInletSet(self,setName="DEFAULT"):
         if self.inletSets is None:
@@ -221,6 +211,8 @@ class FlowPath:
         self.flowrate=flowrate
         self.timePrev=time
         self.collectedSlugs=collectedSlugs
+        
+        self.currTerminus=None
 
     def setAddress(self,address):
         _inlets=address.inletsSett
@@ -240,9 +232,13 @@ class FlowPath:
 
     def addPath(self,segments,pathName="DEFAULT"):
         self.segmentSets[pathName]=segments
+        if len(self.segmentSets.keys())==1:
+            self.selectPath()
 
     def selectPath(self,pathName="DEFAULT"):
         self.segments=self.segmentSets[pathName]
+        for _x in self.segments:
+            _x.associatedFlowPath=self
         return self.segments
     
     def appendComponent(self,comp,pathName="DEFAULT"):
@@ -256,7 +252,6 @@ class FlowPath:
         self.updateFlowrates()
         
     def updateFlowrates(self):
-        from collections import defaultdict, deque
 
         # Build a dependency graph and calculate indegrees
         graph = defaultdict(list)
@@ -538,26 +533,27 @@ class FlowJiggler: #Handles compound flowrates at a junction, i.e. correct flowr
 if __name__ == "__main__":
     _path=FlowPath()
 
-    #Stocks + pumps up to t piece
-
+    #Stocks
     _redStock=FlowOrigin(dispensing=False,volume=0,inlets=[],outlets=[],name="RED_STOCK",flowrateIn=0.0,slugs=[])
     _blueStock=FlowOrigin(dispensing=False,volume=0,inlets=[],outlets=[],name="BLUE_STOCK",flowrateIn=0.0,slugs=[])
     _pinkStock=FlowOrigin(dispensing=False,volume=0,inlets=[],outlets=[],name="PINK_STOCK",flowrateIn=0.0,slugs=[])
     #Pump lines
     _pump_1=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_1",flowrateIn=0.0,slugs=[])
     _pump_2=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_2",flowrateIn=0.0,slugs=[])
+    _pump_3=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_3",flowrateIn=0.0,slugs=[])
     #Valves
-    _cwValve=(Valve(volume=0.05,inlets=[],outlets=[],name="CW_VALVE",slugs=[]))
-    #TPiece
-    _Tpiece=TPiece(dispensing=False,volume=0,inlets=[],outlets=[],name="T_PIECE",flowrateIn=0.0,slugs=[])
-    #Coil
-    _coil=(Coil(volume=10,inlets=[],outlets=[],name="COIL",slugs=[]))
-    _pump_3=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_3",flowrateIn=0.0,flowrateOut=0.0,slugs=[])
+    _cwValve=Valve(volume=0.05,inlets=[],outlets=[],name="CW_VALVE",slugs=[])
+    _valve_1=Valve(volume=0.05,inlets=[],outlets=[],name="DIVERT_VALVE",slugs=[])
+    _flushCoilValve=Valve(volume=0.05,inlets=[],outlets=[],name="FLUSH_VALVE",slugs=[])
     #IR
     _IR=(IR(volume=0.5,inlets=[],outlets=[],name="IR",slugs=[]))
-    #Terminus
+    #Coil
+    _coil=(Coil(volume=10,inlets=[],outlets=[],name="COIL",slugs=[]))
+    #Termini
     _waste=FlowTerminus(volume=0,inlets=[],outlets=[None],name="WASTE",flowrateIn=0,flowrateOut=0,slugs=[])
     _collect=FlowTerminus(volume=0,inlets=[],outlets=[None],name="COLLECT",flowrateIn=0,flowrateOut=0,slugs=[])
+    _terminus_3=FlowTerminus(volume=0,inlets=[],outlets=[None],name="TERMINUS_3",flowrateIn=0,flowrateOut=0,slugs=[])
+    _terminus_4=FlowTerminus(volume=0,inlets=[],outlets=[None],name="TERMINUS_4",flowrateIn=0,flowrateOut=0,slugs=[])
 
     ###################
     #Connect components
@@ -565,48 +561,54 @@ if __name__ == "__main__":
     #Stock solutions
     _redStock.flowInto(_pump_1)
     _blueStock.flowInto(_pump_2)
-    #Pumplines
-    _pump_1.flowInto(_Tpiece)
-    _pump_2.flowInto(_Tpiece)
-    #Tubing etc to WC
-    _Tpiece.flowInto(_coil)
     _pinkStock.flowInto(_pump_3)
+    #Pumplines
+    _pump_1.flowInto(_valve_1)
+    _pump_2.flowInto(_valve_1)
     _pump_3.flowInto(_IR)
+    #Divert valve
+    _valve_1.flowInto(_coil,setNameOut="TO_COIL")
+    _valve_1.flowInto(_flushCoilValve,setNameOut="TO_FLUSH_VALVE")
+    #Flush coil valve
+    _flushCoilValve.flowInto(_terminus_3,setNameOut="TO_TERMINUS_3")
+    _flushCoilValve.flowInto(_terminus_4,setNameOut="TO_TERMINUS_4")
+    #Coil
     _coil.flowInto(_IR)
+    
     _IR.flowInto(_cwValve)
     _cwValve.flowInto(_waste,setNameOut="WASTE")
     _cwValve.flowInto(_collect,setNameOut="COLLECT")
     #select one of the termini
-    _cwValve.switchToOutlets("WASTE")
     '''
     #Create path
     '''
     _path.addPath(
-
-        #Must be in acceptable order, otherwise a null error occurs
-        #because of multiple pieces being able to flow into the same component. 
         [
             _redStock,
             _blueStock,
+            _pinkStock,
 
             _pump_1,
             _pump_2,
+            _pump_3,
             
-            _Tpiece,
+            _valve_1,
+            _flushCoilValve,
 
             _coil,
-            _pinkStock,
-            _pump_3,
             _IR,
 
             _cwValve,
 
             _collect,
-            _waste
+            _waste,
+            _terminus_3,
+            _terminus_4
         ]
     )
-    #Selects default path
-    _path.selectPath()
+    _flushCoilValve.switchToOutlets("TO_TERMINUS_3")
+    _valve_1.switchToOutlets("TO_FLUSH_VALVE")
+    _cwValve.switchToOutlets("WASTE")
 
     for _x in _path.segments:
         print("*********")
@@ -616,18 +618,13 @@ if __name__ == "__main__":
         print(_x.inlets)   
         print(_x.outlets)
 
-    #Each volume object must be manually assigned the path
-    for _x in _path.segments:
-        _x.associatedFlowPath=_path
-    #Manually assign starting point and ending point
-    _currOrigin=_Tpiece
-    _currTerminus=_waste
+    #TODO - Manually assign starting point for now
+    _currOrigin=_pump_1
     
     
     # Flag variable to indicate whether the thread should continue running?
     running=True
     allSlugs=Slugs()
-
     def run_code():
         global running
         global allSlugs
@@ -652,9 +649,10 @@ if __name__ == "__main__":
             _switched=False
             _now=time.perf_counter()
             _path.timePrev=time.perf_counter()
-            while not (_slug.tailHost is _currTerminus):
+            while not (_slug.tailHost is _path.currTerminus):
                 _path.advanceSlugs()
                 _vol=_slug.slugVolume()
+                print(f"FR OUT FOR {_slug.frontHost.name}: {_slug.frontHost.flowrateOut}")
                 print("Time: " + str(round(time.perf_counter() - _now, 0)) + " seconds, Fro h/pos: " + str(
                     _slug.frontHost.name) + ", " + str(round(_slug.frontHostPos, 2)) + "/" + str(
                     _slug.frontHost.volume) + " mL, tail h/pos: " + str(_slug.tailHost.name) + ", " + str(
@@ -666,11 +664,10 @@ if __name__ == "__main__":
                     _switched=True
                 time.sleep(0.25)
             print("************")
-            print(str(time.perf_counter() - _now) + " seconds")
             print("Collected slug volumes")
             for _x in _path.collectedSlugs:
-                print(_x.collectedVol)
-            print("Slug took " + str(_now-_slug.reachedTerminusAt) + " seconds to reach terminus")
+                print(f'{_x.collectedVol} mL')
+            print("Slug took " + str(time.perf_counter() - _now) + " seconds to reach terminus")
             print("************")
 
     # Create a thread for running the code

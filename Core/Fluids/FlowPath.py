@@ -55,7 +55,6 @@ class VolumeObject:
             print(str(self.name) + " is busy dispensing!")
             self.dispensing=True
             _return=Slug(frontHost=self,tailHost=self,frontHostPos=0,tailHostPos=0,targetTerminus=targetTerminus)
-            print(_return)
             self.associatedFlowPath.slugs.append(_return)
             return _return
     def terminateDispensing(self):
@@ -240,9 +239,13 @@ class FlowPath:
 
     def addPath(self,segments,pathName="DEFAULT"):
         self.segmentSets[pathName]=segments
+        if len(self.segmentSets.keys())==1:
+            self.selectPath()
 
     def selectPath(self,pathName="DEFAULT"):
         self.segments=self.segmentSets[pathName]
+        for _x in self.segments:
+            _x.associatedFlowPath=self
         return self.segments
     
     def appendComponent(self,comp,pathName="DEFAULT"):
@@ -582,21 +585,18 @@ if __name__ == "__main__":
     #Create path
     '''
     _path.addPath(
-
-        #Must be in acceptable order, otherwise a null error occurs
-        #because of multiple pieces being able to flow into the same component. 
         [
             _redStock,
             _blueStock,
+            _pinkStock,
 
             _pump_1,
             _pump_2,
+            _pump_3,
             
             _Tpiece,
 
             _coil,
-            _pinkStock,
-            _pump_3,
             _IR,
 
             _cwValve,
@@ -605,8 +605,6 @@ if __name__ == "__main__":
             _waste
         ]
     )
-    #Selects default path
-    _path.selectPath()
 
     for _x in _path.segments:
         print("*********")
@@ -616,9 +614,6 @@ if __name__ == "__main__":
         print(_x.inlets)   
         print(_x.outlets)
 
-    #Each volume object must be manually assigned the path
-    for _x in _path.segments:
-        _x.associatedFlowPath=_path
     #Manually assign starting point and ending point
     _currOrigin=_Tpiece
     _currTerminus=_waste
@@ -666,11 +661,10 @@ if __name__ == "__main__":
                     _switched=True
                 time.sleep(0.25)
             print("************")
-            print(str(time.perf_counter() - _now) + " seconds")
             print("Collected slug volumes")
             for _x in _path.collectedSlugs:
-                print(_x.collectedVol)
-            print("Slug took " + str(_now-_slug.reachedTerminusAt) + " seconds to reach terminus")
+                print(f'{_x.collectedVol} mL')
+            print("Slug took " + str(time.perf_counter() - _now) + " seconds to reach terminus")
             print("************")
 
     # Create a thread for running the code
