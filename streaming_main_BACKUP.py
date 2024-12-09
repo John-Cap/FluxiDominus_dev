@@ -25,7 +25,7 @@ class ReactionGAOptimizer:
         
         self.trendBiasFactor = 0.75
         
-        self.targetYield = 0.90
+        self.targetYield = 0.95
         self.best_yield = -float("inf")
         
         self.recent_yields = []
@@ -42,6 +42,10 @@ class ReactionGAOptimizer:
         self.bracketer=bracketer if bracketer else (Bracketer(setName="DEFAULT"))
 
         self.experiment_counter = 0
+        
+        self.evaluationCount = 0
+        
+        self.bracketScores = {} #Tracks best performing brackets
 
         # GA setup using DEAP
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -128,13 +132,13 @@ class ReactionGAOptimizer:
                         self.x_max=self.bracketer.brackets[param][0].maxValue
                         print(f"Temp:")
                         print(f"min: {self.x_min}")
-                        print(f"min: {self.x_max}")
+                        print(f"max: {self.x_max}")
                     else:
                         self.y_min=self.bracketer.brackets[param][0].minValue
                         self.y_max=self.bracketer.brackets[param][0].maxValue
                         print(f"Time:")
                         print(f"min: {self.y_min}")
-                        print(f"min: {self.y_max}")
+                        print(f"max: {self.y_max}")
                 self._bracketCounters[param]+=1
                         
         
@@ -205,6 +209,8 @@ class ReactionGAOptimizer:
         if is_local_max:
             self.local_maxima.append((x, y, yield_value))
 
+        self.evaluationCount += 1
+
         return yield_value,  # DEAP expects a tuple
 
     def is_local_maximum(self, x, y, yield_value):
@@ -259,7 +265,7 @@ class ReactionGAOptimizer:
         self.ax.set_ylabel("Y (Time)")
         self.ax.legend()
         plt.pause(0.1)
-        
+
     def optimize(self):
         """
         Perform optimization with visualization, local maxima detection, and progress tracking.
@@ -360,6 +366,9 @@ if __name__ == "__main__":
         local_maxima_exclDist=0.15
     )
     
+    # optimizer.bracketer.addBracket("temp",[0,100])
+    # optimizer.bracketer.addBracket("time",[0,30])
+
     optimizer.bracketer.addBracket("temp",[0,25])
     optimizer.bracketer.addBracket("temp",[25,50])
     optimizer.bracketer.addBracket("temp",[50,75])
@@ -380,7 +389,7 @@ if __name__ == "__main__":
     # Run optimization
     _i=0
     _pass=False
-    while _i < 5:
+    while _i < 10:
 
         best_yield_global=0
         best_xy_global=0
@@ -390,6 +399,7 @@ if __name__ == "__main__":
         optimizer.recent_x=[]
         optimizer.recent_y=[]
         optimizer._bracketCounters={} #Local!
+        optimizer.evaluationCount=0
         while not _pass:
             best_x, best_y, best_yield = optimizer.optimize()
             if best_yield > optimizer.targetYield:

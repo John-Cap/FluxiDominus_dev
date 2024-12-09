@@ -1,3 +1,4 @@
+from statistics import mean
 from deap import base, creator, tools, algorithms
 import random
 import numpy as np
@@ -22,6 +23,8 @@ class ReactionGAOptimizer:
         self.local_maxima_exclDist_orig = local_maxima_exclDist
         self.local_maxima_exclDist_max = 5
         
+        self.trendBiasFactor = 0.75
+        
         self.targetYield = 0.90
         self.best_yield = -float("inf")
         
@@ -39,6 +42,10 @@ class ReactionGAOptimizer:
         self.bracketer=bracketer if bracketer else (Bracketer(setName="DEFAULT"))
 
         self.experiment_counter = 0
+        
+        self.evaluationCount = 0
+        
+        self.bracketScores = {} #Tracks best performing brackets
 
         # GA setup using DEAP
         creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -125,13 +132,13 @@ class ReactionGAOptimizer:
                         self.x_max=self.bracketer.brackets[param][0].maxValue
                         print(f"Temp:")
                         print(f"min: {self.x_min}")
-                        print(f"min: {self.x_max}")
+                        print(f"max: {self.x_max}")
                     else:
                         self.y_min=self.bracketer.brackets[param][0].minValue
                         self.y_max=self.bracketer.brackets[param][0].maxValue
                         print(f"Time:")
                         print(f"min: {self.y_min}")
-                        print(f"min: {self.y_max}")
+                        print(f"max: {self.y_max}")
                 self._bracketCounters[param]+=1
                         
         
@@ -148,7 +155,8 @@ class ReactionGAOptimizer:
             self.x_min,
             self.x_max,
             self.recent_yields,#min_val, max_val, recent_yields, recent_params, bias_factor=0.5)
-            self.recent_params
+            self.recent_params,
+            self.trendBiasFactor
         )
         self.toolbox.register(
             "attr_y",
@@ -158,7 +166,8 @@ class ReactionGAOptimizer:
             self.y_min,
             self.y_max,
             self.recent_yields,#min_val, max_val, recent_yields, recent_params, bias_factor=0.5)
-            self.recent_params
+            self.recent_params,
+            self.trendBiasFactor
         )
 
         self.toolbox.register("individual", tools.initCycle, creator.Individual, 
@@ -200,6 +209,8 @@ class ReactionGAOptimizer:
         if is_local_max:
             self.local_maxima.append((x, y, yield_value))
 
+        self.evaluationCount += 1
+
         return yield_value,  # DEAP expects a tuple
 
     def is_local_maximum(self, x, y, yield_value):
@@ -212,9 +223,9 @@ class ReactionGAOptimizer:
             distance = np.sqrt((x - other_x)**2 + (y - other_y)**2)
             if distance < excldDist:  # Define a neighborhood radius to consider
                 if yield_value < other_yield:
-                    self.local_maxima_exclDist=self.local_maxima_exclDist*-0.05 + self.local_maxima_exclDist
-                    if self.local_maxima_exclDist < 0:
-                        self.local_maxima_exclDist=0
+                    # self.local_maxima_exclDist=self.local_maxima_exclDist*-0.05 + self.local_maxima_exclDist
+                    # if self.local_maxima_exclDist < 0:
+                    #     self.local_maxima_exclDist=0
                     ret=False
         #self.local_maxima_exclDist=self.local_maxima_exclDist*0.05 + self.local_maxima_exclDist
         if self.local_maxima_exclDist_max < self.local_maxima_exclDist:
@@ -254,7 +265,7 @@ class ReactionGAOptimizer:
         self.ax.set_ylabel("Y (Time)")
         self.ax.legend()
         plt.pause(0.1)
-        
+
     def optimize(self):
         """
         Perform optimization with visualization, local maxima detection, and progress tracking.
@@ -266,10 +277,8 @@ class ReactionGAOptimizer:
         population = self.toolbox.population(n=self.pop_size)
         best_solution = None
         no_improvement_counter = 0
-        sleep(2)
 
         for gen in range(self.ngen):
-            sleep(0.5)
             self.current_generation = gen  # Track the current generation
 
             # Apply GA operations
@@ -351,16 +360,24 @@ if __name__ == "__main__":
 
     optimizer = ReactionGAOptimizer(
         reactionLookup=lookup,
-        pop_size=3,
-        ngen=5,
-        restart_threshold=3
+        pop_size=10,
+        ngen=6,
+        restart_threshold=4,
+        local_maxima_exclDist=0.15
     )
     
-    optimizer.bracketer.addBracket("temp",[0,50])
-    optimizer.bracketer.addBracket("temp",[50,100])
+    # optimizer.bracketer.addBracket("temp",[0,100])
+    # optimizer.bracketer.addBracket("time",[0,30])
+
+    optimizer.bracketer.addBracket("temp",[0,25])
+    optimizer.bracketer.addBracket("temp",[25,50])
+    optimizer.bracketer.addBracket("temp",[50,75])
+    optimizer.bracketer.addBracket("temp",[75,100])
     
-    optimizer.bracketer.addBracket("time",[0,15])
-    optimizer.bracketer.addBracket("time",[15,30])
+    optimizer.bracketer.addBracket("time",[0,7.5])
+    optimizer.bracketer.addBracket("time",[7.5,15])
+    optimizer.bracketer.addBracket("time",[15,22.5])
+    optimizer.bracketer.addBracket("time",[22.5,30])
     
     print(f"Brackets for {(str(optimizer.paramNames).replace('[','').replace(']',''))}:")
     _i=0
@@ -368,25 +385,43 @@ if __name__ == "__main__":
         print(f"{optimizer.paramNames[_i]}:")
         for y in x[1].values():
             print(f" {[y.minValue,y.maxValue]}")
-
-    best_yield_global=0
-    best_xy_global=0
+    optimizationTimes=[]
     # Run optimization
-    while True:
-        best_x, best_y, best_yield = optimizer.optimize()
-        if best_yield > optimizer.targetYield:
+    _i=0
+    _pass=False
+    while _i < 10:
+
+        best_yield_global=0
+        best_xy_global=0
+        optimizer.best_yield=0
+        optimizer.experiment_counter=0
+        optimizer.recent_params=[]
+        optimizer.recent_x=[]
+        optimizer.recent_y=[]
+        optimizer._bracketCounters={} #Local!
+        optimizer.evaluationCount=0
+        while not _pass:
+            best_x, best_y, best_yield = optimizer.optimize()
+            if best_yield > optimizer.targetYield:
+                print(f'No experiments: {optimizer.experiment_counter}')
+                print(f"Experiment took {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes!")
+                print(f"Optimal parameters: X={best_x:.2f} degrees, Y={best_y:.2f} minutes")
+                optimizationTimes.append(round(time_per_exp*optimizer.experiment_counter/60,0))
+                _pass=True
+                continue
+            elif best_yield > best_yield_global:
+                best_yield_global=best_yield
+                best_xy_global=[best_x,best_y]
+                print(f"New global maximum!: {best_yield_global}, with parameters {best_xy_global}")
+            else:
+                print(f"Current global maximum: {best_yield_global}, with parameters {best_xy_global}")
+                
             print(f'No experiments: {optimizer.experiment_counter}')
-            print(f"Experiment took {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes!")
-            print(f"Optimal parameters: X={best_x:.2f} degrees, Y={best_y:.2f} minutes")
-            print("We done here!")
-            exit()
-        elif best_yield > best_yield_global:
-            best_yield_global=best_yield
-            best_xy_global=[best_x,best_y]
-            print(f"New global maximum!: {best_yield_global}, with parameters {best_xy_global}")
-        else:
-            print(f"Current global maximum: {best_yield_global}, with parameters {best_xy_global}")
-            
-        print(f'No experiments: {optimizer.experiment_counter}')
-        print(f"Experiment is {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes into optimization")
-        #TODO - Add logic here that flags local maxima for the solver to avoid
+            print(f"Experiment is {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes into optimization")
+            #TODO - Add logic here that flags local maxima for the solver to avoid
+        _pass=False
+        _i+=1
+    
+    print(f"Average time for optimization: {mean(optimizationTimes)} minutes")
+    print(f"Fastest: {min(optimizationTimes)} minutes, slowest: {max(optimizationTimes)} minutes")
+    print("We done here!")
