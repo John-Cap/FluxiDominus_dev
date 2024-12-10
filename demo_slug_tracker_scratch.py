@@ -1,16 +1,23 @@
 import time
 import threading
+import uuid
 from Core.Utils.Utils import Utils
 from collections import defaultdict, deque
 
-class FlowAddress:
-    def __init__(self,name,inletsSett=[],outletsSett=[]) -> None: #inlets
-        self.name=name
-        self.inletsSett=inletsSett
-        self.outletsSett=outletsSett
-    def setAddress(self,inletsSett,outletsSett):
-        self.inletsSett=inletsSett
-        self.outletsSett=outletsSett
+class FlowAddresses:
+    def __init__(self,addressBookName) -> None: #inlets
+        self.addressBookName=addressBookName
+        self.addresses={}
+    def addAddress(self,targetComponent,address):
+        '''
+        Add the neccessary outlets to select for each component to reach 'targetComponent' in the
+        flowline.
+        targetComponent: volObj
+        address: dict with component names as keys and array [inletName,outletName] for each
+        '''
+        if not isinstance(targetComponent,str):
+            targetComponent=targetComponent.name
+        self.addresses[targetComponent]=address
 
 class VolumeObject:
 
@@ -202,7 +209,8 @@ class VolObjNull(VolumeObject):
         super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
 
 class FlowPath:
-    def __init__(self,segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
+    def __init__(self,flowPathName=uuid.uuid4(),segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
+        self.flowPathName=flowPathName
         self.segments=segments
         self.segmentSets=segmentSets
         self.volume=0
@@ -212,9 +220,11 @@ class FlowPath:
         self.timePrev=time
         self.collectedSlugs=collectedSlugs
         
+        self.addresses=FlowAddresses()
+        
         self.currTerminus=None
 
-    def setAddress(self,address):
+    def switchToAddress(self,address):
         _inlets=address.inletsSett
         _outlets=address.outletsSett
         for _x in _inlets:
@@ -606,8 +616,8 @@ if __name__ == "__main__":
             _terminus_4
         ]
     )
-    _flushCoilValve.switchToOutlets("TO_TERMINUS_3")
-    _valve_1.switchToOutlets("TO_FLUSH_VALVE")
+    _flushCoilValve.switchToOutlets("TO_TERMINUS_4")
+    _valve_1.switchToOutlets("TO_COIL")
     _cwValve.switchToOutlets("WASTE")
 
     for _x in _path.segments:
@@ -652,7 +662,6 @@ if __name__ == "__main__":
             while not (_slug.tailHost is _path.currTerminus):
                 _path.advanceSlugs()
                 _vol=_slug.slugVolume()
-                print(f"FR OUT FOR {_slug.frontHost.name}: {_slug.frontHost.flowrateOut}")
                 print("Time: " + str(round(time.perf_counter() - _now, 0)) + " seconds, Fro h/pos: " + str(
                     _slug.frontHost.name) + ", " + str(round(_slug.frontHostPos, 2)) + "/" + str(
                     _slug.frontHost.volume) + " mL, tail h/pos: " + str(_slug.tailHost.name) + ", " + str(
