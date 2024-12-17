@@ -1,177 +1,427 @@
-from ast import List
+from statistics import mean
+from deap import base, creator, tools, algorithms
 import random
-from time import sleep
-import uuid
-import keras
 import numpy as np
-import tensorflow as tf
+import matplotlib.pyplot as plt
+from time import sleep
+from scipy.interpolate import griddata
 
-from Core.Utils import Utils
+from Core.Optimization.samplers import Sampler
+from Core.Utils.Utils import Bracketer
 from ReactionSimulation.fakeReactionLookup import ReactionLookup
-
-class LSTMOptimizer:
-    def __init__(self, reactionLookup, stopVal=0.95, sequenceLengthGlobal=5, sequenceLengthIntervalGlobal=5):
-        self.modelParams = {}
-        self.modelParamNames = {}
-        self.modelAttemptedParams = {}
-        self.modelYields = {}
-        self.initialTraining = False
-        self.modelBrackets = {}
+class ReactionGAOptimizer:
+    def __init__(self, reactionLookup, pop_size=100, cxpb=0.7, mutpb=0.3, ngen=100, 
+                 restart_threshold=10, local_maxima_exclDist=5, bracketer=None, paramNames=["temp","time"]):
         self.reactionLookup = reactionLookup
-        self.stopVal = stopVal
-        self.sequenceLengthGlobal = sequenceLengthGlobal
-        self.sequenceLengthIntervalGlobal = sequenceLengthIntervalGlobal
-        self.cycleNumber = 0
-        self.optimize = True
-        self.modelBrackets = {}
-        self.modelSequenceLengths = {}
-        self.training = False
-        self.models = {}
-        self.strikes = {}
-
-    def buildLstmModel(self, inputShape, startParams, paramNames, bracket, name="", sequenceLength=None):
-        """Build the LSTM model."""
-        model = keras.Sequential()
-        model.name = str(uuid.uuid4()) if name == "" else name
-        self.models[model.name] = model
-        self.modelParams[model.name] = dict(zip(paramNames, startParams))
-        self.modelParamNames[model.name] = paramNames
-        self.modelAttemptedParams[model.name] = []
-        self.modelYields[model.name] = []
-        sequenceLength = sequenceLength or self.sequenceLengthGlobal
-        self.modelSequenceLengths[model.name] = sequenceLength
-        self.modelBrackets[model.name] = bracket
-        self.modelBrackets[model.name] = {
-            key: Utils.Bracket(minValue=bracket[key][0], maxValue=bracket[key][1])
-            for key in bracket.keys()
-        }
+        self.pop_size = pop_size
+        self.cxpb = cxpb
+        self.mutpb = mutpb
+        self.ngen = ngen
+        self.restart_threshold = restart_threshold
+        self.local_maxima = []  # Local maxima list
+        self.local_maxima_exclDist = local_maxima_exclDist
+        self.local_maxima_exclDist_orig = local_maxima_exclDist
+        self.local_maxima_exclDist_max = 5
         
-        model.add(keras.layers.LSTM(64, input_shape=inputShape))
-        model.add(keras.layers.Dense(len(paramNames), activation="relu"))
-        model.compile(optimizer="adam", loss=tf.keras.losses.Huber(1))
-        print(f"Model '{model.name}' initialized!")
-        return model
+        self.trendBiasFactor = 0.75
+        
+        self.targetYield = 0.95
+        self.best_yield = -float("inf")
+        
+        self.recent_yields = []
+        
+        # Ranges for X and Y
+        self.paramNames=paramNames
+        self.x_min = None
+        self.x_max = None
+        self.y_min = None
+        self.y_max = None
+        
+        self._bracketCounters={}
+        self._currBracket=None
+        self.bracketer=bracketer if bracketer else (Bracketer(setName="DEFAULT"))
 
-    def checkBounds(self, model, params):
-        """Check if parameters are within the defined bounds."""
-        bracket = self.modelBrackets[model.name]
-        bracketer = self.modelBrackets[model.name]
-        for name, value in params.items():
-            if not (bracket[name][0] <= bracketer[name].toBracket(value) <= bracket[name][1]):
-                return False
-        return True
+        self.experiment_counter = 0
+        
+        self.evaluationCount = 0
+        
+        self.bracketScores = {} #Tracks best performing brackets
 
-    def getNextParams(self, model):
-        """Predict the next parameters using the LSTM model."""
-        attemptedParams = self.modelAttemptedParams[model.name]
-        paramNames = self.modelParamNames[model.name]
+        # GA setup using DEAP
+        creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+        creator.create("Individual", list, fitness=creator.FitnessMax)
 
-        if len(attemptedParams) < 100:
-            return np.array([np.random.uniform(0, 1) for name in paramNames])
+        # Register attributes with separate ranges
+        self.toolbox = base.Toolbox()
+        
+        # Visualization setup
+        self.fig, self.ax = plt.subplots()
+        self.surf = None
 
-        recent_sequence = np.array(attemptedParams[-self.modelSequenceLengths[model.name]:])
-        recent_sequence = recent_sequence.reshape(1, self.modelSequenceLengths[model.name], len(paramNames))
-        return model.predict(recent_sequence)[0]
-
-    def runMultiModelCycle(self, models=None):
-        """Run a single optimization cycle for each model."""
-        if not models and len(self.models) != 0:
-            models = self.models
-        else:
-            print("No available models!")
+    def selectBracket(self,paramName,idx):
+        if not (paramName in self.bracketer.brackets):
+            print(f"Unknown bracket paramName {paramName}")
+        if len(self.bracketer.brackets[paramName])==0:
+            print("No brackets set!")
+            return None
+        elif not (idx in self.bracketer.brackets[paramName]):
+            print(f"Bracket with index '{idx}' not found!")
+            return None
+        elif len(self.bracketer.brackets[paramName])==1 and idx != self.brackets.keys()[paramName][0]:
+            print(f"Unknown bracket '{idx}', switching to default")
             return None
 
-        for model in list(models.values()):
-            paramNames = self.modelParamNames[model.name]
-            recommendedParams = self.getNextParams(model)
-            paramsDict = dict(zip(paramNames, recommendedParams))
-
-            if not self.checkBounds(model, paramsDict):
-                print("Recommended parameters out of bounds, skipping cycle.")
-                return
-            
-            x, y, predictedYield = paramsDict["temp"], paramsDict["time"], paramsDict["yieldPrev"]
-            xProc = self.modelBrackets[model.name]["temp"].toBracket(x)
-            yProc = self.modelBrackets[model.name]["time"].toBracket(y)
-
-            if len(self.modelAttemptedParams[model.name]) < self.sequenceLengthGlobal:
-                yieldVal = self.reactionLookup.getYield(xProc, yProc)
-                predictedYield = yieldVal
+    def nextBracket(self):
+        print('Setting next bracket:')
+        for param in self.paramNames:
+            if not param in self._bracketCounters:
+                self._bracketCounters[param]=1
+                
+                # TODO - Hardcoded for now
+                if param == "temp":
+                    self.x_min=self.bracketer.brackets[param][0].minValue
+                    self.x_max=self.bracketer.brackets[param][0].maxValue
+                    print(f"Temp:")
+                    print(f"min: {self.x_min}")
+                    print(f"min: {self.x_max}")
+                else:
+                    self.y_min=self.bracketer.brackets[param][0].minValue
+                    self.y_max=self.bracketer.brackets[param][0].maxValue
+                    print(f"Time:")
+                    print(f"min: {self.y_min}")
+                    print(f"min: {self.y_max}")
+                    
+            elif self._bracketCounters[param] == 0:
+                
+                # TODO - Hardcoded for now
+                if param == "temp":
+                    self.x_min=self.bracketer.brackets[param][0].minValue
+                    self.x_max=self.bracketer.brackets[param][0].maxValue
+                    print(f"Temp:")
+                    print(f"min: {self.x_min}")
+                    print(f"min: {self.x_max}")
+                else:
+                    self.y_min=self.bracketer.brackets[param][0].minValue
+                    self.y_max=self.bracketer.brackets[param][0].maxValue
+                    print(f"Time:")
+                    print(f"min: {self.y_min}")
+                    print(f"min: {self.y_max}")
+                self._bracketCounters[param]+=1
             else:
-                self.training = True
-                yieldVal = predictedYield
+                # TODO - Hardcoded for now
+                if self._bracketCounters[param] in self.bracketer.brackets[param]:
+                    if param == "temp":
+                        self.x_min=self.bracketer.brackets[param][self._bracketCounters[param]].minValue
+                        self.x_max=self.bracketer.brackets[param][self._bracketCounters[param]].maxValue
+                        print(f"Temp:")
+                        print(f"min: {self.x_min}")
+                        print(f"min: {self.x_max}")
+                    else:
+                        self.y_min=self.bracketer.brackets[param][self._bracketCounters[param]].minValue
+                        self.y_max=self.bracketer.brackets[param][self._bracketCounters[param]].maxValue
+                        print(f"Time:")
+                        print(f"min: {self.y_min}")
+                        print(f"min: {self.y_max}")
+                else:
+                    print(f"Bracket with index '{self._bracketCounters[param]}' for '{param}' not found! Resetting brackets")
+                    self._bracketCounters[param]=0
+                    
+                    # TODO - Hardcoded for now
+                    if param == "temp":
+                        self.x_min=self.bracketer.brackets[param][0].minValue
+                        self.x_max=self.bracketer.brackets[param][0].maxValue
+                        print(f"Temp:")
+                        print(f"min: {self.x_min}")
+                        print(f"max: {self.x_max}")
+                    else:
+                        self.y_min=self.bracketer.brackets[param][0].minValue
+                        self.y_max=self.bracketer.brackets[param][0].maxValue
+                        print(f"Time:")
+                        print(f"min: {self.y_min}")
+                        print(f"max: {self.y_max}")
+                self._bracketCounters[param]+=1
+                        
+        
+        self.recent_x = []
+        self.recent_y = []
+        self.recent_params = []
+                            
+        # Register attributes with separate ranges
+        self.toolbox.register(
+            "attr_x",
+            #random number...
+            Sampler.trendBasedSampler,
+            #...between these two values:
+            self.x_min,
+            self.x_max,
+            self.recent_yields,#min_val, max_val, recent_yields, recent_params, bias_factor=0.5)
+            self.recent_params,
+            self.trendBiasFactor
+        )
+        self.toolbox.register(
+            "attr_y",
+            #random number...
+            Sampler.trendBasedSampler,
+            #...between these two values:
+            self.y_min,
+            self.y_max,
+            self.recent_yields,#min_val, max_val, recent_yields, recent_params, bias_factor=0.5)
+            self.recent_params,
+            self.trendBiasFactor
+        )
 
-            print(f"Cycle {self.cycleNumber}: Predicted {predictedYield:.2f}, True Yield {yieldVal:.2f}")
+        self.toolbox.register("individual", tools.initCycle, creator.Individual, 
+                                (self.toolbox.attr_x, self.toolbox.attr_y), n=1)
+        self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
-            if len(self.modelAttemptedParams[model.name]) < self.sequenceLengthGlobal:
-                self.modelAttemptedParams[model.name].append([x, y, predictedYield])
-                self.modelYields[model.name].append(yieldVal)
-            elif not self.initialTraining:
-                self.modelAttemptedParams[model.name].append([x, y, predictedYield])
-                self.modelYields[model.name].append(yieldVal)
-                self.initialTraining = True
+        # GA operations
+        self.toolbox.register("evaluate", self.evaluate)
+        self.toolbox.register("mate", tools.cxBlend, alpha=0.5)
+        self.toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=10, indpb=0.2)
+        self.toolbox.register("select", tools.selTournament, tournsize=3)
+    
+    def mutate(self, individual):
+        self.toolbox.mutate(individual)
+        # Clip each axis to its defined range
+        individual[0] = max(self.x_min, min(self.x_max, individual[0]))  # X-axis
+        individual[1] = max(self.y_min, min(self.y_max, individual[1]))  # Y-axis
+        return individual,
+    
+    def evaluate(self, individual):
+        x, y = individual
+        self.experiment_counter += 1
+        yield_value = self.reactionLookup.getYield(x, y)
+
+        # Record recent results
+        self.recent_yields.append(yield_value)
+        self.recent_x.append(x)
+        self.recent_y.append(y)
+
+        # Keep only the last N results to avoid excessive memory use
+        max_recent = 10
+        if len(self.recent_yields) > max_recent:
+            self.recent_yields.pop(0)
+            self.recent_x.pop(0)
+            self.recent_y.pop(0)
+
+        # Check for local maxima
+        is_local_max = self.is_local_maximum(x, y, yield_value)
+        if is_local_max:
+            self.local_maxima.append((x, y, yield_value))
+
+        self.evaluationCount += 1
+
+        return yield_value,  # DEAP expects a tuple
+
+    def is_local_maximum(self, x, y, yield_value):
+        """
+        Check if a given point is a local maximum by comparing it to nearby points.
+        """
+        ret=True
+        excldDist=self.local_maxima_exclDist
+        for other_x, other_y, other_yield in self.local_maxima:
+            distance = np.sqrt((x - other_x)**2 + (y - other_y)**2)
+            if distance < excldDist:  # Define a neighborhood radius to consider
+                if yield_value < other_yield:
+                    # self.local_maxima_exclDist=self.local_maxima_exclDist*-0.05 + self.local_maxima_exclDist
+                    # if self.local_maxima_exclDist < 0:
+                    #     self.local_maxima_exclDist=0
+                    ret=False
+        #self.local_maxima_exclDist=self.local_maxima_exclDist*0.05 + self.local_maxima_exclDist
+        if self.local_maxima_exclDist_max < self.local_maxima_exclDist:
+            self.local_maxima_exclDist=self.local_maxima_exclDist_max
+        return ret
+    
+    def restart_population(self, population):
+        """
+        Restart the population by generating new random individuals.
+        """
+        return [self.toolbox.individual() for _ in range(len(population))]
+
+    def plot_population(self, population):
+        """
+        Plot the population on the yield surface.
+        """
+        # Clear previous plot
+        self.ax.clear()
+
+        # Plot the yield surface
+        x = self.reactionLookup.data[:, 0]
+        y = self.reactionLookup.data[:, 1]
+        z = self.reactionLookup.data[:, 2]
+        xi = np.linspace(x.min(), x.max(), 100)
+        yi = np.linspace(y.min(), y.max(), 100)
+        X, Y = np.meshgrid(xi, yi)
+        Z = griddata((x, y), z, (X, Y), method='cubic')
+        self.ax.contourf(X, Y, Z, levels=50, cmap="viridis", alpha=0.7)
+
+        # Plot population locations
+        pop_coords = np.array([[ind[0], ind[1]] for ind in population])
+        self.ax.scatter(pop_coords[:, 0], pop_coords[:, 1], color="red", label="Population", alpha=0.8)
+
+        # Label and update the plot
+        self.ax.set_title(f"Generation {self.current_generation}: Best Yield = {self.best_yield:.4f}")
+        self.ax.set_xlabel("X (Temperature)")
+        self.ax.set_ylabel("Y (Time)")
+        self.ax.legend()
+        plt.pause(0.1)
+
+    def optimize(self):
+        """
+        Perform optimization with visualization, local maxima detection, and progress tracking.
+        """
+        self.local_maxima_exclDist = self.local_maxima_exclDist_orig
+        #Set brackets
+        self.nextBracket()
+        
+        population = self.toolbox.population(n=self.pop_size)
+        best_solution = None
+        no_improvement_counter = 0
+
+        for gen in range(self.ngen):
+            self.current_generation = gen  # Track the current generation
+
+            # Apply GA operations
+            offspring = algorithms.varAnd(population, self.toolbox, cxpb=self.cxpb, mutpb=self.mutpb)
+            fits = list(map(self.toolbox.evaluate, offspring))
+            for ind, fit in zip(offspring, fits):
+                ind.fitness.values = fit
+
+            # Select the next generation population
+            population = self.toolbox.select(offspring, k=len(population))
+
+            # Track the best solution
+            current_best = tools.selBest(population, k=1)[0]
+            if not best_solution:
+                best_solution=current_best
+            current_yield = self.reactionLookup.getYield(*current_best)
+
+            if current_yield > self.best_yield:
+                self.best_yield = current_yield
+                best_solution = current_best
+                no_improvement_counter -= 1
+                if (no_improvement_counter < 0):
+                    no_improvement_counter=0
             else:
-                self.modelAttemptedParams[model.name].append([x, y, predictedYield])
-                self.modelYields[model.name].append(yieldVal)
+                no_improvement_counter += 1
 
-            if yieldVal >= self.stopVal and self.training:
-                self.optimize = False
-                print(f"Target yield achieved by {model.name}: {yieldVal:.2f}")
-                break
+            # Visualize population on the yield surface
+            self.plot_population(population)
 
-            if self.initialTraining and len(self.modelAttemptedParams[model.name]) >= self.modelSequenceLengths[model.name]:
-                print(f"Training {model.name} with {len(self.modelAttemptedParams[model.name])} data points.")
-                self.trainLSTMModel(model, self.modelAttemptedParams[model.name], epochs=30)
+            if current_yield > self.targetYield:
+                print(f"Reached target yield with {current_yield*100}%!")
+                return best_solution[0], best_solution[1], self.best_yield
 
-        if self.training:
-            self.cycleNumber += 1
+            # Restart if no improvement for restart_threshold generations
+            if no_improvement_counter >= self.restart_threshold:
+                print(f"Restarting population at generation {gen}")
+                population = self.restart_population(population)
+                no_improvement_counter = 0
+                continue
 
-    def trainLSTMModel(self, model, attemptedParams, epochs=25):
-        """Train the LSTM model on all recorded sequences."""
-        sequence_length = min(self.modelSequenceLengths[model.name], len(attemptedParams))
-        if len(attemptedParams) < sequence_length:
-            print(f"Not enough data to train {model.name}. Skipping training.")
-            return
+        print(f"Total Experiments: {self.experiment_counter}")
+        return best_solution[0], best_solution[1], self.best_yield
 
-        X = np.array([attemptedParams[i:i+sequence_length] for i in range(len(attemptedParams) - sequence_length)])
-        y = np.array(attemptedParams[sequence_length:])
-        print(f"Training {model.name}: X shape {X.shape}, y shape {y.shape}")
-        model.fit(X, y, epochs=epochs, verbose=0)
+    def select(self, population):
+        """
+        Modify the selection process to penalize individuals near local maxima.
+        """
+        # Filter individuals that are too close to any local maxima
+        penalized_population = []
+        for ind in population:
+            x, y = ind
+            if self.is_near_local_maximum(x, y):
+                # Apply a penalty by assigning a low fitness value
+                ind.fitness.values = (-float('inf'),)
+            else:
+                # Keep original fitness
+                ind.fitness.values = self.evaluate(ind)
+            penalized_population.append(ind)
+        
+        # Return the selection based on the penalized individuals
+        return tools.selTournament(penalized_population, tournsize=3)
 
-    def optimizeLoop(self):
-        """Main optimization loop."""
-        while self.optimize:
-            self.runMultiModelCycle()
+    def is_near_local_maximum(self, x, y):
+        """
+        Check if the individual is near any local maxima.
+        """
+        for local_x, local_y, _ in self.local_maxima:
+            distance = np.sqrt((x - local_x)**2 + (y - local_y)**2)
+            if distance < self.local_maxima_exclDist:  # Threshold distance to consider it close to a local maximum
+                return True
+        return False
 
-# Example usage
+
+# Example Usage
 if __name__ == "__main__":
-    # Define some dummy values for the parameters
-    startParams_1 = [15.0, 10.0, 0]
-    paramNames_1 = ["temp", "time", "yieldPrev"]
-    brackets_1 = {"temp": (4, 25), "time": (5, 15), "yieldPrev": (0,1)}
-    info_1=(startParams_1,paramNames_1,brackets_1)
+    # Load the reaction surface
+    lookup = ReactionLookup("ReactionSimulation/tables/max_at_34_10_1.csv")
+    time_per_exp=15 #sec
 
-    startParams_2 = [25.0, 40.0, 0]
-    paramNames_2 = ["temp", "time", "yieldPrev"]
-    brackets_2 = {"temp": (25, 75), "time": (15, 45), "yieldPrev": (0,1)}
-    info_2=(startParams_2,paramNames_2,brackets_2)
+    optimizer = ReactionGAOptimizer(
+        reactionLookup=lookup,
+        pop_size=10,
+        ngen=6,
+        restart_threshold=4,
+        local_maxima_exclDist=0.15
+    )
+    
+    # optimizer.bracketer.addBracket("temp",[0,100])
+    # optimizer.bracketer.addBracket("time",[0,30])
 
-    startParams_3 = [80, 50.0, 0]
-    paramNames_3 = ["temp", "time", "yieldPrev"]
-    brackets_3 = {"temp": (75, 100), "time": (45, 60), "yieldPrev": (0,1)}
-    info_3=(startParams_3,paramNames_3,brackets_3)
+    optimizer.bracketer.addBracket("temp",[0,25])
+    optimizer.bracketer.addBracket("temp",[25,50])
+    optimizer.bracketer.addBracket("temp",[50,75])
+    optimizer.bracketer.addBracket("temp",[75,100])
     
-    allInfo=[info_1]#,info_2,info_3]
-    names=["Bob","Sam","Oprah"]
+    optimizer.bracketer.addBracket("time",[0,7.5])
+    optimizer.bracketer.addBracket("time",[7.5,15])
+    optimizer.bracketer.addBracket("time",[15,22.5])
+    optimizer.bracketer.addBracket("time",[22.5,30])
     
-    # Create the optimizer instance
-    reactionLookup = ReactionLookup()
-    optimizer = LSTMOptimizer(stopVal=0.5,sequenceLengthGlobal=100, sequenceLengthIntervalGlobal=10, reactionLookup=reactionLookup)
-    
+    print(f"Brackets for {(str(optimizer.paramNames).replace('[','').replace(']',''))}:")
     _i=0
-    for info in allInfo:
-        optimizer.buildLstmModel(inputShape=(optimizer.sequenceLengthGlobal, len(info[1])),startParams=info[0],bracket=info[2],paramNames=info[1],name=names[_i],sequenceLength=100)
-        _i+=1
+    for x in optimizer.bracketer.brackets.items():
+        print(f"{optimizer.paramNames[_i]}:")
+        for y in x[1].values():
+            print(f" {[y.minValue,y.maxValue]}")
+    optimizationTimes=[]
     # Run optimization
-    bestParams, bestYield = optimizer.optimizeLoop()
-    print(f"Best parameters: {bestParams} with yield: {bestYield*100} obtained in {optimizer.cycleNumber} cycles!")
+    _i=0
+    _pass=False
+    while _i < 10:
+
+        best_yield_global=0
+        best_xy_global=0
+        optimizer.best_yield=0
+        optimizer.experiment_counter=0
+        optimizer.recent_params=[]
+        optimizer.recent_x=[]
+        optimizer.recent_y=[]
+        optimizer._bracketCounters={} #Local!
+        optimizer.evaluationCount=0
+        while not _pass:
+            best_x, best_y, best_yield = optimizer.optimize()
+            if best_yield > optimizer.targetYield:
+                print(f'No experiments: {optimizer.experiment_counter}')
+                print(f"Experiment took {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes!")
+                print(f"Optimal parameters: X={best_x:.2f} degrees, Y={best_y:.2f} minutes")
+                optimizationTimes.append(round(time_per_exp*optimizer.experiment_counter/60,0))
+                _pass=True
+                continue
+            elif best_yield > best_yield_global:
+                best_yield_global=best_yield
+                best_xy_global=[best_x,best_y]
+                print(f"New global maximum!: {best_yield_global}, with parameters {best_xy_global}")
+            else:
+                print(f"Current global maximum: {best_yield_global}, with parameters {best_xy_global}")
+                
+            print(f'No experiments: {optimizer.experiment_counter}')
+            print(f"Experiment is {round(time_per_exp*optimizer.experiment_counter/60,0)} minutes into optimization")
+            #TODO - Add logic here that flags local maxima for the solver to avoid
+        _pass=False
+        _i+=1
+    
+    print(f"Average time for optimization: {mean(optimizationTimes)} minutes")
+    print(f"Fastest: {min(optimizationTimes)} minutes, slowest: {max(optimizationTimes)} minutes")
+    print("We done here!")
