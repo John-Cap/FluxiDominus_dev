@@ -1,3 +1,4 @@
+import random
 import time
 import threading
 import uuid
@@ -42,6 +43,7 @@ class VolumeObject:
         self.slugs=slugs
         self.lastAdvance=lastAdvance
         self.dispensing=dispensing
+        self.remainderToDispense=None
         self.associatedFlowPath=associatedFlowPath
         self.remainder=remainder
         #Boolean flags
@@ -54,12 +56,14 @@ class VolumeObject:
         self.id=VolumeObject.idCounter
         VolumeObject.idCounter+=1
     
-    def dispense(self,targetTerminus=None):
+    def dispense(self,vol=-1):
         if not (self.dispensing) and not self.associatedFlowPath is None:
-            print(str(self.name) + " is busy dispensing!")
+            print(str(self.name) + " has started dispensing!")
             self.dispensing=True
-            _return=Slug(frontHost=self,tailHost=self,frontHostPos=0,tailHostPos=0,targetTerminus=targetTerminus)
+            _return=Slug(frontHost=self,tailHost=self,frontHostPos=0,tailHostPos=0)
             self.associatedFlowPath.slugs.append(_return)
+            if vol != -1:
+                self.remainderToDispense=vol
             return _return
         
     def terminateDispensing(self):
@@ -305,7 +309,7 @@ class FlowPath:
             self.addressesAll[terminus.name] = addresses
 
     def setCurrDestination(self, terminus):
-        if not isinstance(terminus, FlowTerminus):
+        if isinstance(terminus, str):
             name = terminus
         else:
             name = terminus.name
@@ -390,28 +394,40 @@ class FlowPath:
         self.timePrev=_nowTime
 
         #Front
-        for _slug in self.slugs:
-            _frontHost=_slug.frontHost
-            if isinstance(_frontHost,FlowTerminus):
-                if _slug.reachedTerminusAt==-1:
-                    _slug.reachedTerminusAt=time.perf_counter()
-                continue
+        for slug in self.slugs:
+            
+            #Now for the fireworks
+            _frontHost=slug.frontHost
             if _frontHost is None:
                 continue
+            
+            _frontHostPos=slug.frontHostPos
+         
+            _dV=_frontHost.flowrateOut*_dT
+            _newVol=_frontHostPos+_dV
 
-            _frontHostPos=_slug.frontHostPos
+            
+            #Update slug dispensed
+            if not slug.collected and isinstance(_frontHost,FlowTerminus):
+                slug.collectedVol+=_frontHost.flowrateIn*_dT
+                if slug.reachedTerminusAt==0:
+                    slug.reachedTerminusAt=_nowTime #TODO - Wait what exactly does this tell us?
+                continue
+            
+            _frontHostPos=slug.frontHostPos
          
             _dV=_frontHost.flowrateOut*_dT
             _newVol=_frontHostPos+_dV
 
             if _newVol>_frontHost.volume:
-                _nextHost=_frontHost.outlets[0]          
+                _nextHost=_frontHost.outlets[0]
+                _remainder=_newVol-_frontHost.volume
                 if isinstance(_nextHost,FlowTerminus):
-                    _slug.frontHost=_nextHost
-                    _slug.frontHostPos=0
-                    _slug.collecting=True
-                else:                      
-                    _remainder=_newVol-_frontHost.volume
+                    slug.frontHost=_nextHost
+                    slug.collectedVol+=_remainder
+                    slug.frontHostPos=0
+                    slug.collecting=True
+                else:
                     print("Next host fr: " + str(_nextHost.flowrateOut))
                     if _nextHost.flowrateOut!=_frontHost.flowrateOut:
                         _currHostLeftToFill=(_frontHost.volume-_frontHostPos)
@@ -419,42 +435,48 @@ class FlowPath:
                         _dTRemainder=_dT-_frontHostFillTime
                         #print("dTremainder: " + str(_dTRemainder) + ", next host fr: " + str((_nextHost.flowrateOut)))
                         _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
-                        _slug.frontHost=_nextHost
-                        _slug.frontHostPos=_volumeAdd
+                        slug.frontHost=_nextHost
+                        slug.frontHostPos=_volumeAdd
                         #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
                     else:
-                        _slug.frontHost=_nextHost
-                        _slug.frontHostPos=_remainder                   
+                        slug.frontHost=_nextHost
+                        slug.frontHostPos=_remainder                   
             else:
-                _slug.frontHostPos=_newVol
+                slug.frontHostPos=_newVol
+
         #Tail
-        for _slug in self.slugs:
-            _tailHost=_slug.tailHost
+        for slug in self.slugs:
+            _tailHost=slug.tailHost
 
             if isinstance(_tailHost,FlowTerminus):
-                if _slug.collected==False:
-                    _slug.collected=True
+                if not slug.collected:
+                    slug.collected=True
                 continue
-            elif _tailHost.dispensing:
-                continue
-                
-            _tailHostPos=_slug.tailHostPos
          
             _dV=_tailHost.flowrateOut*_dT
 
-            if isinstance(_slug.frontHost,FlowTerminus):
-                _slug.collectedVol=_slug.collectedVol+_dV
+            if _tailHost.dispensing:
+                slug.totalDispensed+=_dV
+                if not _tailHost.remainderToDispense is None:
+                    _tailHost.remainderToDispense-=_dV
+                    if _tailHost.remainderToDispense <= 0:
+                        _tailHost.dispensing=False
+                        _tailHost.remainderToDispense=0
+                continue
+                            
+            _tailHostPos=slug.tailHostPos
 
             _newVol=_tailHostPos+_dV
 
             if _newVol>_tailHost.volume:
-                _nextHost=_tailHost.outlets[0]                
+                _nextHost=_tailHost.outlets[0]        
                 if isinstance(_nextHost,FlowTerminus):
-                    _slug.tailHost=_nextHost
-                    _slug.tailHostPos=0
-                    self.collectedSlugs.append(_slug)
-                    del self.slugs[self.slugs.index(_slug)]
-                else:                      
+                    slug.tailHost=_nextHost
+                    slug.tailHostPos=0
+                    self.collectedSlugs.append(slug)
+                    del self.slugs[self.slugs.index(slug)]
+                else:
+                    #TODO - if next host is small enough to be jumped in 1 cycle, something might go wrong!
                     _remainder=_newVol-_tailHost.volume
 
                     if _nextHost.flowrateOut!=_tailHost.flowrateOut:
@@ -462,15 +484,15 @@ class FlowPath:
                         _tailHostFillTime=_currHostLeftToFill/(_tailHost.flowrateOut)
                         _dTRemainder=_dT-_tailHostFillTime
                         _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
-                        _slug.tailHost=_nextHost
-                        _slug.tailHostPos=_volumeAdd
+                        slug.tailHost=_nextHost
+                        slug.tailHostPos=_volumeAdd
                         #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
                     else:
-                        _slug.tailHost=_nextHost
-                        _slug.tailHostPos=_remainder                   
+                        slug.tailHost=_nextHost
+                        slug.tailHostPos=_remainder                   
             else:
-                _slug.tailHostPos=_newVol
-                
+                slug.tailHostPos=_newVol
+
 class FlowComponent(VolumeObject):
     def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
         super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
@@ -514,7 +536,7 @@ class Slugs:
         self.slugsCollected=slugsCollected
 
 class SlugNull:
-    def __init__(self,volume=None,location=None,parentSlug=None,childSlug=None,elastic=None,hosts=None,tailHost=None,frontHost=None,tailHostPos=None,frontHostPos=None,stationary=True,collectedVol=0,collecting=False,reachedTerminusAt=0,targetTerminus=None,collected=False) -> None:
+    def __init__(self,volume=None,location=None,parentSlug=None,childSlug=None,elastic=None,hosts=None,tailHost=None,frontHost=None,tailHostPos=None,frontHostPos=None,stationary=True,collectedVol=0,collecting=False,reachedTerminusAt=0,collected=False,totalDispensed=None,lastDispenseCycleTime=None) -> None:
         self.volume=volume
         self.location=location
         self.parentSlug=parentSlug
@@ -529,11 +551,10 @@ class SlugNull:
         self.collectedVol=collectedVol
         self.collecting=collecting
         self.reachedTerminusAt=reachedTerminusAt
-        self.targetTerminus=targetTerminus
         self.collected=collected
-
-    def setTargetTerminus(self,terminus):
-        self.targetTerminus=terminus
+        
+        self.totalDispensed=totalDispensed
+        self.lastDispenseCycleTime=lastDispenseCycleTime
 
     def branchSlug(self):
         if self.elastic:
@@ -541,7 +562,16 @@ class SlugNull:
         _child=Slug(parentSlug=self)
         return _child
 
+    def dispensedSlugVolume(self):
+        """
+        Volume of slug dispensed from origin
+        """
+        return self.totalDispensed
+
     def slugVolume(self):
+        '''
+        Volume of slug currently in flow path
+        '''
         _frontHost=self.frontHost
         _tailHost=self.tailHost
 
@@ -560,9 +590,8 @@ class SlugNull:
                     _volume=_volume+_thisComp.volume
 
 class Slug(SlugNull):
-    def __init__(self, volume=None, location=None, parentSlug=None, childSlug=None, elastic=None, hosts=None, tailHost=None, frontHost=None, tailHostPos=None, frontHostPos=None, stationary=True, collectedVol=0, collecting=False, reachedTerminusAt=0, targetTerminus=None, collected=False) -> None:
-        super().__init__(volume, location, parentSlug, childSlug, elastic, hosts, tailHost, frontHost, tailHostPos, frontHostPos, stationary, collectedVol, collecting, reachedTerminusAt, targetTerminus, collected)
-
+    def __init__(self, volume=None, location=None, parentSlug=None, childSlug=None, elastic=None, hosts=None, tailHost=None, frontHost=None, tailHostPos=None, frontHostPos=None, stationary=True, collectedVol=0, collecting=False, reachedTerminusAt=0,  collected=False, totalDispensed=None, lastDispenseCycleTime=None):
+        super().__init__(volume, location, parentSlug, childSlug, elastic, hosts, tailHost, frontHost, tailHostPos, frontHostPos, stationary, collectedVol, collecting, reachedTerminusAt, collected, totalDispensed=0, lastDispenseCycleTime=0)
 #######################################################################################
 ###Examples
 if __name__ == "__main__":
@@ -645,8 +674,6 @@ if __name__ == "__main__":
     #TODO - Manually assign starting point for now
     _path.currRelOrigin=_redStock
     _path.mapPathTermini()
-    print(f"Generated addresses: {_path.addressesAll}")
-    _path.setCurrDestination(_terminus_4)
 
     for _x in _path.segments:
         print("*********")
@@ -656,6 +683,10 @@ if __name__ == "__main__":
         print(_x.inlets)   
         print(_x.outlets)
     
+    #Some example things:
+    flowRates=[1,2,3]
+    dispVol=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    adrses=[str(key) for key in _path.addressesAll.keys()]
     
     # Flag variable to indicate whether the thread should continue running?
     running=True
@@ -665,26 +696,30 @@ if __name__ == "__main__":
         global allSlugs
         global _path
         while running:
+            '''
             _flow_1=eval(input("Pump 1 flowrate: "))
             _flow_2=eval(input("Pump 2 flowrate: "))
             _flow_3=eval(input("Pump 3 flowrate: "))
             _slugVol=eval(input("Vol to dispense: "))
+            '''
+            _flow_1=random.choice(flowRates)
+            _flow_2=random.choice(flowRates)
+            _flow_3=random.choice(flowRates)
+            _slugVol=random.choice(dispVol)
             _redStock.flowrateIn=_flow_1/60
             _blueStock.flowrateIn=_flow_2/60
             _pinkStock.flowrateIn=_flow_3/60
 
             _path.updateFlowrates()
-
-            for _x in _path.segments:
-                print(_x.flowrateOut)
             
-            _slug=_path.currRelOrigin.dispense()
+            print(f"Generated addresses: {_path.addressesAll}")
+            
+            _path.setCurrDestination(random.choice(adrses))
+            _slug=_path.currRelOrigin.dispense(_slugVol)
             allSlugs.slugs.append(_slug)
-            print(str(_slug.slugVolume()) + " mL")
 
-            _switched=False
             _now=time.perf_counter()
-            _path.timePrev=time.perf_counter()
+            #_path.timePrev=time.perf_counter()
             while not (isinstance(_slug.tailHost,FlowTerminus)):
                 _path.advanceSlugs()
                 _vol=_slug.slugVolume()
@@ -694,9 +729,6 @@ if __name__ == "__main__":
                     round(_slug.tailHostPos, 2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(
                     round(_slug.frontHost.flowrateOut*60, 2)) + " mL.min-1, slug vol: " + str(
                     round(_vol, 2)) + " mL, vol collected: " + str(round(_slug.collectedVol, 2)) + " mL")
-                if not _switched and _vol > _slugVol:
-                    _path.currRelOrigin.dispensing=False
-                    _switched=True
                 time.sleep(0.25)
             print("************")
             print("Collected slug volumes")
@@ -704,6 +736,7 @@ if __name__ == "__main__":
                 print(f'{_x.collectedVol} mL')
             print("Slug took " + str(time.perf_counter() - _now) + " seconds to reach terminus")
             print("************")
+            time.sleep(10)
 
     # Create a thread for running the code
     thread=threading.Thread(target=run_code)

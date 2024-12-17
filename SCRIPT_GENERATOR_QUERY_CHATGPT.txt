@@ -1,147 +1,22 @@
 
-class FlowAddresses:
-    def __init__(self,addressBookName) -> None: #inlets
-        self.addressBookName=addressBookName
-        self.addresses={}
-    def addAddress(self,targetComponent,address):
-        '''
-        Add the neccessary outlets to select for each component to reach 'targetComponent' in the
-        flowline.
-        targetComponent: volObj
-        address: dict with component names as keys and array [inletName,outletName] for each
-        '''
-        if not isinstance(targetComponent,str):
-            targetComponent=targetComponent.name
-        self.addresses[targetComponent]=address
-
-**
-
-class Inlets:
-    def __init__(self) -> None:
-        self.inletIndex=0
-        self.inlets={}
-
-    def addInlet(self,inlet):
-        self.inlets[self.inletIndex]=inlet
-        self.inletIndex+=self.inletIndex
-
-    def getInlet(self,index):
-        return Utils().getOrDef(self.inlets,index,None)
-class Outlets:
-    def __init__(self) -> None:
-        pass    
-    def addOutlet(self,outlet):
-        self.outlets[self.outletIndex]=outlet
-        self.outletIndex+=self.outletIndex
-
-**
-
-class FlowPath:
-    def __init__(self,flowPathName=uuid.uuid4(),segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
-        self.flowPathName=flowPathName
-        self.segments=segments
-        self.segmentSets=segmentSets
-        self.volume=0
-        self.componentIndex=0
-        self.slugs=slugs
-        self.flowrate=flowrate
-        self.timePrev=time
-        self.collectedSlugs=collectedSlugs
-        
-        self.addresses=FlowAddresses()
-        
-        self.currTerminus=None
-
-    def switchToAddress(self,address):
-        _inlets=address.inletsSett
-        _outlets=address.outletsSett
-        for _x in _inlets:
-            _x[0].switchToInlets(_x[1])
-        for _x in _outlets:
-            _x[0].switchToOutlets(_x[1])            
-
-    def pathVolume(self,segmentSet=None):
-        if segmentSet is None:
-            segmentSet=self.segments
-        _vol=0
-        for _x in segmentSet:
-            _vol=_vol + _x.volume
-        return _vol
-
-    def addPath(self,segments,pathName="DEFAULT"):
-        self.segmentSets[pathName]=segments
-        if len(self.segmentSets.keys())==1:
-            self.selectPath()
-
-    def selectPath(self,pathName="DEFAULT"):
-        self.segments=self.segmentSets[pathName]
-        for _x in self.segments:
-            _x.associatedFlowPath=self
-        return self.segments
-    
-    def appendComponent(self,comp,pathName="DEFAULT"):
-        if not pathName in self.segmentSets:
-            self.addPath([comp],pathName)
-            return
-        else:
-            _theseSeg=self.segmentSets[pathName]
-            _theseSeg.append(comp)
-        self.volume=self.pathVolume()
-        self.updateFlowrates()
-        
-    def updateFlowrates(self):
-
-        # Build a dependency graph and calculate indegrees
-        graph = defaultdict(list)
-        indegree = defaultdict(int)
-
-        for segment in self.segments:
-            for inlet in segment.inlets:
-                graph[inlet].append(segment)
-                indegree[segment] += 1
-
-        # Initialize queue with segments that have no unresolved dependencies (indegree == 0)
-        queue = deque(segment for segment in self.segments if indegree[segment] == 0)
-
-        resolved = set()
-        while queue:
-            current = queue.popleft()
-            resolved.add(current)
-
-            # Update flowrates for the current segment
-            current.cumulativeFlowrates()
-
-            # Process downstream segments
-            for downstream in graph[current]:
-                indegree[downstream] -= 1
-                if indegree[downstream] == 0:
-                    queue.append(downstream)
-
-        # Check if all segments were resolved
-        if len(resolved) < len(self.segments):
-            unresolved = [segment for segment in self.segments if segment not in resolved]
-            raise ValueError(f"Unresolved dependencies in flow path: {unresolved}")
-
-    def updateSlugs(self):
-        for _x in self.segments:
-            pass
-
     def advanceSlugs(self):
         _nowTime=time.perf_counter()
         _dT=_nowTime-self.timePrev        
         self.timePrev=_nowTime
 
         #Front
-        for _slug in self.slugs:
-            _frontHost=_slug.frontHost
+        for slug in self.slugs:
+            
+            #Now for the fireworks
+            _frontHost=slug.frontHost
             if isinstance(_frontHost,FlowTerminus):
-                if _slug.reachedTerminusAt==-1:
-                    _slug.reachedTerminusAt=time.perf_counter()
+                if slug.reachedTerminusAt==0:
+                    slug.reachedTerminusAt=time.perf_counter() #TODO - Wait what exactly does this tell us?
                 continue
             if _frontHost is None:
                 continue
 
-            _frontHostPos=_slug.frontHostPos
+            _frontHostPos=slug.frontHostPos
          
             _dV=_frontHost.flowrateOut*_dT
             _newVol=_frontHostPos+_dV
@@ -149,10 +24,11 @@ class FlowPath:
             if _newVol>_frontHost.volume:
                 _nextHost=_frontHost.outlets[0]          
                 if isinstance(_nextHost,FlowTerminus):
-                    _slug.frontHost=_nextHost
-                    _slug.frontHostPos=0
-                    _slug.collecting=True
-                else:                      
+                    slug.frontHost=_nextHost
+                    slug.frontHostPos=0
+                    slug.collecting=True
+                else:
+                    #TODO   
                     _remainder=_newVol-_frontHost.volume
                     print("Next host fr: " + str(_nextHost.flowrateOut))
                     if _nextHost.flowrateOut!=_frontHost.flowrateOut:
@@ -161,43 +37,44 @@ class FlowPath:
                         _dTRemainder=_dT-_frontHostFillTime
                         #print("dTremainder: " + str(_dTRemainder) + ", next host fr: " + str((_nextHost.flowrateOut)))
                         _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
-                        _slug.frontHost=_nextHost
-                        _slug.frontHostPos=_volumeAdd
+                        slug.frontHost=_nextHost
+                        slug.frontHostPos=_volumeAdd
                         #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
                     else:
-                        _slug.frontHost=_nextHost
-                        _slug.frontHostPos=_remainder                   
+                        slug.frontHost=_nextHost
+                        slug.frontHostPos=_remainder                   
             else:
-                _slug.frontHostPos=_newVol
+                slug.frontHostPos=_newVol
         #Tail
-        for _slug in self.slugs:
-            _tailHost=_slug.tailHost
+        for slug in self.slugs:
+            _tailHost=slug.tailHost
 
             if isinstance(_tailHost,FlowTerminus):
-                if _slug.collected==False:
-                    _slug.collected=True
+                if slug.collected==False:
+                    slug.collected=True
                 continue
-            #elif isinstance(_tailHost,FlowOrigin) and _tailHost.dispensing:
             elif _tailHost.dispensing:
+                slug.lastDispenseCycleTime=time.perf_counter()
                 continue
                 
-            _tailHostPos=_slug.tailHostPos
+            _tailHostPos=slug.tailHostPos
          
             _dV=_tailHost.flowrateOut*_dT
 
-            if isinstance(_slug.frontHost,FlowTerminus):
-                _slug.collectedVol=_slug.collectedVol+_dV
+            if isinstance(slug.frontHost,FlowTerminus):
+                slug.collectedVol=slug.collectedVol+_dV
 
             _newVol=_tailHostPos+_dV
 
             if _newVol>_tailHost.volume:
-                _nextHost=_tailHost.outlets[0]                
+                _nextHost=_tailHost.outlets[0]        
                 if isinstance(_nextHost,FlowTerminus):
-                    _slug.tailHost=_nextHost
-                    _slug.tailHostPos=0
-                    self.collectedSlugs.append(_slug)
-                    del self.slugs[self.slugs.index(_slug)]
-                else:                      
+                    slug.tailHost=_nextHost
+                    slug.tailHostPos=0
+                    self.collectedSlugs.append(slug)
+                    del self.slugs[self.slugs.index(slug)]
+                else:
+                    #TODO - if next host is small enough to be jumped in 1 cycle, something might go wrong!
                     _remainder=_newVol-_tailHost.volume
 
                     if _nextHost.flowrateOut!=_tailHost.flowrateOut:
@@ -205,12 +82,11 @@ class FlowPath:
                         _tailHostFillTime=_currHostLeftToFill/(_tailHost.flowrateOut)
                         _dTRemainder=_dT-_tailHostFillTime
                         _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
-                        _slug.tailHost=_nextHost
-                        _slug.tailHostPos=_volumeAdd
+                        slug.tailHost=_nextHost
+                        slug.tailHostPos=_volumeAdd
                         #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
                     else:
-                        _slug.tailHost=_nextHost
-                        _slug.tailHostPos=_remainder                   
+                        slug.tailHost=_nextHost
+                        slug.tailHostPos=_remainder                   
             else:
-                _slug.tailHostPos=_newVol
-                
+                slug.tailHostPos=_newVol
