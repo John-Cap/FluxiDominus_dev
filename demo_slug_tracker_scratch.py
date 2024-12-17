@@ -65,7 +65,30 @@ class VolumeObject:
             if vol != -1:
                 self.remainderToDispense=vol
             return _return
-        
+
+    @NotImplementedError        
+    def start(self):
+        '''
+        start pumping whatever is in flow path
+        '''
+        pass
+
+    @NotImplementedError
+    def stop(self):
+        '''
+        stop pumping whatever is in flow path (does not cancel dispensing=True!)
+        '''
+        pass
+
+    def setFlowrate(self,fr):
+        '''
+        Alter flowrate and notify self.associatedFlowpath of change
+        '''
+        self.flowrateOut=fr
+        self.flowrateIn=fr
+        if self.associatedFlowPath:
+            self.associatedFlowPath.flowrateShifted=True
+     
     def terminateDispensing(self):
         if self.dispensing:
             self.dispensing=False
@@ -191,6 +214,7 @@ class FlowPath:
         self.flowrate=flowrate
         self.timePrev=time
         self.collectedSlugs=collectedSlugs
+        self.flowrateShifted=True
         
         self.addresses=FlowAddresses("DEFAULT")
         self.addressesAll={}
@@ -389,9 +413,14 @@ class FlowPath:
             pass
 
     def advanceSlugs(self):
+        
         _nowTime=time.perf_counter()
         _dT=_nowTime-self.timePrev        
         self.timePrev=_nowTime
+        
+        if self.flowrateShifted:
+            self.updateFlowrates()
+            self.flowrateShifted=False
 
         #Front
         for slug in self.slugs:
@@ -452,7 +481,7 @@ class FlowPath:
                 if not slug.collected:
                     slug.collected=True
                 continue
-         
+        
             _dV=_tailHost.flowrateOut*_dT
 
             if _tailHost.dispensing:
@@ -684,8 +713,8 @@ if __name__ == "__main__":
         print(_x.outlets)
     
     #Some example things:
-    flowRates=[1,2,3]
-    dispVol=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    flowRates=[0,1,2,3,4]
+    dispVol=[1,2,3,4,5]
     adrses=[str(key) for key in _path.addressesAll.keys()]
     
     # Flag variable to indicate whether the thread should continue running?
@@ -703,12 +732,15 @@ if __name__ == "__main__":
             _slugVol=eval(input("Vol to dispense: "))
             '''
             _flow_1=random.choice(flowRates)
+            if _flow_1 == 0:
+                _flow_1=1
             _flow_2=random.choice(flowRates)
             _flow_3=random.choice(flowRates)
             _slugVol=random.choice(dispVol)
-            _redStock.flowrateIn=_flow_1/60
-            _blueStock.flowrateIn=_flow_2/60
-            _pinkStock.flowrateIn=_flow_3/60
+            
+            _redStock.setFlowrate(_flow_1/60)
+            _blueStock.setFlowrate(_flow_2/60)
+            _pinkStock.setFlowrate(_flow_3/60)
 
             _path.updateFlowrates()
             
@@ -719,22 +751,25 @@ if __name__ == "__main__":
             allSlugs.slugs.append(_slug)
 
             _now=time.perf_counter()
+            _nowRefresh=_now
             #_path.timePrev=time.perf_counter()
             while not (isinstance(_slug.tailHost,FlowTerminus)):
                 _path.advanceSlugs()
-                _vol=_slug.slugVolume()
-                print("Time: " + str(round(time.perf_counter() - _now, 0)) + " seconds, Fro h/pos: " + str(
-                    _slug.frontHost.name) + ", " + str(round(_slug.frontHostPos, 2)) + "/" + str(
-                    _slug.frontHost.volume) + " mL, tail h/pos: " + str(_slug.tailHost.name) + ", " + str(
-                    round(_slug.tailHostPos, 2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(
-                    round(_slug.frontHost.flowrateOut*60, 2)) + " mL.min-1, slug vol: " + str(
-                    round(_vol, 2)) + " mL, vol collected: " + str(round(_slug.collectedVol, 2)) + " mL")
-                time.sleep(0.25)
+                if time.perf_counter() - _nowRefresh > 1:
+                    _vol=_slug.slugVolume()
+                    _nowRefresh=time.perf_counter()
+                    print("Time: " + str(round(time.perf_counter() - _now, 0)) + " sec, Front in: " + str(
+                        _slug.frontHost.name) + ", " + str(round(_slug.frontHostPos, 2)) + "/" + str(
+                        _slug.frontHost.volume) + " mL, tail in: " + str(_slug.tailHost.name) + ", " + str(
+                        round(_slug.tailHostPos, 2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(
+                        round(_slug.frontHost.flowrateOut*60, 2)) + " mL.min-1, slug vol: " + str(
+                        round(_vol, 2)) + " mL, vol collected: " + str(round(_slug.collectedVol, 2)) + " mL")
+                time.sleep(0.1)
             print("************")
             print("Collected slug volumes")
             for _x in _path.collectedSlugs:
-                print(f'{_x.collectedVol} mL')
-            print("Slug took " + str(time.perf_counter() - _now) + " seconds to reach terminus")
+                print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
+                print(f'Slug was collected at terminus "{_x.frontHost.name}"')
             print("************")
             time.sleep(10)
 
