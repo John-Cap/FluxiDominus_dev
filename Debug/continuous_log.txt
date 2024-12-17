@@ -1,3 +1,471 @@
-2024-07-15 08:53:09.654, 123.456, [1, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5]
-2024-07-15 08:53:14.657, 113.456, [5, 2, 3, 5, 1]
-2024-07-15 08:53:19.661, 125, [1, 35, 3, 4, 1]
+For the following code, provide methods FlowPath.mapPathTermini and FlowPath.setCurrDestination that will automatically map
+the 'address' for each FlowTerminus about in the FlowPath. The provided Diagrams provide additional information and 
+explains the concept:
+
+import time
+import threading
+import uuid
+from Core.Utils.Utils import Utils
+from collections import defaultdict, deque
+
+class FlowAddresses:
+    def __init__(self,addressBookName) -> None: #inlets
+        self.addressBookName=addressBookName
+        self.addresses={}
+        
+    def addAddress(self,targetComponent,address):
+        '''
+        Add the neccessary outlets to select for each component to reach 'targetComponent' in the
+        flowline.
+        targetComponent: volObj
+        address: dict with component names as keys and array [inletName,outletName] for each
+        '''
+        if not isinstance(targetComponent,str):
+            targetComponent=targetComponent.name
+        self.addresses[targetComponent]=address
+
+class VolumeObject:
+
+    #Class var
+    idCounter=0
+
+    def __init__(self,volume=None,inlets=None,outlets=None,name=None,deviceName=None,deviceType=None,flowrateOut=None,flowrateIn=None,slugs=None,lastAdvance=None,outletSets=None,inletSets=None,currOutlets=None,currInlets=None,remainder=None,settings=None,state=None,availableCommands=None,dispensing=False,associatedFlowPath=None) -> None:
+        self.volume=volume
+        #######################################################################################
+        #Inlet/outlet control
+        self.inlets=inlets #Array with currently used inlets (array with any number of flow components)
+        self.outlets=outlets #Array with currently used outlets (array with only one element, an outlet set can have only a single flow component for now)
+        self.inletSets=inletSets #Dict with named sets of 'inlets'. One will be selected to act as self.inlets
+        self.outletSets=outletSets #Dict with named sets of 'outlets'. One will be selected to act as self.outlets
+        #######################################################################################
+        self.name=name
+        self.deviceName=deviceName
+        self.deviceType=deviceType
+        self.flowrateIn=flowrateIn
+        self.flowrateOut=flowrateOut
+        self.slugs=slugs
+        self.lastAdvance=lastAdvance
+        self.dispensing=dispensing
+        self.associatedFlowPath=associatedFlowPath
+        self.remainder=remainder
+        #Boolean flags
+        self.flowrateShifted=False
+        #Settings and commands
+        self.settings=settings
+        self.state=state
+        self.availableCommands=availableCommands
+        #Hashmap id generator
+        self.id=VolumeObject.idCounter
+        VolumeObject.idCounter+=1
+    
+    def dispense(self,targetTerminus=None):
+        if not (self.dispensing) and not self.associatedFlowPath is None:
+            print(str(self.name) + " is busy dispensing!")
+            self.dispensing=True
+            _return=Slug(frontHost=self,tailHost=self,frontHostPos=0,tailHostPos=0,targetTerminus=targetTerminus)
+            self.associatedFlowPath.slugs.append(_return)
+            return _return
+        
+    def terminateDispensing(self):
+        if self.dispensing:
+            self.dispensing=False
+
+    def addInlet(self,comp,setName="DEFAULT"):
+        _thisInletSet=self.getInletSet(setName)
+        if len(_thisInletSet)==0:
+            self.inletSets[setName]=[comp]
+            self.inlets=self.inletSets[setName]
+            self.flowrateShifted=True
+        elif len(_thisInletSet)==1 and _thisInletSet[0] is None:   
+            self.inletSets[setName]=[comp]
+            self.inlets=self.inletSets[setName]
+            self.flowrateShifted=True
+        else:
+            if not comp in _thisInletSet:
+                _thisInletSet.append(comp)
+                
+    def addOutlet(self,comp,setName="DEFAULT"):
+        _thisOutletSet=self.getOutletSet(setName)
+        if len(_thisOutletSet)==0:       
+            _thisOutletSet.append(comp)
+            self.outlets=_thisOutletSet
+            self.flowrateShifted=True
+        elif len(_thisOutletSet)==1 and _thisOutletSet[0] is None:
+            _thisOutletSet=[(comp)]
+            self.outlets=_thisOutletSet
+            self.flowrateShifted=True
+        else:
+            if not comp in _thisOutletSet:
+                _thisOutletSet.append(comp)
+
+    def flowInto(self,outlet,setNameIn="DEFAULT",setNameOut="DEFAULT"):
+        self.addOutlet(outlet,setNameOut)
+        outlet.addInlet(self,setNameIn)
+
+    def switchToInlets(self,setName="DEFAULT"):
+        if setName in self.inletSets:
+            self.inlets=self.inletSets[setName]
+            
+    def switchToOutlets(self,setName="DEFAULT"):
+        if setName in self.outletSets:
+            self.outlets=self.outletSets[setName]
+        if isinstance(self.outlets[0],FlowTerminus) and not self.associatedFlowPath.currTerminus:
+            print(f"Setting currTerminus as: {self.outlets[0]}")
+            self.associatedFlowPath.currTerminus=self.outlets[0]
+
+    def getInletSet(self,setName="DEFAULT"):
+        if self.inletSets is None:
+            self.inletSets={}
+        if setName in self.inletSets:
+            return self.inletSets[setName]
+        else:
+            self.inletSets[setName]=[]
+            return self.inletSets[setName]
+        
+    def getOutletSet(self,setName="DEFAULT"):
+        if self.outletSets is None:
+            self.outletSets={}
+        if setName in self.outletSets:
+            return self.outletSets[setName]
+        else:
+            self.outletSets[setName]=[]
+            return self.outletSets[setName]
+        
+    def switchToDefaultInlets(self):
+        if len(self.inletSets) <= 1:
+            return self.inlets
+        else:
+            self.switchToInlet("DEFAULT")
+            return self.inlets
+    def switchToDefaultOutlets(self):
+        if len(self.outletSets) <= 1:
+            return self.outlets
+        else:
+            self.switchToOutlets("DEFAULT")
+            return self.outlets
+        
+    def cumulativeFlowrates(self):
+        if not self.inlets:
+            self.inlets = []
+
+        # If no inputs, propagate flowrateOut directly from flowrateIn
+        if len(self.inlets) == 0:
+            self.flowrateOut = self.flowrateIn
+            return
+
+        # Calculate flowrate from all resolved inlets
+        _flowrate = 0
+        unresolved = False
+
+        for inlet in self.inlets:
+            if inlet.flowrateOut is not None:
+                _flowrate += inlet.flowrateOut
+            else:
+                unresolved = True
+
+        # Update flowrate if all inputs are resolved
+        if not unresolved:
+            self.flowrateIn = _flowrate
+            self.flowrateOut = _flowrate  # Assume a single outlet for now
+            self.flowrateShifted = False
+        else:
+            raise ValueError(f"Unresolved flowrate inputs for {self.name}.")
+
+    def hostSlug(self,slug,initPos):
+        self.slugs.insert(0,slug)
+        slug.frontHost=self
+        slug.frontHostPos=initPos
+
+class VolObjNull(VolumeObject):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+
+class FlowPath:
+    def __init__(self,flowPathName=uuid.uuid4(),segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
+        self.flowPathName=flowPathName
+        self.segments=segments
+        self.segmentSets=segmentSets
+        self.volume=0
+        self.componentIndex=0
+        self.slugs=slugs
+        self.flowrate=flowrate
+        self.timePrev=time
+        self.collectedSlugs=collectedSlugs
+        
+        self.addresses=FlowAddresses("DEFAULT")
+        self.addressesAll={}
+        
+        self.currTerminus=None
+        self.currRelOrigin=None #Relative starting point in flow path that 'dispenses' slugs
+
+    def switchToAddress(self,address):
+        _inlets=address.inletsSett
+        _outlets=address.outletsSett
+        for _x in _inlets:
+            _x[0].switchToInlets(_x[1])
+        for _x in _outlets:
+            _x[0].switchToOutlets(_x[1])            
+
+    def pathVolume(self,segmentSet=None):
+        if segmentSet is None:
+            segmentSet=self.segments
+        _vol=0
+        for _x in segmentSet:
+            _vol=_vol + _x.volume
+        return _vol
+
+    def addPath(self,segments,pathName="DEFAULT"):
+        self.segmentSets[pathName]=segments
+        if len(self.segmentSets.keys())==1:
+            self.selectPath()
+
+    def selectPath(self,pathName="DEFAULT"):
+        self.segments=self.segmentSets[pathName]
+        for _x in self.segments:
+            _x.associatedFlowPath=self
+        return self.segments
+    
+    def mapPathTermini(self):
+        '''
+        Define this function. It must generate self.addressesAll of the form shown in my attached
+        diagram. 
+        '''
+        pass
+    def setCurrDestination(self,terminus):
+        '''
+        Finish defining this method. It will be used to set the 'endpoint' of the flow path.
+        It takes terminus.name as key to retrieve [component,outlet to switch to] from self.addressesAll
+        and uses component.switchToOutlets(outlet to switch to) to set up the correct path 
+        '''
+        if not isinstance(terminus,FlowTerminus):
+            name=terminus
+        else:
+            name=terminus.name
+        theseAddresses=self.addressesAll[name]
+        #Do rest
+
+    def appendComponent(self,comp,pathName="DEFAULT"):
+        if not pathName in self.segmentSets:
+            self.addPath([comp],pathName)
+            return
+        else:
+            _theseSeg=self.segmentSets[pathName]
+            _theseSeg.append(comp)
+        self.volume=self.pathVolume()
+        self.updateFlowrates()
+        
+    def updateFlowrates(self):
+
+        # Build a dependency graph and calculate indegrees
+        graph = defaultdict(list)
+        indegree = defaultdict(int)
+
+        for segment in self.segments:
+            for inlet in segment.inlets:
+                graph[inlet].append(segment)
+                indegree[segment] += 1
+
+        # Initialize queue with segments that have no unresolved dependencies (indegree == 0)
+        queue = deque(segment for segment in self.segments if indegree[segment] == 0)
+
+        resolved = set()
+        while queue:
+            current = queue.popleft()
+            resolved.add(current)
+
+            # Update flowrates for the current segment
+            current.cumulativeFlowrates()
+
+            # Process downstream segments
+            for downstream in graph[current]:
+                indegree[downstream] -= 1
+                if indegree[downstream] == 0:
+                    queue.append(downstream)
+
+        # Check if all segments were resolved
+        if len(resolved) < len(self.segments):
+            unresolved = [segment for segment in self.segments if segment not in resolved]
+            raise ValueError(f"Unresolved dependencies in flow path: {unresolved}")
+
+    def updateSlugs(self):
+        for _x in self.segments:
+            pass
+
+    def advanceSlugs(self):
+        _nowTime=time.perf_counter()
+        _dT=_nowTime-self.timePrev        
+        self.timePrev=_nowTime
+
+        #Front
+        for _slug in self.slugs:
+            _frontHost=_slug.frontHost
+            if isinstance(_frontHost,FlowTerminus):
+                if _slug.reachedTerminusAt==-1:
+                    _slug.reachedTerminusAt=time.perf_counter()
+                continue
+            if _frontHost is None:
+                continue
+
+            _frontHostPos=_slug.frontHostPos
+         
+            _dV=_frontHost.flowrateOut*_dT
+            _newVol=_frontHostPos+_dV
+
+            if _newVol>_frontHost.volume:
+                _nextHost=_frontHost.outlets[0]          
+                if isinstance(_nextHost,FlowTerminus):
+                    _slug.frontHost=_nextHost
+                    _slug.frontHostPos=0
+                    _slug.collecting=True
+                else:                      
+                    _remainder=_newVol-_frontHost.volume
+                    print("Next host fr: " + str(_nextHost.flowrateOut))
+                    if _nextHost.flowrateOut!=_frontHost.flowrateOut:
+                        _currHostLeftToFill=(_frontHost.volume-_frontHostPos)
+                        _frontHostFillTime=_currHostLeftToFill/(_frontHost.flowrateOut)
+                        _dTRemainder=_dT-_frontHostFillTime
+                        #print("dTremainder: " + str(_dTRemainder) + ", next host fr: " + str((_nextHost.flowrateOut)))
+                        _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
+                        _slug.frontHost=_nextHost
+                        _slug.frontHostPos=_volumeAdd
+                        #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
+                    else:
+                        _slug.frontHost=_nextHost
+                        _slug.frontHostPos=_remainder                   
+            else:
+                _slug.frontHostPos=_newVol
+        #Tail
+        for _slug in self.slugs:
+            _tailHost=_slug.tailHost
+
+            if isinstance(_tailHost,FlowTerminus):
+                if _slug.collected==False:
+                    _slug.collected=True
+                continue
+            elif _tailHost.dispensing:
+                continue
+                
+            _tailHostPos=_slug.tailHostPos
+         
+            _dV=_tailHost.flowrateOut*_dT
+
+            if isinstance(_slug.frontHost,FlowTerminus):
+                _slug.collectedVol=_slug.collectedVol+_dV
+
+            _newVol=_tailHostPos+_dV
+
+            if _newVol>_tailHost.volume:
+                _nextHost=_tailHost.outlets[0]                
+                if isinstance(_nextHost,FlowTerminus):
+                    _slug.tailHost=_nextHost
+                    _slug.tailHostPos=0
+                    self.collectedSlugs.append(_slug)
+                    del self.slugs[self.slugs.index(_slug)]
+                else:                      
+                    _remainder=_newVol-_tailHost.volume
+
+                    if _nextHost.flowrateOut!=_tailHost.flowrateOut:
+                        _currHostLeftToFill=(_tailHost.volume-_tailHostPos)
+                        _tailHostFillTime=_currHostLeftToFill/(_tailHost.flowrateOut)
+                        _dTRemainder=_dT-_tailHostFillTime
+                        _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
+                        _slug.tailHost=_nextHost
+                        _slug.tailHostPos=_volumeAdd
+                        #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
+                    else:
+                        _slug.tailHost=_nextHost
+                        _slug.tailHostPos=_remainder                   
+            else:
+                _slug.tailHostPos=_newVol
+                
+class FlowComponent(VolumeObject):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+class Tubing(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+class TPiece(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+class IR(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    def scan(self):
+        pass
+
+class Chip(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+
+class Coil(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+
+class Valve(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+class Pump(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+class FlowOrigin(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+
+class FlowTerminus(FlowComponent):
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
+        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+
+class Slugs:
+    def __init__(self,slugs=[],slugsCollected=[]) -> None:
+        self.slugs=slugs
+        self.slugsCollected=slugsCollected
+
+class SlugNull:
+    def __init__(self,volume=None,location=None,parentSlug=None,childSlug=None,elastic=None,hosts=None,tailHost=None,frontHost=None,tailHostPos=None,frontHostPos=None,stationary=True,collectedVol=0,collecting=False,reachedTerminusAt=0,targetTerminus=None,collected=False) -> None:
+        self.volume=volume
+        self.location=location
+        self.parentSlug=parentSlug
+        self.childSlug=childSlug
+        self.elastic=elastic #If elastic,the slug will be 'stretched' at junctions and not branched into new one
+        self.hosts=hosts
+        self.tailHost=tailHost
+        self.frontHost=frontHost
+        self.tailHostPos=tailHostPos #Volume of progress
+        self.frontHostPos=frontHostPos
+        self.stationary=stationary
+        self.collectedVol=collectedVol
+        self.collecting=collecting
+        self.reachedTerminusAt=reachedTerminusAt
+        self.targetTerminus=targetTerminus
+        self.collected=collected
+
+    def setTargetTerminus(self,terminus):
+        self.targetTerminus=terminus
+
+    def branchSlug(self):
+        if self.elastic:
+            return self
+        _child=Slug(parentSlug=self)
+        return _child
+
+    def slugVolume(self):
+        _frontHost=self.frontHost
+        _tailHost=self.tailHost
+
+        if (_frontHost is _tailHost):
+            return (self.frontHostPos-self.tailHostPos)
+        else:
+            _thisComp=_tailHost
+            _volume=_tailHost.volume - self.tailHostPos
+            while True:
+                _thisComp=_thisComp.outlets[0]
+                if isinstance(_thisComp,FlowTerminus):
+                    return _volume
+                elif _thisComp is _frontHost:
+                    return (_volume+self.frontHostPos)
+                else:
+                    _volume=_volume+_thisComp.volume
+
+class Slug(SlugNull):
+    def __init__(self, volume=None, location=None, parentSlug=None, childSlug=None, elastic=None, hosts=None, tailHost=None, frontHost=None, tailHostPos=None, frontHostPos=None, stationary=True, collectedVol=0, collecting=False, reachedTerminusAt=0, targetTerminus=None, collected=False) -> None:
+        super().__init__(volume, location, parentSlug, childSlug, elastic, hosts, tailHost, frontHost, tailHostPos, frontHostPos, stationary, collectedVol, collecting, reachedTerminusAt, targetTerminus, collected)
