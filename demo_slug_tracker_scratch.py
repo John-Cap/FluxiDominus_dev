@@ -752,8 +752,25 @@ if __name__ == "__main__":
 
             _now=time.perf_counter()
             _nowRefresh=_now
+            _jiggleFlowrate=time.perf_counter() + 5
             #_path.timePrev=time.perf_counter()
             while not (isinstance(_slug.tailHost,FlowTerminus)):
+                if time.perf_counter() - _jiggleFlowrate > 30:
+                    _flow_1=random.choice(flowRates)
+                    if _flow_1 == 0:
+                        _flow_1=1
+                    _flow_2=random.choice(flowRates)
+                    _flow_3=random.choice(flowRates)
+                    print("--")
+                    print(f"New flowrates: {_flow_1}, {_flow_2}, {_flow_3}")
+                    print("--")
+                                        
+                    _redStock.setFlowrate(_flow_1/60)
+                    _blueStock.setFlowrate(_flow_2/60)
+                    _pinkStock.setFlowrate(_flow_3/60)
+                    
+                    _jiggleFlowrate=time.perf_counter()
+
                 _path.advanceSlugs()
                 if time.perf_counter() - _nowRefresh > 1:
                     _vol=_slug.slugVolume()
