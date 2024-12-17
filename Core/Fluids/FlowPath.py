@@ -200,9 +200,8 @@ class VolumeObject:
         slug.frontHostPos=initPos
 
 class VolObjNull(VolumeObject):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
-
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class FlowPath:
     def __init__(self,flowPathName=uuid.uuid4(),segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
         self.flowPathName=flowPathName
@@ -523,41 +522,37 @@ class FlowPath:
                 slug.tailHostPos=_newVol
 
 class FlowComponent(VolumeObject):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class Tubing(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class TPiece(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class IR(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
     def scan(self):
         pass
-
 class Chip(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
-
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class Coil(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
-
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class Valve(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class Pump(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class FlowOrigin(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
-
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 class FlowTerminus(FlowComponent):
-    def __init__(self, volume=None, inlets=None, outlets=None, name=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, dispensing=False, associatedFlowPath=None) -> None:
-        super().__init__(volume, inlets, outlets, name, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, dispensing, associatedFlowPath)
+    def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, associatedFlowPath=None):
+        super().__init__(volume, inlets, outlets, name, deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, associatedFlowPath)
 
 class Slugs:
     def __init__(self,slugs=[],slugsCollected=[]) -> None:
@@ -641,13 +636,20 @@ if __name__ == "__main__":
     #IR
     _IR=(IR(volume=0.5,inlets=[],outlets=[],name="IR",slugs=[]))
     #Coil
-    _coil=(Coil(volume=10,inlets=[],outlets=[],name="COIL",slugs=[]))
+    _coil=(Coil(volume=5,inlets=[],outlets=[],name="COIL",slugs=[]))
     #Termini
     _waste=FlowTerminus(volume=0,inlets=[],outlets=[None],name="WASTE",flowrateIn=0,flowrateOut=0,slugs=[])
     _collect=FlowTerminus(volume=0,inlets=[],outlets=[None],name="COLLECT",flowrateIn=0,flowrateOut=0,slugs=[])
     _terminus_3=FlowTerminus(volume=0,inlets=[],outlets=[None],name="TERMINUS_3",flowrateIn=0,flowrateOut=0,slugs=[])
     _terminus_4=FlowTerminus(volume=0,inlets=[],outlets=[None],name="TERMINUS_4",flowrateIn=0,flowrateOut=0,slugs=[])
-
+    
+    _tPiece_1=TPiece(volume=0.05,inlets=[],outlets=[],name="TPIECE_1",slugs=[])
+    _tPiece_2=TPiece(volume=0.05,inlets=[],outlets=[],name="TPIECE_2",slugs=[])
+    
+    _tubing_1=Tubing(volume=0.5,inlets=[],outlets=[],name="TUBE_1",slugs=[])
+    _tubing_2=Tubing(volume=1,inlets=[],outlets=[],name="TUBE_2",slugs=[])
+    _tubing_3=Tubing(volume=0.5,inlets=[],outlets=[],name="TUBE_3",slugs=[])
+    _tubing_4=Tubing(volume=1,inlets=[],outlets=[],name="TUBE_4",slugs=[])
     ###################
     #Connect components
 
@@ -655,20 +657,25 @@ if __name__ == "__main__":
     _redStock.flowInto(_pump_1)
     _blueStock.flowInto(_pump_2)
     _pinkStock.flowInto(_pump_3)
-    #Pumplines
-    _pump_1.flowInto(_valve_1)
-    _pump_2.flowInto(_valve_1)
-    _pump_3.flowInto(_IR)
+    #Pumplines 1/2
+    _pump_1.flowInto(_tPiece_1)
+    _pump_2.flowInto(_tPiece_1)
     #Divert valve
+    _tPiece_1.flowInto(_tubing_1)
+    _tubing_1.flowInto(_valve_1)
     _valve_1.flowInto(_coil,setNameOut="TO_COIL")
-    _valve_1.flowInto(_flushCoilValve,setNameOut="TO_FLUSH_VALVE")
+    _valve_1.flowInto(_tubing_2,setNameOut="TO_FLUSH_VALVE")
     #Flush coil valve
+    _tubing_2.flowInto(_flushCoilValve)
     _flushCoilValve.flowInto(_terminus_3,setNameOut="TO_TERMINUS_3")
     _flushCoilValve.flowInto(_terminus_4,setNameOut="TO_TERMINUS_4")
     #Coil
-    _coil.flowInto(_IR)
-    
-    _IR.flowInto(_cwValve)
+    _coil.flowInto(_tPiece_2)
+    _pump_3.flowInto(_tPiece_2)
+    _tPiece_2.flowInto(_tubing_3)
+    _tubing_3.flowInto(_IR)
+    _IR.flowInto(_tubing_4)
+    _tubing_4.flowInto(_cwValve)
     _cwValve.flowInto(_waste,setNameOut="WASTE")
     _cwValve.flowInto(_collect,setNameOut="COLLECT")
     #select one of the termini
@@ -696,7 +703,15 @@ if __name__ == "__main__":
             _collect,
             _waste,
             _terminus_3,
-            _terminus_4
+            _terminus_4,
+            
+            #Connectors
+            _tubing_1,
+            _tubing_2,
+            _tubing_3,
+            _tubing_4,
+            _tPiece_1,
+            _tPiece_2
         ]
     )
 
@@ -724,6 +739,7 @@ if __name__ == "__main__":
         global running
         global allSlugs
         global _path
+        _i=0
         while running:
             '''
             _flow_1=eval(input("Pump 1 flowrate: "))
@@ -752,18 +768,31 @@ if __name__ == "__main__":
 
             _now=time.perf_counter()
             _nowRefresh=_now
+            _jiggleFlowrate=time.perf_counter() + 5
             #_path.timePrev=time.perf_counter()
             while not (isinstance(_slug.tailHost,FlowTerminus)):
+                if time.perf_counter() - _jiggleFlowrate > 30:
+                    _flow_1=random.choice(flowRates)
+                    if _flow_1 == 0:
+                        _flow_1=1
+                    _flow_2=random.choice(flowRates)
+                    _flow_3=random.choice(flowRates)
+                    print("--")
+                    print(f"New flowrates: {_flow_1}, {_flow_2}, {_flow_3}")
+                    print("--")
+                                        
+                    _redStock.setFlowrate(_flow_1/60)
+                    _blueStock.setFlowrate(_flow_2/60)
+                    _pinkStock.setFlowrate(_flow_3/60)
+                    
+                    _jiggleFlowrate=time.perf_counter()
+
                 _path.advanceSlugs()
                 if time.perf_counter() - _nowRefresh > 1:
                     _vol=_slug.slugVolume()
                     _nowRefresh=time.perf_counter()
-                    print("Time: " + str(round(time.perf_counter() - _now, 0)) + " sec, Front in: " + str(
-                        _slug.frontHost.name) + ", " + str(round(_slug.frontHostPos, 2)) + "/" + str(
-                        _slug.frontHost.volume) + " mL, tail in: " + str(_slug.tailHost.name) + ", " + str(
-                        round(_slug.tailHostPos, 2)) + "/" + str(_slug.tailHost.volume) + " mL, fr: " + str(
-                        round(_slug.frontHost.flowrateOut*60, 2)) + " mL.min-1, slug vol: " + str(
-                        round(_vol, 2)) + " mL, vol collected: " + str(round(_slug.collectedVol, 2)) + " mL")
+                    rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
+                    print(rep)
                 time.sleep(0.1)
             print("************")
             print("Collected slug volumes")
@@ -771,6 +800,9 @@ if __name__ == "__main__":
                 print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
                 print(f'Slug was collected at terminus "{_x.frontHost.name}"')
             print("************")
+            _i+=1
+            if _i > 10:
+                exit()
             time.sleep(10)
 
     # Create a thread for running the code
