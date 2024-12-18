@@ -415,116 +415,199 @@ class FlowPath:
     def updateSlugs(self):
         for _x in self.segments:
             pass
-
     def advanceSlugs(self):
-        
         if self.flowrateShifted:
             self.updateFlowrates()
-            self.flowrateShifted=False
-        
-        _nowTime=time.perf_counter()
-        _dT=_nowTime-self.timePrev        
-        self.timePrev=_nowTime
+            self.flowrateShifted = False
 
-        #Front
+        _nowTime = time.perf_counter()
+        _dT = _nowTime - self.timePrev
+        self.timePrev = _nowTime
+
+        # Front movement
         for slug in self.slugs:
-            
-            #Now for the fireworks
-            _frontHost=slug.frontHost
+            _frontHost = slug.frontHost
+
+            # If frontHost is None, no advancement
             if _frontHost is None:
                 continue
-            
-            _frontHostPos=slug.frontHostPos
-         
-            _dV=_frontHost.flowrateOut*_dT
-            _newVol=_frontHostPos+_dV
 
-            
-            #Update slug dispensed
-            if not slug.collected and isinstance(_frontHost,FlowTerminus):
-                slug.collectedVol+=_frontHost.flowrateIn*_dT
-                if slug.reachedTerminusAt==0:
-                    slug.reachedTerminusAt=_nowTime #TODO - Wait what exactly does this tell us?
-                continue
-            
-            _frontHostPos=slug.frontHostPos
-         
-            _dV=_frontHost.flowrateOut*_dT
-            _newVol=_frontHostPos+_dV
-
-            if _newVol>_frontHost.volume:
-                _nextHost=_frontHost.outlets[0]
-                _remainder=_newVol-_frontHost.volume
-                if isinstance(_nextHost,FlowTerminus):
-                    slug.frontHost=_nextHost
-                    slug.collectedVol+=_remainder
-                    slug.frontHostPos=0
-                    slug.collecting=True
-                else:
-                    print("Next host fr: " + str(_nextHost.flowrateOut))
-                    if _nextHost.flowrateOut!=_frontHost.flowrateOut:
-                        _currHostLeftToFill=(_frontHost.volume-_frontHostPos)
-                        _frontHostFillTime=_currHostLeftToFill/(_frontHost.flowrateOut)
-                        _dTRemainder=_dT-_frontHostFillTime
-                        #print("dTremainder: " + str(_dTRemainder) + ", next host fr: " + str((_nextHost.flowrateOut)))
-                        _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
-                        slug.frontHost=_nextHost
-                        slug.frontHostPos=_volumeAdd
-                        #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
-                    else:
-                        slug.frontHost=_nextHost
-                        slug.frontHostPos=_remainder                   
-            else:
-                slug.frontHostPos=_newVol
-
-        #Tail
-        for slug in self.slugs:
-            _tailHost=slug.tailHost
-
-            if isinstance(_tailHost,FlowTerminus):
+            # If slug has reached a terminus and is collecting
+            if isinstance(_frontHost, FlowTerminus):
                 if not slug.collected:
-                    slug.collected=True
+                    # Increase collected volume by input flow * dT
+                    slug.collectedVol += _frontHost.flowrateIn * _dT
+                    if slug.reachedTerminusAt == 0:
+                        slug.reachedTerminusAt = _nowTime
+                # No further advancement needed for a terminus
                 continue
-        
-            _dV=_tailHost.flowrateOut*_dT
 
-            if _tailHost.dispensing:
-                slug.totalDispensed+=_dV
-                if not _tailHost.remainderToDispense is None:
-                    _tailHost.remainderToDispense-=_dV
-                    if _tailHost.remainderToDispense <= 0:
-                        _tailHost.dispensing=False
-                        _tailHost.remainderToDispense=0
-                continue
-                            
-            _tailHostPos=slug.tailHostPos
+            # Calculate displacement volume for this timestep
+            _dV = _frontHost.flowrateOut * _dT
+            _newVol = slug.frontHostPos + _dV
 
-            _newVol=_tailHostPos+_dV
+            # Check if slug surpasses the current frontHost volume
+            if _newVol > _frontHost.volume:
+                # We have leftover volume after filling this component
+                _remainder = _newVol - _frontHost.volume
 
-            if _newVol>_tailHost.volume:
-                _nextHost=_tailHost.outlets[0]        
-                if isinstance(_nextHost,FlowTerminus):
-                    slug.tailHost=_nextHost
-                    slug.tailHostPos=0
-                    self.collectedSlugs.append(slug)
-                    del self.slugs[self.slugs.index(slug)]
+                # Move to next host(s)
+                # Compute initial leftover time at the moment slug left _frontHost
+                _currHostLeftToFill = (_frontHost.volume - slug.frontHostPos)
+                _frontHostFillTime = _currHostLeftToFill / _frontHost.flowrateOut
+                _dTRemainder = _dT - _frontHostFillTime
+
+                # Identify the next host
+                if len(_frontHost.outlets) == 0:
+                    # No next host, slug stops here
+                    slug.frontHostPos = _frontHost.volume
+                    continue
+
+                _nextHost = _frontHost.outlets[0]
+
+                # If flowrates differ between hosts, adjust volume based on the nextHost’s flowrate
+                if isinstance(_nextHost, FlowTerminus):
+                    # If next host is a terminus, slug enters and is collected
+                    slug.frontHost = _nextHost
+                    # Adjust collectedVol by remainder
+                    slug.collectedVol += _remainder
+                    slug.frontHostPos = 0
+                    slug.collecting = True
                 else:
-                    #TODO - if next host is small enough to be jumped in 1 cycle, something might go wrong!
-                    _remainder=_newVol-_tailHost.volume
-
-                    if _nextHost.flowrateOut!=_tailHost.flowrateOut:
-                        _currHostLeftToFill=(_tailHost.volume-_tailHostPos)
-                        _tailHostFillTime=_currHostLeftToFill/(_tailHost.flowrateOut)
-                        _dTRemainder=_dT-_tailHostFillTime
-                        _volumeAdd=_dTRemainder*(_nextHost.flowrateOut)
-                        slug.tailHost=_nextHost
-                        slug.tailHostPos=_volumeAdd
-                        #print("_dV: " + str(_dV) + " _dT: " + str(_dT) + " _dtRemainder: " + str(_dTRemainder) + " _currHostLeftToFill: " + str(_currHostLeftToFill) + " _volumeAdd: " + str(_volumeAdd))
+                    # If next host has a different flowrate
+                    if _nextHost.flowrateOut != _frontHost.flowrateOut:
+                        _volumeAdd = _dTRemainder * _nextHost.flowrateOut
                     else:
-                        slug.tailHost=_nextHost
-                        slug.tailHostPos=_remainder                   
+                        _volumeAdd = _remainder
+
+                    # Now, potentially continue through multiple hosts
+                    slug.frontHost = _nextHost
+                    # Use a loop to handle multiple jumps
+                    _stillToFill = _volumeAdd
+
+                    while _stillToFill > _nextHost.volume:
+                        # Surpass this host entirely
+                        _stillToFill -= _nextHost.volume
+
+                        # Move to the next outlet
+                        if len(_nextHost.outlets) == 0:
+                            # No further hosts, slug ends here
+                            slug.frontHostPos = _nextHost.volume
+                            break
+
+                        _nextHost = _nextHost.outlets[0]
+
+                        if isinstance(_nextHost, FlowTerminus):
+                            # Slug enters terminus and is collected
+                            slug.frontHost = _nextHost
+                            slug.collectedVol += _stillToFill
+                            slug.frontHostPos = 0
+                            slug.collecting = True
+                            _stillToFill = 0
+                            break
+
+                        # If next host differs in flowrate, we’d need additional logic here
+                        # But for now we assume the computed _stillToFill works directly
+                        slug.frontHost = _nextHost
+
+                    # If we still have leftover that doesn't surpass the new host fully
+                    if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
+                        slug.frontHostPos = _stillToFill
+
             else:
-                slug.tailHostPos=_newVol
+                # Slug remains within the same host
+                slug.frontHostPos = _newVol
+
+        # Tail movement
+        # Similar logic applies for the tail. We allow multiple host jumps if needed.
+        for slug in self.slugs[:]:  # copy list since we may remove slugs
+            _tailHost = slug.tailHost
+
+            # If tail is in a terminus, slug is collected
+            if isinstance(_tailHost, FlowTerminus):
+                if not slug.collected:
+                    slug.collected = True
+                continue
+
+            _dV = _tailHost.flowrateOut * _dT
+            
+            if _tailHost.dispensing:
+                # Only dispense up to the remainder
+                if _tailHost.remainderToDispense is not None:
+                    if _dV > _tailHost.remainderToDispense:
+                        # Cap _dV so we don't overshoot
+                        _dV = _tailHost.remainderToDispense
+                
+                slug.totalDispensed += _dV
+
+                if _tailHost.remainderToDispense is not None:
+                    _tailHost.remainderToDispense -= _dV
+                    if _tailHost.remainderToDispense <= 0:
+                        _tailHost.dispensing = False
+                        _tailHost.remainderToDispense = 0
+                continue
+
+            _tailHostPos = slug.tailHostPos
+            _newVol = _tailHostPos + _dV
+
+            # Check if we surpass the tailHost's volume
+            if _newVol > _tailHost.volume:
+                _remainder = _newVol - _tailHost.volume
+
+                # Move on to next host
+                if len(_tailHost.outlets) == 0:
+                    # No further hosts, so slug remains here
+                    slug.tailHostPos = _tailHost.volume
+                    continue
+
+                _nextHost = _tailHost.outlets[0]
+
+                if isinstance(_nextHost, FlowTerminus):
+                    # Slug tail enters terminus - slug is collected
+                    slug.tailHost = _nextHost
+                    slug.tailHostPos = 0
+                    self.collectedSlugs.append(slug)
+                    self.slugs.remove(slug)
+                else:
+                    # Handle multiple jumps for the tail
+                    _currHostLeftToFill = (_tailHost.volume - _tailHostPos)
+                    _tailHostFillTime = _currHostLeftToFill / (_tailHost.flowrateOut)
+                    _dTRemainder = _dT - _tailHostFillTime
+
+                    if _nextHost.flowrateOut != _tailHost.flowrateOut:
+                        _volumeAdd = _dTRemainder * _nextHost.flowrateOut
+                    else:
+                        _volumeAdd = _remainder
+
+                    slug.tailHost = _nextHost
+                    _stillToFill = _volumeAdd
+
+                    while _stillToFill > _nextHost.volume:
+                        _stillToFill -= _nextHost.volume
+                        if len(_nextHost.outlets) == 0:
+                            # No further hosts for the tail
+                            slug.tailHostPos = _nextHost.volume
+                            break
+
+                        _nextHost = _nextHost.outlets[0]
+
+                        if isinstance(_nextHost, FlowTerminus):
+                            # Slug tail enters terminus
+                            slug.tailHost = _nextHost
+                            slug.tailHostPos = 0
+                            self.collectedSlugs.append(slug)
+                            if slug in self.slugs:
+                                self.slugs.remove(slug)
+                            _stillToFill = 0
+                            break
+
+                        slug.tailHost = _nextHost
+
+                    if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
+                        slug.tailHostPos = _stillToFill
+            else:
+                # Tail remains within the same host
+                slug.tailHostPos = _newVol
 
 class FlowComponent(VolumeObject):
     def __init__(self, volume=None, inlets=None, outlets=None, name=None, deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
@@ -744,7 +827,7 @@ if __name__ == "__main__":
         global running
         global allSlugs
         global _path
-        _i=0
+        _i=10
         while running:
             '''
             _flow_1=eval(input("Pump 1 flowrate: "))
@@ -772,7 +855,7 @@ if __name__ == "__main__":
             _jiggleFlowrate=time.perf_counter() + 5
             #_path.timePrev=time.perf_counter()
             while not (isinstance(_slug.tailHost,FlowTerminus)):
-                if time.perf_counter() - _jiggleFlowrate > 30:
+                if time.time() - _jiggleFlowrate > 30:
                     _flow_1=random.choice(flowRates)
                     if _flow_1 == 0:
                         _flow_1=1
@@ -786,12 +869,12 @@ if __name__ == "__main__":
                     _blueStock.setFlowrate(_flow_2/60)
                     _pinkStock.setFlowrate(_flow_3/60)
                     
-                    _jiggleFlowrate=time.perf_counter()
+                    _jiggleFlowrate=time.time()
 
                 _path.advanceSlugs()
-                if time.perf_counter() - _nowRefresh > 1:
+                if time.time() - _nowRefresh > 1:
                     _vol=_slug.slugVolume()
-                    _nowRefresh=time.perf_counter()
+                    _nowRefresh=time.time()
                     rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[_flow_1,_flow_2,_flow_3]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
                     print(rep)
                 time.sleep(0.1)
