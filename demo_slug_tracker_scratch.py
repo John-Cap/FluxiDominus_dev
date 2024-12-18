@@ -119,11 +119,9 @@ class VolumeObject:
             if not comp in outletSet:
                 outletSet.append(comp)
 
-    def flowInto(self,outlet,setNameIn="",setNameOut=""):
+    def flowInto(self,outlet,setNameIn="DEFAULT",setNameOut=""):
         if setNameOut == "":
             setNameOut=f"{self.name}_{self.id}_to_{outlet.name}_{outlet.id}"
-        if setNameIn == "":
-            setNameIn=f"{outlet.name}_{outlet.id}_from_{self.name}_{self.id}"
         self._addOutlet(outlet,setNameOut)
         outlet._addInlet(self,setNameIn)
         if not len(self.outlets):
@@ -156,7 +154,7 @@ class VolumeObject:
             return self.inletSets[setName]
         else:
             self.inletSets[setName]=[]
-            return []
+            return self.inletSets[setName]
         
     def _getOutletSet(self,setName):
         if self.outletSets is None:
@@ -165,7 +163,7 @@ class VolumeObject:
             return self.outletSets[setName]
         else:
             self.outletSets[setName]=[]
-            return []
+            return self.outletSets[setName]
 
     def cumulativeFlowrates(self):
         if not self.inlets:
@@ -735,7 +733,6 @@ if __name__ == "__main__":
             print(f"  Inlet set: UNDEFINED")
             print(f"  Outlet set: {x[1]}")
         print("--")
-            
     #Some example things:
     flowRates=[0,1,2,3,4]
     dispVol=[1,2,3,4,5]
