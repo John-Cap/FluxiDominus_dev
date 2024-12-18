@@ -827,7 +827,7 @@ if __name__ == "__main__":
         global running
         global allSlugs
         global _path
-        _i=10
+        _i=0
         while running:
             '''
             _flow_1=eval(input("Pump 1 flowrate: "))

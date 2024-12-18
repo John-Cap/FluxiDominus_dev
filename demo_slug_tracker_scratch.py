@@ -711,55 +711,55 @@ if __name__ == "__main__":
     comp=[]
     
     #Stocks
-    _redStock=FlowOrigin(dispensing=False,volume=0,inlets=[],outlets=[],name="RED_STOCK",flowrateIn=0.0,slugs=[])
+    _redStock=FlowOrigin(volume=0,name="RED_STOCK")
     comp.append(_redStock)
-    _blueStock=FlowOrigin(dispensing=False,volume=0,inlets=[],outlets=[],name="BLUE_STOCK",flowrateIn=0.0,slugs=[])
+    _blueStock=FlowOrigin(volume=0,name="BLUE_STOCK")
     comp.append(_blueStock)
-    _pinkStock=FlowOrigin(dispensing=False,volume=0,inlets=[],outlets=[],name="PINK_STOCK",flowrateIn=0.0,slugs=[])
+    _pinkStock=FlowOrigin(volume=0,name="PINK_STOCK")
     comp.append(_pinkStock)
     
     #Pump lines
-    _pump_1=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_1",flowrateIn=0.0,slugs=[])
+    _pump_1=Pump(volume=1.5,name="PUMP_1")
     comp.append(_pump_1)
-    _pump_2=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_2",flowrateIn=0.0,slugs=[])
+    _pump_2=Pump(volume=1.5,name="PUMP_2")
     comp.append(_pump_2)
-    _pump_3=Pump(volume=1.5,inlets=[],outlets=[],name="PUMP_3",flowrateIn=0.0,slugs=[])
+    _pump_3=Pump(volume=1.5,name="PUMP_3")
     comp.append(_pump_3)
     #Valves
-    _cwValve=Valve(volume=0.05,inlets=[],outlets=[],name="CW_VALVE",slugs=[])
+    _cwValve=Valve(volume=0.05,name="CW_VALVE")
     comp.append(_cwValve)
-    _valve_1=Valve(volume=0.05,inlets=[],outlets=[],name="DIVERT_VALVE",slugs=[])
+    _valve_1=Valve(volume=0.05,name="DIVERT_VALVE")
     comp.append(_valve_1)
-    _flushCoilValve=Valve(volume=0.05,inlets=[],outlets=[],name="FLUSH_VALVE",slugs=[])
+    _flushCoilValve=Valve(volume=0.05,name="FLUSH_VALVE")
     comp.append(_flushCoilValve)
     #IR
-    _IR=(IR(volume=0.5,inlets=[],outlets=[],name="IR",slugs=[]))
+    _IR=(IR(volume=0.5,name="IR"))
     comp.append(_IR)
     #Coil
-    _coil=(Coil(volume=5,inlets=[],outlets=[],name="COIL",slugs=[]))
+    _coil=(Coil(volume=5,name="COIL"))
     comp.append(_coil)
     #Termini
-    _waste=FlowTerminus(volume=0,inlets=[],outlets=[None],name="WASTE",flowrateIn=0,flowrateOut=0,slugs=[])
+    _waste=FlowTerminus(volume=0,name="WASTE")
     comp.append(_waste)
-    _collect=FlowTerminus(volume=0,inlets=[],outlets=[None],name="COLLECT",flowrateIn=0,flowrateOut=0,slugs=[])
+    _collect=FlowTerminus(volume=0,name="COLLECT")
     comp.append(_collect)
-    _terminus_3=FlowTerminus(volume=0,inlets=[],outlets=[None],name="TERMINUS_3",flowrateIn=0,flowrateOut=0,slugs=[])
+    _terminus_3=FlowTerminus(volume=0,name="TERMINUS_3")
     comp.append(_terminus_3)
-    _terminus_4=FlowTerminus(volume=0,inlets=[],outlets=[None],name="TERMINUS_4",flowrateIn=0,flowrateOut=0,slugs=[])
+    _terminus_4=FlowTerminus(volume=0,name="TERMINUS_4")
     comp.append(_terminus_4)
     
-    _tPiece_1=TPiece(volume=0.05,inlets=[],outlets=[],name="TPIECE_1",slugs=[])
+    _tPiece_1=TPiece(volume=0.05,name="TPIECE_1")
     comp.append(_tPiece_1)
-    _tPiece_2=TPiece(volume=0.05,inlets=[],outlets=[],name="TPIECE_2",slugs=[])
+    _tPiece_2=TPiece(volume=0.05,name="TPIECE_2")
     comp.append(_tPiece_2)
     
-    _tubing_1=Tubing(volume=0.5,inlets=[],outlets=[],name="TUBE_1",slugs=[])
+    _tubing_1=Tubing(volume=0.5,name="TUBE_1")
     comp.append(_tubing_1)
-    _tubing_2=Tubing(volume=1,inlets=[],outlets=[],name="TUBE_2",slugs=[])
+    _tubing_2=Tubing(volume=1,name="TUBE_2")
     comp.append(_tubing_2)
-    _tubing_3=Tubing(volume=0.5,inlets=[],outlets=[],name="TUBE_3",slugs=[])
+    _tubing_3=Tubing(volume=0.5,name="TUBE_3")
     comp.append(_tubing_3)
-    _tubing_4=Tubing(volume=1,inlets=[],outlets=[],name="TUBE_4",slugs=[])
+    _tubing_4=Tubing(volume=1,name="TUBE_4")
     comp.append(_tubing_4)
     ###################
     #Connect components
@@ -827,7 +827,7 @@ if __name__ == "__main__":
         global running
         global allSlugs
         global _path
-        _i=10
+        _i=0
         while running:
             '''
             _flow_1=eval(input("Pump 1 flowrate: "))
