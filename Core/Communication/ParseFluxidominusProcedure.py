@@ -1,8 +1,10 @@
 import ast
 import re
 from Core.Control.Commands import Configuration, Delay, Procedure, WaitUntil
-from Core.Fluids.FlowPath import FlowPathAdjustment
+
 import paho.mqtt.client as mqtt
+
+from examples.demo_slug_tracker import FlowPathAdjustment
 
 class FdpDecoder:
     def __init__(self, currKwargs=None, confNum=0):
