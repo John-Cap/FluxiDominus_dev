@@ -1,0 +1,28 @@
+
+    return SfCartesianChart(
+      primaryXAxis: NumericAxis(
+        initialVisibleMinimum: widget.mqttService.timeBracketMin,
+        initialVisibleMaximum: widget.mqttService.timeBracketMax,
+        minimum: widget.mqttService.timeBracketMin,
+        maximum: widget.mqttService.timeBracketMax,
+        rangePadding: ChartRangePadding.additional,
+        anchorRangeToVisiblePoints: false,
+        interval: 10,
+        title: AxisTitle(text: widget.xAxisTitle),
+      ),
+      primaryYAxis: NumericAxis(
+        interval: 1,
+        title: AxisTitle(text: widget.yAxisTitle),
+      ),
+      title: ChartTitle(text: widget.title),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <CartesianSeries<PlotData, double>>[
+        LineSeries<PlotData, double>(
+          dataSource: dataTele,
+          animationDuration: 0,
+          xValueMapper: (PlotData data, _) => data.x,
+          yValueMapper: (PlotData data, _) => data.y,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+        ),
+      ],
+    );
