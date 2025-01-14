@@ -717,6 +717,8 @@ if __name__ == "__main__":
     comp.append(_blueStock)
     _pinkStock=FlowOrigin(volume=0,name="PINK_STOCK")
     comp.append(_pinkStock)
+    _purpleStock=FlowOrigin(volume=0,name="PURPLE_STOCK")
+    #comp.append(_purpleStock)
     
     #Pump lines
     _pump_1=Pump(volume=1.5,name="PUMP_1")
@@ -725,7 +727,10 @@ if __name__ == "__main__":
     comp.append(_pump_2)
     _pump_3=Pump(volume=1.5,name="PUMP_3")
     comp.append(_pump_3)
+    _pump_4=Pump(volume=1.5,name="PUMP_4")
+    #comp.append(_pump_4)
     #Valves
+    _3wayValve=Valve(volume=0.05)
     _cwValve=Valve(volume=0.05,name="CW_VALVE")
     comp.append(_cwValve)
     _valve_1=Valve(volume=0.05,name="DIVERT_VALVE")
@@ -817,7 +822,7 @@ if __name__ == "__main__":
             print(f"  Outlet set: {x[1]}")
         print("--")
     #Some example things:
-    flowRates=[0,1,2,3,4]
+    flowRates=[0,1.3,2.6,3.75,4.13]
     dispVol=[1,2,3,4,5]
     
     # Flag variable to indicate whether the thread should continue running?

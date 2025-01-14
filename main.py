@@ -11,8 +11,8 @@ from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.UI.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
-#updater = MqttService(broker_address="localhost")
-updater = MqttService(broker_address="146.64.91.174")
+updater = MqttService(broker_address="localhost")
+#updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
 
@@ -45,7 +45,8 @@ def pullTemp():
 ###########################################################
 #Package for MongoDB
 #Host details
-host = "146.64.91.174"
+host = "localhost"
+#host = "146.64.91.174"
 port = 27017
 database_name = "Pharma"
 collection_name = "pharma-data"
