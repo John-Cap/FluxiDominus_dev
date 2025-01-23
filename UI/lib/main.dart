@@ -8,7 +8,7 @@ import 'ui/authentication/login_page.dart';
 //
 void main() async {
   //MqttService thisMqttService = MqttService(server: 'ws://146.64.91.174/');
-  MqttService thisMqttService = MqttService(server: 'localhost');
+  MqttService thisMqttService = MqttService(server: 'ws://localhost');
   await thisMqttService.initializeMQTTClient();
   await thisMqttService.connect();
   runApp(MyApp(

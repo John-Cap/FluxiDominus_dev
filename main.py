@@ -45,8 +45,8 @@ def pullTemp():
 ###########################################################
 #Package for MongoDB
 #Host details
-host = "localhost"
-#host = "146.64.91.174"
+#host = "localhost"
+host = "146.64.91.174"
 port = 27017
 database_name = "Pharma"
 collection_name = "pharma-data"
@@ -98,12 +98,12 @@ while True:
     updater.currTestlistId=None
     updater.currTestrunId=None
     #Send back test not started confirmation
-    updater.client.publish("ui/dbCmnd/ret",json.dumps({"runTest":False}))
+    updater.publish("ui/dbCmnd/ret",json.dumps({"runTest":False}))
 
     ##########################################################
     #Wake everything up 1
-    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.51","port":43344}},"settings":{"command":"REMOTEEN"}}))
-    updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+    updater.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.51","port":43344}},"settings":{"command":"REMOTEEN"}}))
+    updater.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
         "deviceName": "flowsynmaxi2",
         "inUse": True,
         "connDetails": {
@@ -116,13 +116,13 @@ while True:
             "command": "REMOTEEN"
         }
     }))
-    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"REMOTEEN"}}))
+    updater.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"REMOTEEN"}}))
 
     time.sleep(1)
 
     ##########################################################
     #Set setup to safe state
-    updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+    updater.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
         "deviceName": "flowsynmaxi2",
         "inUse": True,
         "connDetails": {
@@ -137,7 +137,7 @@ while True:
             "value": 0
         }
     }))
-    updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+    updater.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
         "deviceName": "flowsynmaxi2",
         "inUse": True,
         "connDetails": {
@@ -153,7 +153,7 @@ while True:
         }
     }))
 
-    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({
+    updater.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({
         "deviceName": "vapourtecR4P1700",
         "inUse": True,
         "connDetails": {
@@ -168,7 +168,7 @@ while True:
             "value": 0.05
         }
     }))
-    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({
+    updater.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({
         "deviceName": "vapourtecR4P1700",
         "inUse": True,
         "connDetails": {
@@ -183,8 +183,8 @@ while True:
             "value": 0.05
         }
     }))
-    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0.0}}))
-    updater.client.publish("subflow/sf10Vapourtec1/cmnd",json.dumps({
+    updater.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"SET","temp":0.0}}))
+    updater.publish("subflow/sf10Vapourtec1/cmnd",json.dumps({
         "deviceName": "sf10Vapourtec1",
         "inUse": True,
         "connDetails": {
@@ -284,8 +284,8 @@ while True:
 
     ##########################################################
     #Wake everything up 2
-    updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.51","port":43344}},"settings":{"command":"REMOTEEN"}}))
-    updater.client.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
+    updater.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({"deviceName":"vapourtecR4P1700","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.51","port":43344}},"settings":{"command":"REMOTEEN"}}))
+    updater.publish("subflow/flowsynmaxi2/cmnd",json.dumps({
         "deviceName": "flowsynmaxi2",
         "inUse": True,
         "connDetails": {
@@ -298,15 +298,15 @@ while True:
             "command": "REMOTEEN"
         }
     }))
-    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"REMOTEEN"}}))
-    updater.client.publish("subflow/reactIR702L1/cmnd",json.dumps({"deviceName":"reactIR702L1","inUse":True, "connDetails":{"ipCom" : {"addr": "192.168.1.50", "port": 62552}},"settings": {"command":"REMOTEEN"}}))
+    updater.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True,"connDetails":{"ipCom":{"addr":"192.168.1.213","port":81}},"settings":{"command":"REMOTEEN"}}))
+    updater.publish("subflow/reactIR702L1/cmnd",json.dumps({"deviceName":"reactIR702L1","inUse":True, "connDetails":{"ipCom" : {"addr": "192.168.1.50", "port": 62552}},"settings": {"command":"REMOTEEN"}}))
     time.sleep(1)
 
     #
     #Inform UI of test start and provide zerotime
     #
     _zt=updater.databaseOperations.mongoDb.currZeroTime
-    updater.client.publish("ui/dbCmnd/ret",json.dumps(
+    updater.publish("ui/dbCmnd/ret",json.dumps(
         {
             "runTest":True,
             "datetime":_zt
@@ -316,7 +316,7 @@ while True:
     if not noTestDetails:
         _thisRef=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='labNotebookBaseRef',id=updater.currTestrunId)
         _thisTstrn=updater.databaseOperations.mySqlDb.fetchColumnValById(tableName='testruns',columnName='runNr',id=updater.currTestrunId)
-        updater.client.publish(
+        updater.publish(
             topic="ui/dbCmnd/in",payload=json.dumps({
                 "instructions":{
                     "function":"handleStreamRequest",
@@ -330,7 +330,7 @@ while True:
                     }
                 }
             }))
-        updater.client.publish(
+        updater.publish(
             topic="ui/dbCmnd/in",payload=json.dumps({
                 "instructions":{
                     "function":"handleStreamRequest",
@@ -344,7 +344,7 @@ while True:
                     }
                 }
             }))
-        updater.client.publish(
+        updater.publish(
             topic="ui/dbCmnd/in",payload=json.dumps({
                 "instructions":{
                     "function":"handleStreamRequest",
@@ -358,7 +358,7 @@ while True:
                     }
                 }
             }))
-        updater.client.publish(
+        updater.publish(
             topic="ui/dbCmnd/in",payload=json.dumps({
                 "instructions":{
                     "function":"handleStreamRequest",
@@ -372,7 +372,7 @@ while True:
                     }
                 }
         }))
-        updater.client.publish(
+        updater.publish(
             topic="ui/dbCmnd/in",payload=json.dumps({
                 "instructions":{
                     "function":"handleStreamRequest",
@@ -386,7 +386,7 @@ while True:
                     }
                 }
         }))
-        updater.client.publish(
+        updater.publish(
             topic="ui/dbCmnd/in",payload=json.dumps({
                 "instructions":{
                     "function":"handleStreamRequest",
@@ -400,7 +400,7 @@ while True:
                     }
                 }
         }))
-        updater.client.publish(
+        updater.publish(
             topic="ui/dbCmnd/in",payload=json.dumps({
                 "instructions":{
                     "function":"handleStreamRequest",

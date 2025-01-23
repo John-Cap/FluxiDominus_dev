@@ -60,6 +60,9 @@ class MqttService:
         self.currTestrunId=None
         self.abort=False
         
+        #TODO - Temp fix for repeated connecting
+        #self.connected=False
+        
         #Telemetry
         self.registeredTeleDevices={}
         
@@ -71,37 +74,41 @@ class MqttService:
     
     def onConnect(self, client, userdata, flags, rc):
         print("WJ - Connected!")
+        #if self.connected:
+            #return
         if rc == 0:
             for _x in self.allTopics:
                 for tpc in _x.values():
                     qos=MqttTopics.getTopicQos(tpc)
                     ret=self.client.subscribe(tpc,qos=qos)
-                    if ret[0]==0:
+                    if ret[0].real==0:
                         self.topicIDs[ret[1]]=tpc
                     else:
                         print("WJ - could not subscribe to topic "+tpc+"!")
+            self.connected=True
         else:
             print("Connection failed with error code " + str(rc))
+        print(self.topicIDs)
     
     def onConnectTele(self, client, userdata, flags, rc):
         print("WJ - Connected!")
         if rc == 0:
             for tpc in self.allTopicsTele.values():
                 ret=self.client.subscribe(tpc)
-                if ret[0]==0:
+                if ret[0].real==0:
                     self.topicIDs[ret[1]]=tpc
                 else:
                     print("WJ - could not subscribe to topic "+tpc+"!")
             for tpc in self.allTopicsUI.values():
                 ret=self.client.subscribe(tpc,qos=2)
-                if ret[0]==0:
+                if ret[0].real==0:
                     self.topicIDs[ret[1]]=tpc
                 else:
                     print("WJ - could not subscribe to topic "+tpc+"!")
             #Test settings
             tpc="test/settings"
             ret=self.client.subscribe(topic="test/settings",qos=2)
-            if ret[0]==0:
+            if ret[0].real==0:
                 self.topicIDs[ret[1]]=tpc
             #
         else:
@@ -237,13 +244,17 @@ class MqttService:
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
         self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
-        self.databaseOperations.connect()
+        #self.databaseOperations.connect()
         thread = threading.Thread(target=self._run)
         thread.start()
         return thread
 
     def _run(self):
         self.client.loop_start()
+        
+    def publish(self,topic,payload):
+        _ret=self.client.publish(topic,payload)
+        print(f'MQTT message info: {_ret}')
 
     def getTemp(self):
         return self.temp

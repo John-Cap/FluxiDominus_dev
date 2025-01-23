@@ -1,28 +1,569 @@
+The Dart side of Plutter class:
 
-    return SfCartesianChart(
-      primaryXAxis: NumericAxis(
-        initialVisibleMinimum: widget.mqttService.timeBracketMin,
-        initialVisibleMaximum: widget.mqttService.timeBracketMax,
-        minimum: widget.mqttService.timeBracketMin,
-        maximum: widget.mqttService.timeBracketMax,
-        rangePadding: ChartRangePadding.additional,
-        anchorRangeToVisiblePoints: false,
-        interval: 10,
-        title: AxisTitle(text: widget.xAxisTitle),
-      ),
-      primaryYAxis: NumericAxis(
-        interval: 1,
-        title: AxisTitle(text: widget.yAxisTitle),
-      ),
-      title: ChartTitle(text: widget.title),
-      tooltipBehavior: TooltipBehavior(enable: true),
-      series: <CartesianSeries<PlotData, double>>[
-        LineSeries<PlotData, double>(
-          dataSource: dataTele,
-          animationDuration: 0,
-          xValueMapper: (PlotData data, _) => data.x,
-          yValueMapper: (PlotData data, _) => data.y,
-          dataLabelSettings: const DataLabelSettings(isVisible: true),
-        ),
-      ],
-    );
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_flow_chart/config/UI/brokers_and_topics.dart';
+import 'package:flutter_flow_chart/ui/authentication/login_page.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/flutter_flow_chart.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/sketcher.dart';
+import 'package:flutter_flow_chart/ui/graphing/graph_panel.dart';
+import 'package:flutter_flow_chart/ui/script_builder.dart/hardcoded_tele_templates.dart';
+import 'package:flutter_flow_chart/ui/script_builder.dart/script_generator.dart';
+//import 'package:flutter_flow_chart/config/UI/data_queue_instructions.dart' as dq;
+import 'package:flutter_flow_chart/utils/timing.dart';
+import 'package:mqtt_client/mqtt_browser_client.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+
+class MqttService extends ChangeNotifier {
+  late MqttBrowserClient client;
+  Map<String, String> topicsCmnd = MqttTopics.getCmndTopics();
+  Map<String, String> topicsTele = MqttTopics.getTeleTopics();
+  Map<String, String> topicsUI = MqttTopics.getUITopics();
+  Map<String, dynamic> lastMsgFromTopic = {};
+  final String server;
+  final builder = MqttClientPayloadBuilder();
+  List<String> availableDevices = [];
+
+  double minTeleGap = 0.25; //Min time to wait between logging tele
+
+  Map<String, Map<String, dynamic>> currFlowScript = {};
+  String currDashboardJson = '{"elements":[]}';
+  late Dashboard currDashboard;
+
+  late FlowSketcher flowSketcher;
+  late GlobalKey<FlowSketcherState> flowSketcherKey;
+
+  late ScriptGeneratorWidget scriptGeneratorWidget;
+  late GlobalKey<ScriptGeneratorWidgetState> scriptGeneratorWidgetKey;
+
+  //Map<String, dynamic> currDashboard = {};
+  Map<String, List<Map<String, dynamic>>> currTestScriptBlocks = {};
+
+  //Graphs
+  // Variables to hold x-axis time limits
+  double timeBracketMin = 0;
+  double timeBracketMax = 120;
+
+  //
+  //////////////////////////////////////////////////////////////////////////
+  //Data streams *TODO - generalize
+  ValueNotifier<List<PlotData>> hotcoil1PlotDataNotifier = ValueNotifier([]);
+
+  Map<String, List<String>> teleToCollect = {};
+
+  Map<String, ValueNotifier<List<PlotData>>> teleDataNotifiers = {};
+  Map<String, ValueNotifier<List<List<double>>>> dbStreamDataNotifiers = {};
+  ValueNotifier<List<PlotData>> reactIR702L1PlotDataNotifier =
+      ValueNotifier([]);
+  EpochDelta epochDelta = EpochDelta();
+
+  Map<String, EpochDelta> lastReceivedTime = {};
+
+  Map<String, ValueNotifier<Map<String, dynamic>>> backendReturn = {
+    "getAllExpWidgetInfo": ValueNotifier({}),
+    "loadTestrun": ValueNotifier({})
+  };
+  //////////////////////////////////////////////////////////////////////////
+
+  //Authentication
+  Authenticator authenticator = Authenticator();
+
+  bool runTest = false;
+  ValueNotifier<bool> testRunning = ValueNotifier(false);
+
+  //Construct.
+  MqttService({required this.server}) {
+    try {
+      //print("WJ - Now here");
+      // Other initialization code if any
+    } catch (e) {
+      //print("WJ - Error in constructor: $e");
+    }
+  }
+  //
+
+  Future<void> initializeMQTTClient() async {
+    client = MqttBrowserClient(server, 'flutter-web-client');
+    client.websocketProtocols = ['mqtt'];
+    client.port = 9001;
+    client.logging(on: true);
+    client.keepAlivePeriod = 20;
+    client.onConnected = onConnected;
+    client.onSubscribed = onSubscribed;
+    client.autoReconnect = true;
+    //client.onDisconnected = onDisconnected;
+    client.resubscribeOnAutoReconnect = false;
+    //client.onAutoReconnected = onConnected;
+
+    final connMess = MqttConnectMessage()
+        .withClientIdentifier('flutter-web-client')
+        .startClean()
+        .withWillQos(MqttQos.atMostOnce);
+
+    client.connectionMessage = connMess;
+  }
+
+  Future<void> connect() async {
+    try {
+      print('WJ - Initializing Mqtt Browser Client');
+      await initializeMQTTClient();
+      print('WJ - Attempting to connect');
+      MqttClientConnectionStatus? status = await client.connect();
+      print('WJ - Connection state $status');
+      if (status != null &&
+          status.state.toString() != 'MqttConnectionState.disconnected') {
+        print(
+            'WJ - MqttClientConnectionStatus returned ${status.state.toString()}!');
+        client.updates!.listen(onMessage);
+      }
+    } catch (e) {
+      print('WJ - Connection failed: $e');
+    }
+  }
+
+  void onSubscribed(String topic) {
+    print('Subscribed to $topic');
+  }
+
+  ////////////////////////////////////////////
+  //Main message processor
+  void onMessage(List<MqttReceivedMessage<MqttMessage>> event) {
+    final MqttPublishMessage recMess = event[0].payload as MqttPublishMessage;
+    final String message =
+        MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+
+    String topic = event[0].topic;
+    Map<String, dynamic> messageMap = jsonDecode(message);
+
+    lastMsgFromTopic[topic] = messageMap;
+    if (!lastReceivedTime.containsKey(topic)) {
+      lastReceivedTime[topic] = EpochDelta();
+    }
+
+    //Fix hierdie gemors, dis stupid
+    if (messageMap.containsKey("LoginPageWidget")) {
+      if ((messageMap["LoginPageWidget"]).containsKey("authenticated") &&
+          (messageMap["LoginPageWidget"])["authenticated"]) {
+        authenticator.signedIn = true;
+        print('WJ - Sign in successful!');
+        if (authenticator.signInFailed) {
+          authenticator.signInFailed = false;
+        }
+      } else {
+        print('WJ - Sign in failed!');
+        authenticator.signInFailed = true;
+        if (authenticator.signedIn) {
+          authenticator.signedIn = false;
+        }
+      }
+      //
+    } else if (messageMap.containsKey("GraphWidgets")) {
+      //TODO - FIX THIS HARDCODED DISASTER
+    } else if (topic == "subflow/flowsynmaxi2/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      if (teleToCollect.containsKey(topic)) {
+        if (teleToCollect[topic]!.isNotEmpty) {
+          for (var x in teleToCollect[topic]!) {
+            String id = "${topic}_$x";
+            teleDataNotifiers[id]!.value = [
+              ...teleDataNotifiers[id]!.value,
+              PlotData(
+                epochDelta.secSinceEpoch().toDouble(),
+                HardcodedTeleKeys.getTeleVal(messageMap, x),
+              ),
+            ];
+          }
+        }
+      }
+      //
+    } else if (topic == "subflow/vapourtecR4P1700/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      if (teleToCollect.containsKey(topic)) {
+        if (teleToCollect[topic]!.isNotEmpty) {
+          for (var x in teleToCollect[topic]!) {
+            String id = "${topic}_$x";
+            teleDataNotifiers[id]!.value = [
+              ...teleDataNotifiers[id]!.value,
+              PlotData(
+                epochDelta.secSinceEpoch().toDouble(),
+                HardcodedTeleKeys.getTeleVal(messageMap, x),
+              ),
+            ];
+          }
+        }
+      }
+      //
+    } else if (topic == "subflow/hotcoil1/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      for (var x in teleToCollect[topic]!) {
+        String id = "${topic}_$x";
+        teleDataNotifiers[id]?.value = [
+          ...teleDataNotifiers[id]!.value,
+          PlotData(
+            epochDelta.secSinceEpoch().toDouble(),
+            HardcodedTeleKeys.getTeleVal(messageMap, x),
+          ),
+        ];
+      }
+      //
+    } else if (topic == "subflow/reactIR702L1/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      IRPlotData thisData = IRPlotData();
+      List<double> raw = (messageMap["tele"]["state"]["data"]).cast<double>();
+      List<PlotData> gd = thisData.parse(raw);
+      reactIR702L1PlotDataNotifier.value = gd;
+      //
+    } else if (topic == "ui/dbStreaming/out") {
+      messageMap = messageMap['dbStreaming'];
+      String id = messageMap.keys.first;
+      print(
+        'WJ - ${dbStreamDataNotifiers[id]?.value}, keys: ${messageMap.keys}',
+      );
+      if (!dbStreamDataNotifiers.containsKey(id)) {
+        dbStreamDataNotifiers[id] = ValueNotifier([]);
+      }
+      print('WJ - received: ${messageMap[id]}');
+      dbStreamDataNotifiers[id]?.value.addAll(messageMap[id]);
+      //notifyListeners();
+      //Doesn't seem neccessary to notify listeners?!
+    } else if (topic == "ui/dbCmnd/ret") {
+      if (messageMap.containsKey("searchForTest")) {
+        backendReturn["searchForTest"]!.value = messageMap["searchForTest"];
+        //
+      } else if (messageMap.containsKey("getAllExpWidgetInfo")) {
+        backendReturn["getAllExpWidgetInfo"]!.value =
+            messageMap["getAllExpWidgetInfo"];
+        //
+      } else if (messageMap.containsKey("createReplicate")) {
+        backendReturn["getAllExpWidgetInfo"]!.value =
+            messageMap["createReplicate"];
+        //
+      } else if (messageMap.containsKey("loadTestrun")) {
+        //
+      } else if (messageMap.containsKey("handleStreamRequest")) {
+        messageMap = messageMap["handleStreamRequest"];
+        if (messageMap.keys.length == 1) {
+          String id = messageMap.keys.first;
+          if (!dbStreamDataNotifiers.containsKey(id)) {
+            dbStreamDataNotifiers[id] = ValueNotifier([]);
+          }
+          List<List<double>> rawData = (messageMap[id] as List)
+              .map((e) => List<double>.from(e))
+              .toList();
+          /*
+          List<PlotData> plotData =
+              rawData.map((xy) => PlotData(xy[0], xy[1])).toList();
+          */
+          dbStreamDataNotifiers[id]!.value =
+              dbStreamDataNotifiers[id]!.value + rawData;
+          print(
+              'WJ - Received streamed db tele number of: ${dbStreamDataNotifiers[id]!.value.length}');
+          //
+        }
+      } else if (messageMap.containsKey("runTest")) {
+        print("WJ WE HERE");
+        if (messageMap["runTest"]) {
+          epochDelta.reset();
+        }
+        runTest = messageMap["runTest"];
+        testRunning.value = messageMap["runTest"];
+        print('WJ - Setting testRunning to ${messageMap["runTest"]}');
+      }
+    }
+  }
+
+  void onConnected() {
+    topicsTele.forEach((key, value) {
+      if (client.getSubscriptionsStatus(value).name == 'doesNotExist') {
+        print('WJ - topic $value is being subscribed to!');
+        client.subscribe(value, MqttQos.atMostOnce);
+      }
+    });
+    topicsUI.forEach((key, value) {
+      //print('WJ - ${client.getSubscriptionsStatus(value).name}');
+      if (client.getSubscriptionsStatus(value).name == 'doesNotExist') {
+        print('WJ - topic $value is being subscribed to!');
+        client.subscribe(value, MqttQos.atMostOnce);
+      }
+    });
+  }
+
+  void publish(String topic, String message,
+      {MqttQos qos = MqttQos.exactlyOnce}) {
+    if (client.connectionStatus.toString() == 'disconnected') {
+      //TODO - What then?
+      //connect();
+    }
+    builder.clear();
+    builder.addString(message);
+    print('WJ - Attempting to publish $message!');
+    var ret = client.publishMessage(topic, qos, builder.payload!);
+    print('WJ - Publish attempt for $message resulted in: $ret!');
+  }
+}
+
+Python side of Plutter class:
+
+import ast
+from datetime import datetime
+import threading
+import time
+from pytz import utc
+import paho.mqtt.client as mqtt
+from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
+from Core.Control.ScriptGenerator import FlowChemAutomation
+from Core.Data.data import DataPointFDE, DataSetFDD
+from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
+from Core.UI.brokers_and_topics import MqttTopics
+from Core.authentication.authenticator import Authenticator
+
+class MqttService:
+    def __init__(self, broker_address="localhost", port=1883, client = None, orgId="NONE",allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
+        self.broker_address = broker_address
+        self.port = port
+        self.allTopics = allTopics
+        self.allTopicsTele=allTopicsTele
+        self.allTopicsUI=allTopicsUI
+        self.temp = 0
+        self.IR = []
+        
+        self.script = ""
+        self.parsedProcedure = None
+        
+        self.formPanelData={}
+
+        self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
+        self.client.on_connect = self.onConnect
+        self.client.on_message = self.onMessage
+        self.client.on_subscribe = self.onSubscribe
+        #self.client.on_publish=self.onPublish
+        
+        self.topicIDs={}
+
+        self.saidItOnce=False
+        self.isSubscribed = {}
+
+        self.lastMsgFromTopic={}
+        self.dataQueue=DataSetFDD([])
+        self.logData=False
+        self.lastReceivedTime={}
+        self.minTeleInterval=0.5
+        
+        self.orgId=orgId
+        
+        self.automation=automation if automation else (FlowChemAutomation())
+        
+        #Authentication
+        self.authenticator=Authenticator()
+        
+        self.zeroTime=None
+        
+        self.databaseOperations=None
+        
+        #TODO - random test related var
+        self.runTest=False
+        self.currTestlistId=None
+        self.currTestrunId=None
+        self.abort=False
+        
+        #TODO - Temp fix for repeated connecting
+        self.connected=False
+        
+        #Telemetry
+        self.registeredTeleDevices={}
+        
+        #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
+
+    def onSubscribe(self, client, userdata, mid, granted_qos):
+        if mid in self.topicIDs:
+            print("WJ - Subscribed to topic " + self.topicIDs[mid] + " with Qos " + str(granted_qos[0]) + "!")
+    
+    def onConnect(self, client, userdata, flags, rc):
+        print("WJ - Connected!")
+        if self.connected:
+            return
+        if rc == 0:
+            for _x in self.allTopics:
+                for tpc in _x.values():
+                    qos=MqttTopics.getTopicQos(tpc)
+                    ret=self.client.subscribe(tpc,qos=qos)
+                    if ret[0].real==0:
+                        self.topicIDs[ret[1]]=tpc
+                    else:
+                        print("WJ - could not subscribe to topic "+tpc+"!")
+            self.connected=True
+        else:
+            print("Connection failed with error code " + str(rc))
+        print(self.topicIDs)
+    
+    def onConnectTele(self, client, userdata, flags, rc):
+        print("WJ - Connected!")
+        if rc == 0:
+            for tpc in self.allTopicsTele.values():
+                ret=self.client.subscribe(tpc)
+                if ret[0].real==0:
+                    self.topicIDs[ret[1]]=tpc
+                else:
+                    print("WJ - could not subscribe to topic "+tpc+"!")
+            for tpc in self.allTopicsUI.values():
+                ret=self.client.subscribe(tpc,qos=2)
+                if ret[0].real==0:
+                    self.topicIDs[ret[1]]=tpc
+                else:
+                    print("WJ - could not subscribe to topic "+tpc+"!")
+            #Test settings
+            tpc="test/settings"
+            ret=self.client.subscribe(topic="test/settings",qos=2)
+            if ret[0].real==0:
+                self.topicIDs[ret[1]]=tpc
+            #
+        else:
+            print("Connection failed with error code " + str(rc))
+
+    def onMessage(self, client, userdata, msg):
+        _msgContents = msg.payload.decode()
+        topic=msg.topic
+        _msgContents = _msgContents.replace("true", "True").replace("false", "False")
+        _msgContents=_msgContents.replace("null","None")
+        _msgContents = ast.literal_eval(_msgContents)
+        self.lastMsgFromTopic[topic]=_msgContents
+        ##
+        if "deviceName" in _msgContents:
+            #Add to db streaming queue? Minimum wait passed?
+            if self.runTest:
+                if (self.currTestlistId != None  and self.currTestrunId != None and self.logData):
+                    if "tele" in _msgContents:
+                        if not _msgContents["deviceName"] in self.lastReceivedTime:
+                            self.lastReceivedTime[_msgContents["deviceName"]]=time.perf_counter()
+                        else:
+                            if time.perf_counter() - self.lastReceivedTime[_msgContents["deviceName"]] < self.minTeleInterval:
+                                return #TODO - make sure it's fine to jump ship here
+                            else:
+                                if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                                    self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                                    print('WJ - Adding tele source "' + _msgContents["deviceName"] + '"!')
+                                #print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
+                                self.dataQueue.addDataPoint(
+                                    DataPointFDE(
+                                        testlistId=self.currTestlistId,
+                                        testrunId=self.currTestrunId,
+                                        data=_msgContents,
+                                        timestamp=datetime.now(utc)
+                                    )
+                                )
+                    else:
+                        if not _msgContents["deviceName"] in self.registeredTeleDevices:
+                            self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
+                            self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
+                        #print(f'Adding command datapoint for {_msgContents["deviceName"]}!')
+                        self.dataQueue.addDataPoint(
+                            DataPointFDE(
+                                testlistId=self.currTestlistId,
+                                testrunId=self.currTestrunId,
+                                data=_msgContents,
+                                timestamp=datetime.now(utc)
+                            )
+                        )                    
+                        
+        elif "script" in _msgContents:
+            _msgContents=_msgContents["script"]
+            print('############')
+            print('############')
+            print("WJ - Script message contents: "+str(_msgContents))
+            print('############')
+            self.script=self.automation.parsePlutterIn(_msgContents)
+            print("WJ - Parsed script: "+str(self.script))
+            print('############')
+            print('############')
+        ##
+        elif "FormPanelWidget" in _msgContents:
+            _msgContents=_msgContents["FormPanelWidget"]
+            self.formPanelData=_msgContents
+            print(f"WJ - Received FormPanelData: {_msgContents}")
+        ##
+        elif "LoginPageWidget" in _msgContents:
+            _msgContents=_msgContents["LoginPageWidget"]
+            if ("password" in _msgContents):
+                print(f'WJ - Login page details: {_msgContents}')
+                self.authenticator.signIn(orgId=_msgContents["orgId"],password=_msgContents["password"])
+            else:
+                print(_msgContents)
+        ##
+        elif topic=="ui/dbCmnd/in":
+            _msgContents=_msgContents["instructions"]
+            _func=_msgContents["function"]
+            _params=_msgContents["params"]
+
+            if (_func=="getAllExpWidgetInfo"):
+                self.client.publish(
+                    "ui/dbCmnd/ret",
+                    self.databaseOperations.getAllExpWidgetInfo(
+                        orgId=self.authenticator.user.orgId
+                    )
+                )
+            elif (_func=="createReplicate"):
+                self.databaseOperations.createReplicate(
+                    labNotebookBaseRef=_params["labNotebookBaseRef"],
+                    testScript=_params["testScript"],
+                    flowScript=_params["flowScript"],
+                    notes=_params["notes"]
+                )
+                self.client.publish(
+                    "ui/dbCmnd/ret",
+                    self.databaseOperations.getAllExpWidgetInfo(
+                        orgId=self.authenticator.user.orgId
+                    )
+                )
+            elif (_func=="handleStreamRequest"):
+                if not self.databaseOperations.mongoDb.currZeroTime:
+                    self.databaseOperations.mongoDb.currZeroTime=datetime.now()
+                self.client.publish(
+                    "ui/dbCmnd/ret",
+                    self.databaseOperations.handleStreamRequest(
+                        _params
+                    )
+                )
+            elif (_func=="updateTestrunDetails"):
+                self.currTestlistId=_params["testlistId"]
+                self.currTestrunId=_params["testrunId"]
+                self.currLabNotebookBaseRef=_params["labNotebookBaseRef"]
+                print(f'WJ - Set testrun to {self.currTestrunId} for testlist entry {self.currTestlistId}')
+            elif (_func=="enableLogging"):
+                self.logData=True
+                print(f'WJ - Streaming to db enabled')
+            elif (_func=="disableLogging"):
+                self.logData=False
+                print(f'WJ - Streaming to db disabled')
+            elif (_func=="abort"):
+                self.databaseOperations.mongoDb.currZeroTime=None
+                if not self.abort:
+                    self.abort=True
+                    print(f'WJ - Aborting run!')
+            elif (_func=="goCommand"):
+                if self.abort:
+                    self.abort=False
+                self.runTest=True
+                print("WJ - Let's go!")
+                                    
+    def start(self):
+        self.authenticator.initPlutter(mqttService=self)
+        self.client.connect(self.broker_address, self.port)
+        self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
+        self.databaseOperations.connect()
+        thread = threading.Thread(target=self._run)
+        thread.start()
+        return thread
+
+    def _run(self):
+        self.client.loop_start()
+
+    def getTemp(self):
+        return self.temp
+    def getIR(self):
+        return self.IR
