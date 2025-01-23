@@ -1,0 +1,7 @@
+analyzer:
+  errors:
+    depend_on_referenced_packages: ignore
+include: package:flutter_lints/flutter.yaml
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options

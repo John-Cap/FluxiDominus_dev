@@ -1,0 +1,11 @@
+{
+    "devices": {
+        "flowsynmaxi1": {
+            "flowrates": [0, 10, 20, 30]
+        },
+        "flowsynmaxi2": {
+            "flowrates": [5, 15, 25, 35]
+        }
+    }
+}
+  
