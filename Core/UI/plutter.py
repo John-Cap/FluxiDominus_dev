@@ -244,7 +244,7 @@ class MqttService:
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
         self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
-        #self.databaseOperations.connect()
+        self.databaseOperations.connect()
         thread = threading.Thread(target=self._run)
         thread.start()
         return thread

@@ -83,9 +83,8 @@ class MqttService extends ChangeNotifier {
 
   Future<void> initializeMQTTClient() async {
     client = MqttBrowserClient(server, 'flutter-web-client');
-    client.websocketProtocols = ['mqtt'];
     client.port = 9001;
-    client.logging(on: true);
+    client.logging(on: false);
     client.keepAlivePeriod = 20;
     client.onConnected = onConnected;
     client.onSubscribed = onSubscribed;
