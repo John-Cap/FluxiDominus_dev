@@ -12,13 +12,17 @@ class OptimizationTab extends StatefulWidget {
   _OptimizationTabState createState() => _OptimizationTabState();
 }
 
-class _OptimizationTabState extends State<OptimizationTab> {
+class _OptimizationTabState extends State<OptimizationTab>
+    with AutomaticKeepAliveClientMixin {
   final List<String> selectedParameters = [];
   String? selectedOptimizer;
   String? selectedObjectiveFunction;
 
   bool isRunning = false;
   Map<String, dynamic> optimizationProgress = {};
+
+  @override
+  bool get wantKeepAlive => true; // Enable automatic keep-alive
 
   void startOptimization() {
     final optimizationDetails = {
@@ -53,6 +57,7 @@ class _OptimizationTabState extends State<OptimizationTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Row(
       children: [
         // Left Panel: Optimization Settings
