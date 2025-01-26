@@ -24,6 +24,8 @@ void main() async {
 }
 
 class MyExample extends StatelessWidget {
+  const MyExample({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ListBox(

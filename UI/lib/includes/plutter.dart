@@ -91,7 +91,7 @@ class MqttService extends ChangeNotifier {
         },
         'bestYield': '${80 + i}%',
         'finalYield': i == 10 ? '${90 + i}%' : null,
-        'elapsedTime': '${i} seconds',
+        'elapsedTime': '$i seconds',
       };
     }
     runTest = false;
