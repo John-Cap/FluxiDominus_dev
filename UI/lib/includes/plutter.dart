@@ -43,6 +43,60 @@ class MqttService extends ChangeNotifier {
   double timeBracketMin = 0;
   double timeBracketMax = 120;
 
+  //Optimization
+  Map<String, dynamic> optimizationDetails = {};
+  // List<String> optimizationOptions = [];
+  // List<String> objectiveFunctions = [];
+
+  // Mock options for optimizer and objective function
+  final List<String> optimizationOptions = [
+    "Optimizer A",
+    "Optimizer B",
+    "Optimizer C",
+    "D",
+    "EF",
+    "G",
+    "Run",
+    "Run",
+    "Asfastasyoucan",
+    "I'm the big burly",
+    "Gingerbread Man!",
+    "Optimizer A",
+    "Optimizer B",
+    "Optimizer C",
+    "D",
+    "EF",
+    "G",
+    "Run",
+    "Run",
+    "Asfastasyoucan",
+    "I'm the big burly",
+    "Gingerbread Man!"
+  ];
+  final List<String> objectiveFunctions = [
+    "Function X",
+    "Function Y",
+    "Function Z"
+  ];
+  // Mocking a stream for optimization progress updates
+  Stream<Map<String, dynamic>> get optimizationProgressStream async* {
+    for (int i = 0; i <= 10; i++) {
+      await Future.delayed(Duration(seconds: 1));
+      yield {
+        'optimizer': optimizationDetails['optimizer'] ?? 'N/A',
+        'objectiveFunction': optimizationDetails['objectiveFunction'] ?? 'N/A',
+        'recommendedParams': {
+          'Temperature': '${20 + i}°C',
+          'Flowrate': '${5 + i * 0.5} mL/min'
+        },
+        'bestYield': '${80 + i}%',
+        'finalYield': i == 10 ? '${90 + i}%' : null,
+        'elapsedTime': '${i} seconds',
+      };
+    }
+    runTest = false;
+  }
+
   //
   //////////////////////////////////////////////////////////////////////////
   //Data streams *TODO - generalize
