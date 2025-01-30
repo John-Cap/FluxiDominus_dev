@@ -1,42 +1,231 @@
+import threading
+import random
+import time
 
-#rig for monitoring optimizations, generating recommended parameters, and executing the commands
-
-from Config.Data.hardcoded_command_templates import HardcodedCommandTemplates
 from Core.Control.ScriptGenerator import FlowChemAutomation
-"""
-automation.addBlockElement("block_2","sf10vapourtec2","fr",1.0)
-"""
+from Core.parametres.reaction_parametres import Flowrate, ReactionParametres, Temp
 
 class OptimizationRig:
-    def __init__(self):
-        self.automation = FlowChemAutomation() #handles command parsing
-        self.availableParams={} #Reaction parameters that can be tweaked
-        self.availableCmnds={} #Links a tweakable parameter to a specific device command
-        self.availableDeviceCmnds={} #Links cmnd to device
-        self._rigThread=None
-        self.optimizer=None
-        self.objectiveEvaluator=None
-        self.cmndTemplates=HardcodedCommandTemplates.commandTemplatesNested
-    
-    def registerDevice(self,device):
-        if device in self.cmndTemplates:
-            self.availableDeviceCmnds=self.cmndTemplates[device]
+    def __init__(self, mqttService):
+        self.automation = FlowChemAutomation()  #Handles command parsing
+        self.reactionParametres = ReactionParametres()  #Holds different parameters that can be optimized
+        self.availableParams = {}  #Reaction parameters that can be tweaked, per device
+        self.availableCmnds = {}  #Links a tweakable parameter to a specific device command name
+        self.availableDeviceCmnds = {}  #Links device to commands
+        self.currentRecommendation = {}
+        self.recommendationHistory = []
+        self._rigThread = None
+        self.optimizer = None
+        self.optimizing = False
+        self.objectiveEvaluationKwargs = {}  #Additional args for evaluation
+        self.objectiveScore = None  #Score between 0 and 1
+        self.targetScore=None
+        self.mqttService = mqttService
+        
+    def registerDevice(self, device):
+        """
+        Registers a device, automatically linking it to its available commands.
+        """
+        if device in self.automation.commandTemplatesNested:
+            self.availableDeviceCmnds[device] = self.automation.commandTemplatesNested[device]
         else:
-            print(f'WJ - Unknown device {device}!')
+            print(f"Warning: Unknown device {device}!")
+
+    def registerTweakableParam(self, device, parameter):
+        """
+        Registers a tweakable parameter for a specific device.
+        """
+        self.reactionParametres.addTweakable(parameter)
+        if device in self.availableParams:
+            self.availableParams[device].append(parameter)
+        else:
+            self.availableParams[device] = [parameter]
+            
     def generateRecommendation(self):
         """
-        outputs a recommended parameter dict, linked to specific device
+        Generates recommendations using the optimizer.
         """
-        pass
-    
+        if self.optimizer is None:
+            print("Warning: No optimizer set. Cannot generate recommendations.")
+            return
+
+        recommended_values = self.optimizer.recommend(self.reactionParametres.getAllTweakables())
+
+        if not recommended_values:
+            print("Warning: Optimizer returned empty recommendations.")
+            return
+
+        self.currentRecommendation = {}
+
+        for param, value in recommended_values.items():
+            for device, params in self.availableParams.items():
+                if param in params:
+                    if device not in self.currentRecommendation:
+                        self.currentRecommendation[device] = {}
+                    self.currentRecommendation[device][param.id] = value
+
+        self.recommendationHistory.append(self.currentRecommendation)
+
+        print("\nGenerated Recommendation:")
+        for device, params in self.currentRecommendation.items():
+            print(f"  Device: {device}")
+            for param_id, val in params.items():
+                print(f"    {param_id}: {val:.3f}")
+                
+    def evaluateRecommendation(self):
+        """
+        Evaluates the latest recommendation using the provided objective function.
+        Sets self.objectiveScore to a value between 0 and 1.
+        """
+        if self.objectiveEvaluator is None:
+            print("Warning: No objective evaluator function set.")
+            self.objectiveScore = None
+            return
+
+        print("\nEvaluating recommendation with objective function:")
+        print(self.currentRecommendation)  # Debugging print
+
+        try:
+            self.objectiveScore = self.objectiveEvaluator(self.currentRecommendation, **self.objectiveEvaluationKwargs)
+
+            if not (0 <= self.objectiveScore <= 1):
+                raise ValueError(f"Invalid objective score: {self.objectiveScore}. Must be between 0 and 1.")
+
+        except Exception as e:
+            print(f"Error in objective evaluation: {e}")
+            self.objectiveScore = None
+
     def executeRecommendation(self):
         """
-        executes recommended parameter dict, publishes mqtt
+        Executes the generated recommendation:
+        1. Resets the automation system.
+        2. Iterates over devices and parameters, generating execution commands.
+        3. Parses the commands into a script.
+        4. Sends the script to the MQTT service.
         """
-        pass
-    
+        #First clear current automation
+        self.automation.reset()
+
+        for device, params in self.currentRecommendation.items():
+            for param_id, value in params.items():
+                #Find the parameter by ID
+                for param in self.reactionParametres.getAllTweakables():
+                    if param.id == param_id:
+                        command = param.associatedCommand
+                        self.automation.addBlockElement(param.name, device, command, value)
+                        break
+
+        #Convert to script and send to MQTT
+        self.automation.parseToScript()
+        self.mqttService.script = self.automation.output
+
     def start(self):
         """
-        start thread
+        Starts a background thread to continuously optimize until the target score is reached.
         """
-        pass
+        if not self.optimizing:
+            self.optimizing = True
+            self._rigThread = threading.Thread(target=self._optimizationLoop)
+            self._rigThread.start()
+            
+    def _optimizationLoop(self):
+        """
+        Runs the optimization loop in the background.
+        Continuously generates recommendations and evaluates them until the target score is reached.
+        """
+        print("\n--- Starting Optimization Loop ---")
+        while self.optimizing:
+            self.generateRecommendation()
+            self.evaluateRecommendation()
+            print(f"Current Objective Score: {self.objectiveScore:.3f}")
+
+            if self.objectiveScore and self.objectiveScore >= self.targetScore:
+                print("\n🎯 Target Score Reached! Stopping optimization. 🎯")
+                self.optimizing = False
+                break  # Stop loop
+
+            time.sleep(1)  # Prevents excessive CPU usage
+            
+if __name__ == "__main__":
+
+    import time
+    import random
+    class MockMQTTService:
+        """Mock service to emulate MQTT script execution."""
+        def __init__(self):
+            self.script = None
+
+        def execute(self):
+            print("\n--- Executing Script ---")
+            print(self.script)
+            print("------------------------\n")
+
+    class MockOptimizer:
+        """Mock optimizer that generates random values within the tweakable range."""
+        def recommend(self, tweakables):
+            recommendations = {}
+            for param in tweakables:
+                if param.getRanges():
+                    lower, upper = param.getRanges()[0]  # Use the first range
+                    recommendations[param] = random.uniform(lower, upper)
+            return recommendations
+        
+    def mock_objective_evaluator(recommendation, target_temp=50, target_flowrate=2.5):
+        """
+        Example objective function that evaluates the recommendation.
+        The closer to the target values, the higher the score (between 0 and 1).
+        """
+        total_score = 0
+        num_params = 0
+
+        print("\nObjective Evaluator Received:")
+        print(recommendation)  # Debugging print
+
+        for device, params in recommendation.items():
+            for param_id, value in params.items():
+                if "hotcoil1" in device:  # Example heuristic for temperature device
+                    score = max(0, 1 - abs(value - target_temp) / 50)
+                    print(f"  Temp {param_id}: {value:.2f} → Score: {score:.3f}")
+                    total_score += score
+                elif "flowsynmaxi2" in device:
+                    score = max(0, 1 - abs(value - target_flowrate) / 5)
+                    print(f"  Flowrate {param_id}: {value:.2f} → Score: {score:.3f}")
+                    total_score += score
+                num_params += 1
+
+        return total_score / num_params if num_params else 0
+
+    print("Initializing Optimization Rig...")
+
+    # Create a mock MQTT service and optimization rig
+    mqtt_service = MockMQTTService()
+    rig = OptimizationRig(mqtt_service)
+
+    # Create mock devices and parameters
+    device1 = "hotcoil1"
+    device2 = "flowsynmaxi2"
+
+    temp_param = Temp("ReactionTemp", associatedCommand="temp", ranges=[[25, 100]])
+    flowrate_param_1 = Flowrate("FlowRate Pump A", associatedCommand="pafr", ranges=[[0.1, 5]])
+    flowrate_param_2 = Flowrate("FlowRate Pump B", associatedCommand="pbfr", ranges=[[0.5, 7]])
+
+    # Register devices
+    rig.registerDevice(device1)
+    rig.registerDevice(device2)
+
+    # Register tweakable parameters to the devices
+    rig.registerTweakableParam(device1, temp_param)
+    rig.registerTweakableParam(device2, flowrate_param_1)
+    rig.registerTweakableParam(device2, flowrate_param_2)
+
+    # Set a mock optimizer and evaluator
+    rig.optimizer = MockOptimizer()
+    rig.objectiveEvaluator = mock_objective_evaluator
+    rig.objectiveEvaluationKwargs = {"target_temp": 50, "target_flowrate": 2.5}
+
+    # Set a target score for stopping the loop
+    rig.targetScore = 0.80
+
+    # Start background optimization loop
+    print("\n🚀 Starting Optimization Process 🚀")
+    rig.start()

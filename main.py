@@ -61,12 +61,7 @@ metadata={"location": "Room 101", "type": "Demo_Data"}
 
 client = updater.client
 
-decoder_kwargs = {
-    "conditionFunc": checkTempFunc,
-    "conditionParam": pullTemp
-}
-
-fdpDecoder = FdpDecoder(currKwargs=decoder_kwargs)
+fdpDecoder = updater.fdpDecoder
 automation = FlowChemAutomation()
 
 _reportSleep=5
@@ -236,7 +231,7 @@ while True:
     try:
 
         parser = ScriptParser(updater.script, client)
-        procedure = parser.createProcedure(fdpDecoder)
+        procedure = parser.createProcedure(updater.fdpDecoder)
 
         print('#######')
         print('WJ - Parsed script is: '+updater.script)

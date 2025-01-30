@@ -30,6 +30,12 @@ class FlowChemAutomation:
 
         self.commandTemplatesNested = HardcodedCommandTemplates.commandTemplatesNested
         
+    def reset(self):
+        #Delete all block data
+        self.blocks={}
+        self.blockNames=[]
+        self.output=""
+        
     def parsePlutterIn(self,blocks):
         #print("WJ - Blocks in: " + str(blocks))
         for key, val in blocks.items():
@@ -135,7 +141,8 @@ if __name__ == "__main__":
     automation.addBlockElement("block_3","Delay","sleepTime",100.0)
     automation.addBlockElement("block_2","flowsynmaxi1","svcw",True)
 
-    print(automation.parseToScript())
+    automation.parseToScript()
+    print(automation.output)
     #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")    
     #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")
     

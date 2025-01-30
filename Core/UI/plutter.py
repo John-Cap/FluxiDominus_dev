@@ -5,6 +5,7 @@ import time
 from pytz import utc
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
+from Core.Communication.ParseFluxidominusProcedure import FdpDecoder
 from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
@@ -21,8 +22,14 @@ class MqttService:
         self.temp = 0
         self.IR = []
         
+        #Script handling
+        self.currKwargs = {
+            "conditionFunc": None,
+            "conditionParam": None
+        }
         self.script = ""
         self.parsedProcedure = None
+        self.fdpDecoder=FdpDecoder(currKwargs=self.currKwargs)
         
         self.formPanelData={}
 
