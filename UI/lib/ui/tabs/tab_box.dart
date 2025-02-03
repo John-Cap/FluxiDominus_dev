@@ -5,7 +5,6 @@ import 'package:flutter_flow_chart/ui/tabs/includes/dynamic_tabbar.dart';
 class TabBox extends StatefulWidget {
   final String title;
   final List<TabData> tabs;
-  //final Widget flowSketcher;
 
   const TabBox({super.key, required this.title, required this.tabs});
 
@@ -14,9 +13,9 @@ class TabBox extends StatefulWidget {
 }
 
 class _TabBoxState extends State<TabBox> {
-  bool isScrollable = true;
-  bool showNextIcon = true;
-  bool showBackIcon = true;
+  bool isScrollable = false;
+  bool showNextIcon = false;
+  bool showBackIcon = false;
 
   // Leading icon
   Widget? leading;

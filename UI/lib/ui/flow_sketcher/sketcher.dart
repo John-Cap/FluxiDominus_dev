@@ -39,13 +39,20 @@ class FlowSketcherState extends State<FlowSketcher>
             onPressed: () {
               widget.dashboard.setZoomFactor(1.5 * widget.dashboard.zoomFactor);
             },
-            icon: const Icon(Icons.zoom_in),
+            icon: const Text(
+              '+',
+              textScaler: TextScaler.linear(1.5),
+            ),
           ),
           IconButton(
             onPressed: () {
               widget.dashboard.setZoomFactor(widget.dashboard.zoomFactor / 1.5);
             },
-            icon: const Icon(Icons.zoom_out),
+            icon: const Text(
+              '-',
+              textAlign: TextAlign.center,
+              textScaler: TextScaler.linear(2),
+            ),
           ),
         ],
       ),
@@ -101,8 +108,12 @@ class FlowSketcherState extends State<FlowSketcher>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-          onPressed: widget.dashboard.recenter,
-          child: const Icon(Icons.center_focus_strong)),
+        onPressed: widget.dashboard.recenter,
+        child: const Text(
+          '>|<',
+          textScaler: TextScaler.linear(2),
+        ),
+      ),
     );
   }
 

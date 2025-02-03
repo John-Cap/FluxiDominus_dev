@@ -50,33 +50,16 @@ class MqttService extends ChangeNotifier {
 
   // Mock options for optimizer and objective function
   final List<String> optimizationOptions = [
-    "Optimizer A",
-    "Optimizer B",
-    "Optimizer C",
-    "D",
-    "EF",
-    "G",
-    "Run",
-    "Run",
-    "Asfastasyoucan",
-    "I'm the big burly",
-    "Gingerbread Man!",
-    "Optimizer A",
-    "Optimizer B",
-    "Optimizer C",
-    "D",
-    "EF",
-    "G",
-    "Run",
-    "Run",
-    "Asfastasyoucan",
-    "I'm the big burly",
-    "Gingerbread Man!"
+    "VIDAL_C13_3415",
+    "VIDAL_C13_3465",
+    "ERSILIA_BLANK_TS_54",
+    "WJ_LEAP_2024_01_30_3",
+    "STD_SUMMIT_1"
   ];
   final List<String> objectiveFunctions = [
-    "Function X",
-    "Function Y",
-    "Function Z"
+    "WJ_IR_800_2",
+    "WJ_IR_800_5",
+    "GEN_NMR_IR_13000"
   ];
   // Mocking a stream for optimization progress updates
   Stream<Map<String, dynamic>> get optimizationProgressStream async* {
