@@ -1,207 +1,154 @@
-import threading
-import random
-import time
+import json
 
-from Core.Control.ScriptGenerator import FlowChemAutomation
-from Core.parametres.reaction_parametres import Flowrate, ReactionParametres, Temp
+from Config.devices.standard import StandardConfiguratedDevices
+from Core.Fluids.FlowPath import FlowPath
 
-class OptimizationRig:
-    def __init__(self, mqttService):
-        self.automation = FlowChemAutomation()  # Handles command parsing
-        self.reactionParametres = ReactionParametres()  # Holds different parameters that can be optimized
-        self.availableParams = {}  # Reaction parameters that can be tweaked, per device
-        self.availableCommands = {}  # Links a tweakable parameter to a specific device command name
-        self.availableDeviceCommands = {}  # Links device to commands
-        self.currentRecommendation = {}
-        self.recommendationHistory = []
-        self._rigThread = None
-        self.optimizer = None
-        self.optimizing = False
-        self.objectiveEvaluator = None  # Function handle for evaluation
-        self.objectiveEvaluationKwargs = {}  # Additional args for evaluation
-        self.objectiveScore = None  # Score between 0 and 1
-        self.targetScore = None
-        self.mqttService = mqttService
+class ParseFlowpath:
+    def __init__(self, json_string):
+        self.json_data = json.loads(json_string)
+        self.components = {}  # Store instantiated components
+        self.flow_path = FlowPath()
+    
+    def parse(self):
+        """Parses the JSON and sets up the flow path."""
+        # Step 1: Instantiate components
+        for uuid, data in self.json_data.items():
+            component_type = data["deviceType"]
+            params = (data["volume"],data["name"])
+            self.components[uuid] = StandardConfiguratedDevices.initializeComponent(component_type, params)
         
-    def registerDevice(self, device):
-        """ Registers a device and its available commands. """
-        if device in self.automation.commandTemplatesNested:
-            self.availableDeviceCommands[device] = self.automation.commandTemplatesNested[device]
-        else:
-            print(f"Warning: Unknown device {device}!")
+        # Step 2: Set up connections based on "flowsInto"
+        for uuid, data in self.json_data.items():
+            component = self.components[uuid]
+            if data["flowsInto"]:
+                for target_uuid in data["flowsInto"]:
+                    target_component = self.components.get(target_uuid)
+                    if target_component:
+                        component.flowInto(target_component)
+        
+        # Step 3: Add components to the flow path
+        self.flow_path.addPath(list(self.components.values()))
+        self.flow_path.mapPathTermini()
+    
+    def get_flow_path(self):
+        return self.flow_path
 
-    def registerTweakableParam(self, device, parameter):
-        """ Registers a tweakable parameter for a specific device. """
-        self.reactionParametres.addTweakable(parameter)
-        if device in self.availableParams:
-            self.availableParams[device].append(parameter)
-        else:
-            self.availableParams[device] = [parameter]
-            
-    def generateRecommendation(self):
-        """ Generates recommendations using the optimizer. """
-        if self.optimizer is None:
-            print("Warning: No optimizer set. Cannot generate recommendations.")
-            return
-
-        recommendedValues = self.optimizer.recommend(self.reactionParametres.getAllTweakables())
-
-        if not recommendedValues:
-            print("Warning: Optimizer returned empty recommendations.")
-            return
-
-        self.currentRecommendation = {}
-
-        for param, value in recommendedValues.items():
-            for device, params in self.availableParams.items():
-                if param in params:
-                    if device not in self.currentRecommendation:
-                        self.currentRecommendation[device] = {}
-                    self.currentRecommendation[device][param.id] = value
-
-        self.recommendationHistory.append(self.currentRecommendation)
-
-        print("\nGenerated Recommendation:")
-        for device, params in self.currentRecommendation.items():
-            print(f"  Device: {device}")
-            for paramId, val in params.items():
-                print(f"    {paramId}: {val:.3f}")
-                
-    def evaluateRecommendation(self):
-        """ Evaluates the latest recommendation using the provided objective function. """
-        if self.objectiveEvaluator is None:
-            print("Warning: No objective evaluator function set.")
-            self.objectiveScore = None
-            return
-
-        print("\nEvaluating recommendation with objective function:")
-        print(self.currentRecommendation)  # Debugging print
-
-        try:
-            self.objectiveScore = self.objectiveEvaluator(self.currentRecommendation, **self.objectiveEvaluationKwargs)
-
-            if not (0 <= self.objectiveScore <= 1):
-                raise ValueError(f"Invalid objective score: {self.objectiveScore}. Must be between 0 and 1.")
-
-        except Exception as e:
-            print(f"Error in objective evaluation: {e}")
-            self.objectiveScore = None
-
-    def executeRecommendation(self):
-        """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
-        # First, clear current automation
-        self.automation.reset()
-
-        for device, params in self.currentRecommendation.items():
-            for paramId, value in params.items():
-                # Find the parameter by ID
-                for param in self.reactionParametres.getAllTweakables():
-                    if param.id == paramId:
-                        command = param.associatedCommand
-                        self.automation.addBlockElement(param.name, device, command, value)
-                        break
-
-        # Convert to script and send to MQTT
-        self.automation.parseToScript()
-        self.mqttService.script = self.automation.output
-
-    def start(self):
-        """ Starts a background thread to continuously optimize until the target score is reached. """
-        if not self.optimizing:
-            self.optimizing = True
-            self._rigThread = threading.Thread(target=self._optimizationLoop)
-            self._rigThread.start()
-            
-    def _optimizationLoop(self):
-        """ Runs the optimization loop in the background until the target score is reached. """
-        print("\n--- Starting Optimization Loop ---")
-        while self.optimizing:
-            self.generateRecommendation()
-            self.evaluateRecommendation()
-            print(f"Current Objective Score: {self.objectiveScore:.3f}")
-
-            if self.objectiveScore and self.objectiveScore >= self.targetScore:
-                print("\n🎯 Target Score Reached! Stopping optimization. 🎯")
-                self.optimizing = False
-                break  # Stop loop
-
-            time.sleep(1)  # Prevents excessive CPU usage
-            
+# Example usage
 if __name__ == "__main__":
-
-    class MockMQTTService:
-        """ Mock service to emulate MQTT script execution. """
-        def __init__(self):
-            self.script = None
-
-        def execute(self):
-            print("\n--- Executing Script ---")
-            print(self.script)
-            print("------------------------\n")
-
-    class MockOptimizer:
-        """ Mock optimizer that generates random values within the tweakable range. """
-        def recommend(self, tweakables):
-            recommendations = {}
-            for param in tweakables:
-                if param.getRanges():
-                    lower, upper = param.getRanges()[0]  # Use the first range
-                    recommendations[param] = random.uniform(lower, upper)
-            return recommendations
-        
-    def mockObjectiveEvaluator(recommendation, targetTemp=50, targetFlowrate=2.5):
-        """ Objective function that evaluates recommendation accuracy based on target values. """
-        totalScore = 0
-        numParams = 0
-
-        print("\nObjective Evaluator Received:")
-        print(recommendation)  # Debugging print
-
-        for device, params in recommendation.items():
-            for paramId, value in params.items():
-                if "hotcoil1" in device:
-                    score = max(0, 1 - abs(value - targetTemp) / 50)
-                    print(f"  Temp {paramId}: {value:.2f} → Score: {score:.3f}")
-                    totalScore += score
-                elif "flowsynmaxi2" in device:
-                    score = max(0, 1 - abs(value - targetFlowrate) / 5)
-                    print(f"  Flowrate {paramId}: {value:.2f} → Score: {score:.3f}")
-                    totalScore += score
-                numParams += 1
-
-        return totalScore / numParams if numParams else 0
-
-    print("Initializing Optimization Rig...")
-
-    # Create mock MQTT service and optimization rig
-    mqttService = MockMQTTService()
-    rig = OptimizationRig(mqttService)
-
-    # Create mock devices and parameters
-    device1 = "hotcoil1"
-    device2 = "flowsynmaxi2"
-
-    tempParam = Temp("ReactionTemp", associatedCommand="temp", ranges=[[25, 100]])
-    flowrateParam1 = Flowrate("FlowRatePumpA", associatedCommand="pafr", ranges=[[0.1, 5]])
-    flowrateParam2 = Flowrate("FlowRatePumpB", associatedCommand="pbfr", ranges=[[0.5, 7]])
-
-    # Register devices
-    rig.registerDevice(device1)
-    rig.registerDevice(device2)
-
-    # Register tweakable parameters to the devices
-    rig.registerTweakableParam(device1, tempParam)
-    rig.registerTweakableParam(device2, flowrateParam1)
-    rig.registerTweakableParam(device2, flowrateParam2)
-
-    # Set a mock optimizer and evaluator
-    rig.optimizer = MockOptimizer()
-    rig.objectiveEvaluator = mockObjectiveEvaluator
-    rig.objectiveEvaluationKwargs = {"targetTemp": 50, "targetFlowrate": 2.5}
-
-    # Set a target score for stopping the loop
-    rig.targetScore = 0.80
-
-    # Start background optimization loop
-    print("\n🚀 Starting Optimization Process 🚀")
-    rig.start()
+    jsonStringFromFlutter="""
+        {
+        "9d84f9a9-8665-4883-a506-4aa07cee48ab": {
+            "name": "Flowsyn Maxi 2",
+            "flowsInto": [
+            "7b51af7b-ccec-4a47-a13c-ba16eb65b973"
+            ],
+            "deviceName": "flowsynmaxi1",
+            "deviceType": "Pump",
+            "volume": 5
+        },
+        "6892d932-90df-447b-b1f8-77020f8ef4f5": {
+            "name": "R4 (Peristaltic)",
+            "flowsInto": [
+            "7b51af7b-ccec-4a47-a13c-ba16eb65b973"
+            ],
+            "deviceName": "vapourtecR4P1700",
+            "deviceType": "Pump",
+            "volume": 5
+        },
+        "07e4e67d-88a5-486b-9919-83f41aadb926": {
+            "name": "Valve",
+            "flowsInto": [
+            "6892d932-90df-447b-b1f8-77020f8ef4f5"
+            ],
+            "deviceName": null,
+            "deviceType": "Valve",
+            "volume": 0.25
+        },
+        "86f76937-a5a4-4821-947c-f3686d0593f8": {
+            "name": "Push",
+            "flowsInto": [
+            "07e4e67d-88a5-486b-9919-83f41aadb926"
+            ],
+            "deviceName": null,
+            "deviceType": "FlowOrigin",
+            "volume": 0
+        },
+        "2a3dbe75-f252-4d84-a5bd-46abdac44883": {
+            "name": "Stock",
+            "flowsInto": [
+            "07e4e67d-88a5-486b-9919-83f41aadb926"
+            ],
+            "deviceName": null,
+            "deviceType": "FlowOrigin",
+            "volume": 0
+        },
+        "701867bb-daa6-48e6-94b4-c52a11eb6626": {
+            "name": "Stock",
+            "flowsInto": [
+            "9d84f9a9-8665-4883-a506-4aa07cee48ab"
+            ],
+            "deviceName": null,
+            "deviceType": "FlowOrigin",
+            "volume": 0
+        },
+        "7b51af7b-ccec-4a47-a13c-ba16eb65b973": {
+            "name": "Hotcoil (10 mL)",
+            "flowsInto": [
+            "1b28500a-8bf6-4c89-8e09-2416f3e1cc5a"
+            ],
+            "deviceName": "hotcoil1",
+            "deviceType": "Coil",
+            "volume": 10
+        },
+        "1b28500a-8bf6-4c89-8e09-2416f3e1cc5a": {
+            "name": "ReactIR 702L1",
+            "flowsInto": [
+            "96f1d6fd-1304-4e72-a124-8c31dd082e57"
+            ],
+            "deviceName": "reactIR702L1",
+            "deviceType": "IR",
+            "volume": 0.25
+        },
+        "96f1d6fd-1304-4e72-a124-8c31dd082e57": {
+            "name": "BPR (8 Bar)",
+            "flowsInto": [
+            "d2222e10-c5e6-4cd7-add6-21da90dd72ae"
+            ],
+            "deviceName": null,
+            "deviceType": "BPR",
+            "volume": 0.1
+        },
+        "d2222e10-c5e6-4cd7-add6-21da90dd72ae": {
+            "name": "Valve",
+            "flowsInto": [
+            "51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f",
+            "242b2435-c911-42d0-bfaf-a2e34d554edf"
+            ],
+            "deviceName": null,
+            "deviceType": "Valve",
+            "volume": 0.25
+        },
+        "242b2435-c911-42d0-bfaf-a2e34d554edf": {
+            "name": "Collection point",
+            "flowsInto": null,
+            "deviceName": null,
+            "deviceType": "FlowTerminus",
+            "volume": 0
+        },
+        "51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f": {
+            "name": "Collection point",
+            "flowsInto": null,
+            "deviceName": null,
+            "deviceType": "FlowTerminus",
+            "volume": 0
+        }
+        }
+    """
+    #jsonStringFromFlutter = """<insert JSON here>"""
+    parser = ParseFlowpath(jsonStringFromFlutter)
+    parser.parse()
+    flow_path = parser.get_flow_path()
+    
+    # Print path details
+    for segment in flow_path.segments:
+        print(f"Component: {segment.name}, Inlets: {segment.inlets}, Outlets: {segment.outlets}")
