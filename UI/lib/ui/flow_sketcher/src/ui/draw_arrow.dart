@@ -342,9 +342,65 @@ class ArrowPainter extends CustomPainter {
   @override
   bool shouldRepaint(ArrowPainter oldDelegate) =>
       !(from == oldDelegate.from && to == oldDelegate.to);
-
   @override
   bool? hitTest(Offset position) {
-    return path.contains(position);
+    double tolerance = 30.0; // Clickable distance from the midpoint
+
+    // Recalculate control points (same as in `paint()`)
+    double distance = (to - from).distance / 3;
+    double dx = 0, dy = 0;
+
+    if (params.startArrowPosition.x > 0)
+      dx = distance;
+    else if (params.startArrowPosition.x < 0) dx = -distance;
+
+    if (params.startArrowPosition.y > 0)
+      dy = distance;
+    else if (params.startArrowPosition.y < 0) dy = -distance;
+
+    Offset p1 = Offset(from.dx + dx, from.dy + dy);
+    dx = 0;
+    dy = 0;
+
+    if (params.endArrowPosition.x > 0)
+      dx = distance;
+    else if (params.endArrowPosition.x < 0) dx = -distance;
+
+    if (params.endArrowPosition.y > 0)
+      dy = distance;
+    else if (params.endArrowPosition.y < 0) dy = -distance;
+
+    Offset p3 = params.endArrowPosition == const Alignment(0.0, 0.0)
+        ? to
+        : Offset(to.dx + dx, to.dy + dy);
+    Offset p2 = Offset(
+      p1.dx + (p3.dx - p1.dx) / 2,
+      p1.dy + (p3.dy - p1.dy) / 2,
+    );
+
+    // **Find the true midpoint of the Bézier curve**
+    Offset midpoint = Offset(
+      (from.dx + 3 * p1.dx + 3 * p2.dx + to.dx) / 8,
+      (from.dy + 3 * p1.dy + 3 * p2.dy + to.dy) / 8,
+    );
+
+    // **Only return true if the tap is close to the midpoint**
+    return (position - midpoint).distance < tolerance;
+  }
+
+  /// Compute shortest distance from a point to a line segment
+  double _distanceFromLineSegment(Offset p, Offset v, Offset w) {
+    double l2 = (w - v).distanceSquared; // Segment length squared
+    if (l2 == 0) return (p - v).distance; // Case when v == w
+
+    double t = ((p - v).dx * (w - v).dx + (p - v).dy * (w - v).dy) / l2;
+    t = t.clamp(0.0, 1.0);
+
+    Offset projection = Offset(
+      v.dx + t * (w.dx - v.dx),
+      v.dy + t * (w.dy - v.dy),
+    );
+
+    return (p - projection).distance;
   }
 }

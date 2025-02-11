@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_flow_chart/includes/components.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/connection_params.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/flow_chart.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/draw_arrow.dart';
 import 'package:star_menu/star_menu.dart';
 import 'src/ui/element_settings_menu.dart';
 import 'src/ui/text_menu.dart';
@@ -105,6 +107,9 @@ class FlowSketcherState extends State<FlowSketcher>
           onHandlerLongPressed: (context, position, handler, element) {
             debugPrint(
                 'handler long pressed: position $position handler $handler" of element $element');
+          },
+          onLineTapped: (context, position, srcElement, destElement) {
+            _showTubingSettings(context, srcElement, destElement);
           },
         ),
       ),
@@ -754,6 +759,68 @@ class FlowSketcherState extends State<FlowSketcher>
   void updateConnections() {
     widget.dashboard =
         widget.dashboard.loadDashboard(widget.mqttService.currDashboardJson);
+  }
+
+  void _showTubingSettings(
+    BuildContext context,
+    FlowElement srcElement,
+    FlowElement destElement,
+  ) {
+    ConnectionParams? connection = srcElement.next.firstWhere(
+      (c) => c.destElementId == destElement.id,
+      orElse: () => ConnectionParams(
+        destElementId: destElement.id,
+        arrowParams: ArrowParams(),
+      ),
+    );
+
+    double newVolume = connection.tubingVolume;
+    String newType = connection.tubingType;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Tubing Settings"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: InputDecoration(labelText: "Volume (mL)"),
+                keyboardType: TextInputType.number,
+                onChanged: (value) => newVolume =
+                    double.tryParse(value) ?? connection.tubingVolume,
+              ),
+              DropdownButton<String>(
+                value: newType,
+                items: ["Standard", "PTFE", "PEEK", "Steel"]
+                    .map((type) =>
+                        DropdownMenuItem(value: type, child: Text(type)))
+                    .toList(),
+                onChanged: (value) => newType = value ?? connection.tubingType,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  connection.tubingVolume = newVolume;
+                  connection.tubingType = newType;
+                });
+                //widget.dashboard.notifyListeners(); // Refresh UI
+                Navigator.of(context).pop();
+              },
+              child: Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
