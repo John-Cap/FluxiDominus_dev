@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_flow_chart/includes/components.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/connection_params.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/draw_arrow.dart';
@@ -13,7 +14,7 @@ import 'package:flutter/cupertino.dart';
 /// This also acts as the controller to the flow_chart widget
 /// It notifies changes to [FlowChart]
 class Dashboard extends ChangeNotifier {
-  List<FlowElement> elements;
+  List<Component> elements;
   Offset dashboardPosition;
   Size dashboardSize;
   Map<String, List<dynamic>> connections;
@@ -155,7 +156,7 @@ class Dashboard extends ChangeNotifier {
   }
 
   /// add a [FlowElement] to the dashboard
-  addElement(FlowElement element, {bool notify = true}) {
+  addElement(Component element, {bool notify = true}) {
     if (element.id.isEmpty) {
       element.id = const Uuid().v4();
     }
@@ -373,7 +374,7 @@ class Dashboard extends ChangeNotifier {
 
   factory Dashboard.fromMap(Map<String, dynamic> map) {
     Dashboard d = Dashboard();
-    d.elements = List<FlowElement>.from(
+    d.elements = List<Component>.from(
       (map['elements'] as List<dynamic>).map<FlowElement>(
         (x) => FlowElement.fromMap(x as Map<String, dynamic>),
       ),

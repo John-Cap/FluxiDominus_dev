@@ -5,7 +5,7 @@ from Core.Fluids.FlowPath import FlowPath
 
 class ParseFlowpath:
     def __init__(self, json_string):
-        self.json_data = json.loads(json_string)
+        self.json_data = (json.loads(json_string.replace('"null"',"null")))
         self.components = {}  # Store instantiated components
         self.flow_path = FlowPath()
     
@@ -36,113 +36,8 @@ class ParseFlowpath:
 # Example usage
 if __name__ == "__main__":
     jsonStringFromFlutter="""
-        {
-        "9d84f9a9-8665-4883-a506-4aa07cee48ab": {
-            "name": "Flowsyn Maxi 2",
-            "flowsInto": [
-            "7b51af7b-ccec-4a47-a13c-ba16eb65b973"
-            ],
-            "deviceName": "flowsynmaxi1",
-            "deviceType": "Pump",
-            "volume": 5
-        },
-        "6892d932-90df-447b-b1f8-77020f8ef4f5": {
-            "name": "R4 (Peristaltic)",
-            "flowsInto": [
-            "7b51af7b-ccec-4a47-a13c-ba16eb65b973"
-            ],
-            "deviceName": "vapourtecR4P1700",
-            "deviceType": "Pump",
-            "volume": 5
-        },
-        "07e4e67d-88a5-486b-9919-83f41aadb926": {
-            "name": "Valve",
-            "flowsInto": [
-            "6892d932-90df-447b-b1f8-77020f8ef4f5"
-            ],
-            "deviceName": null,
-            "deviceType": "Valve",
-            "volume": 0.25
-        },
-        "86f76937-a5a4-4821-947c-f3686d0593f8": {
-            "name": "Push",
-            "flowsInto": [
-            "07e4e67d-88a5-486b-9919-83f41aadb926"
-            ],
-            "deviceName": null,
-            "deviceType": "FlowOrigin",
-            "volume": 0
-        },
-        "2a3dbe75-f252-4d84-a5bd-46abdac44883": {
-            "name": "Stock",
-            "flowsInto": [
-            "07e4e67d-88a5-486b-9919-83f41aadb926"
-            ],
-            "deviceName": null,
-            "deviceType": "FlowOrigin",
-            "volume": 0
-        },
-        "701867bb-daa6-48e6-94b4-c52a11eb6626": {
-            "name": "Stock",
-            "flowsInto": [
-            "9d84f9a9-8665-4883-a506-4aa07cee48ab"
-            ],
-            "deviceName": null,
-            "deviceType": "FlowOrigin",
-            "volume": 0
-        },
-        "7b51af7b-ccec-4a47-a13c-ba16eb65b973": {
-            "name": "Hotcoil (10 mL)",
-            "flowsInto": [
-            "1b28500a-8bf6-4c89-8e09-2416f3e1cc5a"
-            ],
-            "deviceName": "hotcoil1",
-            "deviceType": "Coil",
-            "volume": 10
-        },
-        "1b28500a-8bf6-4c89-8e09-2416f3e1cc5a": {
-            "name": "ReactIR 702L1",
-            "flowsInto": [
-            "96f1d6fd-1304-4e72-a124-8c31dd082e57"
-            ],
-            "deviceName": "reactIR702L1",
-            "deviceType": "IR",
-            "volume": 0.25
-        },
-        "96f1d6fd-1304-4e72-a124-8c31dd082e57": {
-            "name": "BPR (8 Bar)",
-            "flowsInto": [
-            "d2222e10-c5e6-4cd7-add6-21da90dd72ae"
-            ],
-            "deviceName": null,
-            "deviceType": "BPR",
-            "volume": 0.1
-        },
-        "d2222e10-c5e6-4cd7-add6-21da90dd72ae": {
-            "name": "Valve",
-            "flowsInto": [
-            "51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f",
-            "242b2435-c911-42d0-bfaf-a2e34d554edf"
-            ],
-            "deviceName": null,
-            "deviceType": "Valve",
-            "volume": 0.25
-        },
-        "242b2435-c911-42d0-bfaf-a2e34d554edf": {
-            "name": "Collection point",
-            "flowsInto": null,
-            "deviceName": null,
-            "deviceType": "FlowTerminus",
-            "volume": 0
-        },
-        "51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f": {
-            "name": "Collection point",
-            "flowsInto": null,
-            "deviceName": null,
-            "deviceType": "FlowTerminus",
-            "volume": 0
-        }
-        }
+{"8af0317e-da46-4691-b626-3cd4bd112824":{"name":"ReactIR 702L1","flowsInto":["25bbb0be-174d-4c96-8b49-524c57a4f7fd"],"deviceName":"reactIR702L1","deviceType":"IR","volume":0.25},"10519cdc-ca37-4f94-9936-7b70e17638bc":{"name":"Push","flowsInto":["cc700217-c23a-4589-b3dc-e4781b9f9a1a"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"51172d2d-f4e5-4801-bc37-e03c2ff25eb7":{"name":"Hotcoil (20 mL)","flowsInto":["8af0317e-da46-4691-b626-3cd4bd112824"],"deviceName":"hotcoil1","deviceType":"Coil","volume":20},"6a95e31c-30b0-45ab-9fff-5ffc2e6565fb":{"name":"R4 (Peristaltic)","flowsInto":["51172d2d-f4e5-4801-bc37-e03c2ff25eb7"],"deviceName":"vapourtecR4P1700","deviceType":"vapourtecR4","volume":5},"d9b9844f-9a16-436d-ba31-635f936765cf":{"name":"Stock","flowsInto":["cc700217-c23a-4589-b3dc-e4781b9f9a1a"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"cc700217-c23a-4589-b3dc-e4781b9f9a1a":{"name":"Valve","flowsInto":["6a95e31c-30b0-45ab-9fff-5ffc2e6565fb"],"deviceName":"null","deviceType":"Valve","volume":0.25},"25bbb0be-174d-4c96-8b49-524c57a4f7fd":{"name":"BPR (8 Bar)","flowsInto":["c86132da-f576-4f00-93c2-1ea5291d9d68"],"deviceName":"null","deviceType":"BPR","volume":0.1},"c86132da-f576-4f00-93c2-1ea5291d9d68":{"name":"Valve","flowsInto":["29a85459-ddbe-484b-a1b5-7bd800e8be3a","64fb162e-2b48-4cf2-820e-f7aedef55606"],"deviceName":"null","deviceType":"Valve","volume":0.25},"29a85459-ddbe-484b-a1b5-7bd800e8be3a":{"name":"Collection point","flowsInto":null,"deviceName":"null","deviceType":"FlowTerminus","volume":0},"64fb162e-2b48-4cf2-820e-f7aedef55606":{"name":"Collection point","flowsInto":null,"deviceName":"null","deviceType":"FlowTerminus","volume":0}}
+
     """
     #jsonStringFromFlutter = """<insert JSON here>"""
     parser = ParseFlowpath(jsonStringFromFlutter)
@@ -151,4 +46,4 @@ if __name__ == "__main__":
     
     # Print path details
     for segment in flow_path.segments:
-        print(f"Component: {segment.name}, Inlets: {segment.inlets}, Outlets: {segment.outlets}")
+        print(f"Component: {segment.name}, Inlet sets: {segment.inletSets}, Outlet sets: {segment.outletSets}")

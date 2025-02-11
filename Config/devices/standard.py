@@ -37,11 +37,12 @@ class UniqsisHotchip(Chip):
 
 class StandardConfiguratedDevices:
     deviceClasses={
-        "FlowsynMaxi":FlowsynMaxi,
-        "VapourtecR4":VapourtecR4,
-        "ReactIR702L1":ReactIR702L1,
-        "UniqsisHotcoil":UniqsisHotcoil,
-        "UniqsisHotchip":UniqsisHotchip,
+        "FlowsynMaxi":Pump,
+        "VapourtecR4":Pump,
+        "vapourtecR4":Pump,
+        "ReactIR702L1":IR,
+        "UniqsisHotcoil":Coil,
+        "UniqsisHotchip":Chip,
         
         #Generalized
         "Tubing":Tubing,

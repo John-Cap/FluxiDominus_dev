@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_flow_chart/includes/components.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
@@ -239,7 +240,7 @@ class FlowSketcherState extends State<FlowSketcher>
       _buildMqttReport();
     }
     setState(() {});
-    debugPrint(('WJ -> ${widget.dashboard.connections.toString()}'));
+    //debugPrint(('WJ -> ${widget.dashboard.connections.toString()}'));
   }
 
   void _buildMqttReport() {
@@ -253,8 +254,11 @@ class FlowSketcherState extends State<FlowSketcher>
       mqttReport.report[element.id] = {
         "name": widget.dashboard.nameFromId(element.id),
         "flowsInto": widget.dashboard.connections[element.id],
-        "deviceName": element.deviceName
+        "deviceName": element.deviceName,
+        "deviceType": element.deviceType,
+        "volume": element.volume
       };
+      print('WJ connections of dash -> ${jsonEncode(mqttReport.report)}');
       widget.mqttService.currFlowScript = mqttReport.report;
     }
     //print("WJ - $availableDevices");
@@ -289,9 +293,10 @@ class FlowSketcherState extends State<FlowSketcher>
                 label: const Text('Add valve'),
                 onPressed: () {
                   widget.dashboard.addElement(
-                    FlowElement(
+                    Component(
                       position: position,
                       deviceName: "null",
+                      volume: 0.25,
                       size: const Size(100, 50),
                       text: 'Valve',
                       handlerSize: 15,
@@ -300,6 +305,7 @@ class FlowSketcherState extends State<FlowSketcher>
                         Handler.leftCenter,
                         Handler.rightCenter,
                       ],
+                      deviceType: 'Valve',
                     ),
                   );
                   _updateConnections();
@@ -308,7 +314,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add column (2 mL)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     textSize: 15,
@@ -320,6 +326,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'Column',
+                    volume: 2,
                   ));
                   _updateConnections();
                 },
@@ -327,7 +335,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add column (5 mL)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     textSize: 15,
@@ -339,6 +347,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'Column',
+                    volume: 5,
                   ));
                   _updateConnections();
                 },
@@ -346,7 +356,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add column (10 mL)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     textSize: 15,
@@ -358,6 +368,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'Column',
+                    volume: 10,
                   ));
                   _updateConnections();
                 },
@@ -365,7 +377,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add Magritek 60'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Magritek 60',
@@ -376,6 +388,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    volume: 0.25,
+                    deviceType: 'NMR',
                   ));
                   _updateConnections();
                 },
@@ -383,7 +397,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add ReactIR 702L1'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'ReactIR 702L1',
@@ -394,6 +408,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'IR',
+                    volume: 0.25,
                   ));
                   _updateConnections();
                 },
@@ -401,7 +417,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add BPR (2 Bar)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'BPR (2 Bar)',
@@ -412,6 +428,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'BPR',
+                    volume: 0.1,
                   ));
                   _updateConnections();
                 },
@@ -419,7 +437,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add BPR (5 Bar)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'BPR (5 Bar)',
@@ -430,6 +448,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'BPR',
+                    volume: 0.1,
                   ));
                   _updateConnections();
                 },
@@ -437,7 +457,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add BPR (8 Bar)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'BPR (8 Bar)',
@@ -448,6 +468,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'BPR',
+                    volume: 0.1,
                   ));
                   _updateConnections();
                 },
@@ -455,7 +477,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add BPR (10 Bar)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'BPR (10 Bar)',
@@ -466,6 +488,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'BPR',
+                    volume: 0.1,
                   ));
                   _updateConnections();
                 },
@@ -473,7 +497,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add Stock Solution'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Stock',
@@ -483,6 +507,9 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceName: 'null',
+                    deviceType: 'FlowOrigin',
+                    volume: 0,
                   ));
                   _updateConnections();
                 },
@@ -490,7 +517,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add Pushing Solvent'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Push',
@@ -500,6 +527,9 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceName: 'null',
+                    deviceType: 'FlowOrigin',
+                    volume: 0,
                   ));
                   _updateConnections();
                 },
@@ -507,7 +537,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add collection point'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Collection point',
@@ -517,6 +547,9 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceName: 'null',
+                    deviceType: 'FlowTerminus',
+                    volume: 0,
                   ));
                   _updateConnections();
                 },
@@ -524,7 +557,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add Flowsyn Maxi 1'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Flowsyn Maxi 1',
@@ -535,6 +568,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'FlowsynMaxi',
+                    volume: 5,
                   ));
                   _updateConnections();
                 },
@@ -542,7 +577,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add Flowsyn Maxi 2'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Flowsyn Maxi 2',
@@ -553,6 +588,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'FlowsynMaxi',
+                    volume: 5,
                   ));
                   _updateConnections();
                 },
@@ -560,7 +597,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add Vapourtec R4 (HPLC)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'R4 (HPLC)',
@@ -571,6 +608,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'vapourtecR4',
+                    volume: 5,
                   ));
                   _updateConnections();
                 },
@@ -578,7 +617,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add Vapourtec R4 (Peristaltic)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'R4 (Peristaltic)',
@@ -589,6 +628,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'vapourtecR4',
+                    volume: 5,
                   ));
                   _updateConnections();
                 },
@@ -596,7 +637,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add Vapourtec SF10'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'SF10',
@@ -607,6 +648,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'Pump',
+                    volume: 5,
                   ));
                   _updateConnections();
                 },
@@ -614,7 +657,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add hotcoil (10 mL)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Hotcoil (10 mL)',
@@ -625,6 +668,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'Coil',
+                    volume: 10,
                   ));
                   _updateConnections();
                 },
@@ -632,7 +677,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add hotcoil (20 mL)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Hotcoil (20 mL)',
@@ -643,6 +688,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'Coil',
+                    volume: 20,
                   ));
                   _updateConnections();
                 },
@@ -650,7 +697,7 @@ class FlowSketcherState extends State<FlowSketcher>
               ActionChip(
                 label: const Text('Add hotcoil (40 mL)'),
                 onPressed: () {
-                  widget.dashboard.addElement(FlowElement(
+                  widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
                     text: 'Hotcoil (40 mL)',
@@ -661,6 +708,8 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
+                    deviceType: 'Coil',
+                    volume: 40,
                   ));
                   _updateConnections();
                 },
