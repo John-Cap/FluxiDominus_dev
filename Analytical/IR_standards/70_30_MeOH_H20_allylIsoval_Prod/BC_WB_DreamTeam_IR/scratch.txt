@@ -1,0 +1,93 @@
+
+rawWaveNumber is simply being chopped off, is it fixed again?
+
+First, last wavenumber: [np.float64(748.0), np.float64(3979.5)]
+🔎 Raw Wavenumbers Shape: (6464,), Raw Intensities Shape: (839,)
+First, last wavenumber: [np.float64(748.0), np.float64(1167.0)] , <- chopped
+🔎 Raw Wavenumbers Shape: (839,), Raw Intensities Shape: (839,)
+First, last wavenumber: [np.float64(748.0), np.float64(3979.5)] (self.allWavenumbers)
+🔍 Interpolated Intensities Shape: (6464,)
+Processing range: 748.0 - 1311.5
+🔎 Active Points: 1128 | Nonzero Points: 232
+
+    def processRawScan(self, rawWavenumbers, rawIntensities):
+        """
+        Processes a raw IR scan:
+        1. Aligns the scan to the common wavenumber grid.
+        2. Mutes values outside pre-detected high-change regions.
+        3. Applies the triangle method to transform peaks.
+        4. Returns the processed scan for comparison.
+        """
+
+        # Ensure NumPy arrays
+        rawWavenumbers = np.array(rawWavenumbers)
+        rawIntensities = np.array(rawIntensities)
+        print(f"First, last wavenumber: {[rawWavenumbers[0],rawWavenumbers[-1]]}")
+
+        print(f"🔎 Raw Wavenumbers Shape: {rawWavenumbers.shape}, Raw Intensities Shape: {rawIntensities.shape}")
+
+        # 🔍 Step 1: Ensure matching sizes (Prevent Shape Mismatch)
+        minLength = min(len(rawWavenumbers), len(rawIntensities))
+        rawWavenumbers, rawIntensities = rawWavenumbers[:minLength], rawIntensities[:minLength]
+        print(f"First, last wavenumber: {[rawWavenumbers[0],rawWavenumbers[-1]]}")
+
+        print(f"🔎 Raw Wavenumbers Shape: {rawWavenumbers.shape}, Raw Intensities Shape: {rawIntensities.shape}")
+
+        # 🔍 Step 2: Remove NaNs
+        validMask = ~np.isnan(rawWavenumbers) & ~np.isnan(rawIntensities)
+        rawWavenumbers, rawIntensities = rawWavenumbers[validMask], rawIntensities[validMask]
+
+        if len(rawWavenumbers) == 0:
+            raise ValueError("❌ Error: rawWavenumbers is empty after NaN removal.")
+
+        # 🔍 Step 3: Interpolate test scan onto **standard wavenumber grid** (`self.allWavenumbers`)
+        interpFunc = interp1d(rawWavenumbers, rawIntensities, kind='linear', bounds_error=False, fill_value=0)
+        alignedIntensities = interpFunc(self.allWavenumbers)
+        print(f"First, last wavenumber: {[self.allWavenumbers[0],self.allWavenumbers[-1]]}")
+
+        print(f"🔍 Interpolated Intensities Shape: {alignedIntensities.shape}")
+
+        # 🔍 Step 4: Apply small value threshold (mute small noise)
+        alignedIntensities[np.abs(alignedIntensities) < self.smallValueThreshold] = 0
+
+        # 🔍 Step 5: Mute values outside detected high-change regions
+        ZTransformed = np.zeros_like(alignedIntensities)
+
+        for start, end in self.highChangeRanges:
+            print(f"Processing range: {start} - {end}")
+
+            # Find indices where `self.allWavenumbers` falls within the range
+            rangeMask = (self.allWavenumbers >= start) & (self.allWavenumbers <= end)
+            intensities = alignedIntensities[rangeMask]
+
+            print(f"🔎 Active Points: {np.sum(rangeMask)} | Nonzero Points: {np.sum(intensities != 0)}")
+
+            if len(intensities) < 3 or np.all(intensities == 0):
+                print(f"🚨 Skipping range {start}-{end}: No valid intensities.")
+                continue  # Skip empty or zero regions
+
+            # Find peak index & validate it
+            peakIndex = np.argmax(intensities)
+            peakValue = intensities[peakIndex]
+
+            if peakValue == 0:
+                print(f"🚨 Skipping range {start}-{end}: Peak is zero.")
+                continue  # Avoid processing a zero peak
+
+            # Force start and end to be zero
+            intensities[0] = 0
+            intensities[-1] = 0
+
+            # Create a linear ramp up to the peak, then back down
+            leftSlope = np.linspace(0, peakValue, num=peakIndex + 1)
+            rightSlope = np.linspace(peakValue, 0, num=len(intensities) - peakIndex)
+
+            print(f"Left/Right slope: {[leftSlope, rightSlope]}")
+
+            # Combine slopes
+            triangleShape = np.concatenate([leftSlope[:-1], rightSlope])
+
+            # Store the transformed peak back in the output array
+            ZTransformed[rangeMask] = triangleShape
+
+        return self.allWavenumbers, ZTransformed
