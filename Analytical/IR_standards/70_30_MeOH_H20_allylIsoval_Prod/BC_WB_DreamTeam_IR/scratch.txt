@@ -1,115 +1,951 @@
 
-Yield must in theory move slowly from 0 to 1; claclulated values jump in inconsistent steps and never reach 1
+I wanna try something new; training an mlp to predict yield between 0 - 1
 
-📊 Yield Estimation Results:
-✅ 0: [Yield=0.000, True=0.000, Index=0]
-✅ 1: [Yield=0.009, True=0.009, Index=1]
-✅ 2: [Yield=0.018, True=0.018, Index=2]
-✅ 3: [Yield=0.036, True=0.036, Index=4]
-✅ 4: [Yield=0.045, True=0.045, Index=5]
-✅ 5: [Yield=0.055, True=0.055, Index=6]
-✅ 6: [Yield=0.064, True=0.064, Index=7]
-✅ 7: [Yield=0.073, True=0.073, Index=8]
-✅ 8: [Yield=0.082, True=0.082, Index=9]
-✅ 9: [Yield=0.091, True=0.091, Index=10]
-✅ 10: [Yield=0.100, True=0.100, Index=11]
-✅ 11: [Yield=0.100, True=0.100, Index=11]
-✅ 12: [Yield=0.100, True=0.100, Index=11]
-✅ 13: [Yield=0.100, True=0.100, Index=11]
-✅ 14: [Yield=0.100, True=0.100, Index=11]
-✅ 15: [Yield=0.100, True=0.100, Index=11]
-✅ 16: [Yield=0.109, True=0.109, Index=12]
-✅ 17: [Yield=0.109, True=0.109, Index=12]
-✅ 18: [Yield=0.118, True=0.118, Index=13]
-✅ 19: [Yield=0.127, True=0.127, Index=14]
-✅ 20: [Yield=0.145, True=0.145, Index=16]
-✅ 21: [Yield=0.155, True=0.155, Index=17]
-✅ 22: [Yield=0.173, True=0.173, Index=19]
-✅ 23: [Yield=0.255, True=0.255, Index=28]
-✅ 24: [Yield=0.273, True=0.273, Index=30]
-✅ 25: [Yield=0.273, True=0.273, Index=30]
-✅ 26: [Yield=0.291, True=0.291, Index=32]
-✅ 27: [Yield=0.291, True=0.291, Index=32]
-✅ 28: [Yield=0.300, True=0.300, Index=33]
-✅ 29: [Yield=0.300, True=0.300, Index=33]
-✅ 30: [Yield=0.300, True=0.300, Index=33]
-✅ 31: [Yield=0.300, True=0.300, Index=33]
-✅ 32: [Yield=0.300, True=0.300, Index=33]
-✅ 33: [Yield=0.300, True=0.300, Index=33]
-✅ 34: [Yield=0.300, True=0.300, Index=33]
-✅ 35: [Yield=0.300, True=0.300, Index=33]
-✅ 36: [Yield=0.300, True=0.300, Index=33]
-✅ 37: [Yield=0.300, True=0.300, Index=33]
-✅ 38: [Yield=0.300, True=0.300, Index=33]
-✅ 39: [Yield=0.300, True=0.300, Index=33]
-✅ 40: [Yield=0.300, True=0.300, Index=33]
-✅ 41: [Yield=0.309, True=0.309, Index=34]
-✅ 42: [Yield=0.309, True=0.309, Index=34]
-✅ 43: [Yield=0.327, True=0.327, Index=36]
-✅ 44: [Yield=0.391, True=0.391, Index=43]
-✅ 45: [Yield=0.391, True=0.391, Index=43]
-✅ 46: [Yield=0.391, True=0.391, Index=43]
-✅ 47: [Yield=0.400, True=0.400, Index=44]
-✅ 48: [Yield=0.400, True=0.400, Index=44]
-✅ 49: [Yield=0.400, True=0.400, Index=44]
-✅ 50: [Yield=0.400, True=0.400, Index=44]
-✅ 51: [Yield=0.400, True=0.400, Index=44]
-✅ 52: [Yield=0.400, True=0.400, Index=44]
-✅ 53: [Yield=0.409, True=0.409, Index=45]
-✅ 54: [Yield=0.436, True=0.436, Index=48]
-✅ 55: [Yield=0.473, True=0.473, Index=52]
-✅ 56: [Yield=0.473, True=0.473, Index=52]
-✅ 57: [Yield=0.473, True=0.473, Index=52]
-✅ 58: [Yield=0.491, True=0.491, Index=54]
-✅ 59: [Yield=0.491, True=0.491, Index=54]
-✅ 60: [Yield=0.491, True=0.491, Index=54]
-✅ 61: [Yield=0.500, True=0.500, Index=55]
-✅ 62: [Yield=0.500, True=0.500, Index=55]
-✅ 63: [Yield=0.500, True=0.500, Index=55]
-✅ 64: [Yield=0.509, True=0.509, Index=56]
-✅ 65: [Yield=0.536, True=0.536, Index=59]
-✅ 66: [Yield=0.573, True=0.573, Index=63]
-✅ 67: [Yield=0.573, True=0.573, Index=63]
-✅ 68: [Yield=0.573, True=0.573, Index=63]
-✅ 69: [Yield=0.573, True=0.573, Index=63]
-✅ 70: [Yield=0.573, True=0.573, Index=63]
-✅ 71: [Yield=0.582, True=0.582, Index=64]
-✅ 72: [Yield=0.582, True=0.582, Index=64]
-✅ 73: [Yield=0.582, True=0.582, Index=64]
-✅ 74: [Yield=0.582, True=0.582, Index=64]
-✅ 75: [Yield=0.609, True=0.609, Index=67]
-✅ 76: [Yield=0.609, True=0.609, Index=67]
-✅ 77: [Yield=0.609, True=0.609, Index=67]
-✅ 78: [Yield=0.609, True=0.609, Index=67]
-✅ 79: [Yield=0.609, True=0.609, Index=67]
-✅ 80: [Yield=0.609, True=0.609, Index=67]
-✅ 81: [Yield=0.609, True=0.609, Index=67]
-✅ 82: [Yield=0.618, True=0.618, Index=68]
-✅ 83: [Yield=0.618, True=0.618, Index=68]
-✅ 84: [Yield=0.618, True=0.618, Index=68]
-✅ 85: [Yield=0.618, True=0.618, Index=68]
-✅ 86: [Yield=0.618, True=0.618, Index=68]
-✅ 87: [Yield=0.618, True=0.618, Index=68]
-✅ 88: [Yield=0.618, True=0.618, Index=68]
-✅ 89: [Yield=0.618, True=0.618, Index=68]
-✅ 90: [Yield=0.618, True=0.618, Index=68]
-✅ 91: [Yield=0.618, True=0.618, Index=68]
-✅ 92: [Yield=0.618, True=0.618, Index=68]
-✅ 93: [Yield=0.618, True=0.618, Index=68]
-✅ 94: [Yield=0.618, True=0.618, Index=68]
-✅ 95: [Yield=0.618, True=0.618, Index=68]
-✅ 96: [Yield=0.618, True=0.618, Index=68]
-✅ 97: [Yield=0.618, True=0.618, Index=68]
-✅ 98: [Yield=0.618, True=0.618, Index=68]
-✅ 99: [Yield=0.627, True=0.627, Index=69]
-✅ 100: [Yield=0.627, True=0.627, Index=69]
-✅ 101: [Yield=0.627, True=0.627, Index=69]
-✅ 102: [Yield=0.627, True=0.627, Index=69]
-✅ 103: [Yield=0.627, True=0.627, Index=69]
-✅ 104: [Yield=0.627, True=0.627, Index=69]
-✅ 105: [Yield=0.636, True=0.636, Index=70]
-✅ 106: [Yield=0.636, True=0.636, Index=70]
-✅ 107: [Yield=0.636, True=0.636, Index=70]
-✅ 108: [Yield=0.636, True=0.636, Index=70]
-✅ 109: [Yield=0.636, True=0.636, Index=70]
-✅ 110: [Yield=0.636, True=0.636, Index=70]
+1. Initial input is the uninterpolated 839-element IR scan.
+2. Output is the corresponding yield value between 0 - 1, based on yield = #standardScanIndex/number of standard scans
+3. High change regions are still detected and the rest muted with 0's; however, this time round the muted areas are discared and the high change areas simply placed end-to-end to make the input vector and keep it smaller.
+4. Interpolating between 'slices' of the real-world IR data is carried out to inflate the training set, and then inflated again by jittering the values by some percentage.
+5. Interpolated slices must have their corresponding 'yield' also interpolated between the known yields.
+6. Regularize input IR intensities.
+
+7. Save the training data in a .csv so it can be loaded again later
+
+Use whatever you need from the current code and ditch the rest:
+
+import copy
+from scipy.interpolate import interp1d, griddata
+from scipy.stats import pearsonr
+from fastdtw import fastdtw
+from scipy.spatial.distance import euclidean
+from scipy.interpolate import CubicSpline
+import os
+import re
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.metrics.pairwise import cosine_similarity
+
+class IrStandard:
+    def __init__(self, mainDir, smallValueThreshold=0.015, trimLeft=0, trimRight=0, gradientPercentile=84, thresholdDistance=50, minRangeWidth=50):
+        """
+        Initializes the IR Standard analysis class.
+
+        Parameters:
+        - mainDir (str): Directory containing IR data.
+        - smallValueThreshold (float): Values below this are set to zero.
+        - trimLeft (int): Number of points to trim from the left.
+        - trimRight (int): Number of points to trim from the right.
+        - gradientPercentile (int): Percentile threshold to detect high-change regions.
+        - thresholdDistance (int): Minimum distance to merge high-change ranges.
+        - minRangeWidth (int): Minimum width for a range to be considered valid.
+        """
+        self.mainDir = mainDir
+        self.smallValueThreshold = smallValueThreshold
+        self.trimLeft = trimLeft
+        self.trimRight = trimRight
+        self.gradientPercentile = gradientPercentile
+        self.thresholdDistance = thresholdDistance
+        self.minRangeWidth = minRangeWidth
+        
+        self.originalSpectra=[]
+
+        self.allWavenumbers = None
+        self.allAverages = []
+        self.folderLabels = []
+        self.X, self.Y, self.Z = None, None, None
+        self.highChangeRanges = None
+
+    def loadData(self, targetResolution=0.5):
+        """Loads and processes IR data, aligning all scans to a common wavenumber grid and averaging per folder."""
+        folders = sorted(
+            [f for f in os.listdir(self.mainDir) if os.path.isdir(os.path.join(self.mainDir, f))],
+            key=self.naturalSortKey
+        )
+
+        allFolderAverages = []  # Stores only averaged spectra per folder
+        self.folderLabels = []  # Reset folder labels
+
+        minWavenumber, maxWavenumber = float("inf"), float("-inf")
+
+        for folderIndex, folder in enumerate(folders):
+            folderPath = os.path.join(self.mainDir, folder)
+            files = [f for f in os.listdir(folderPath) if f.lower().endswith((".csv", ".xlsx", ".xls"))]
+
+            if not files:
+                print(f"⚠ Warning: No valid data files found in {folder}")
+                continue
+
+            folderIntensities = []  # Store all scans within a folder
+
+            for fileName in files:
+                filePath = os.path.join(folderPath, fileName)
+                df = pd.read_csv(filePath, header=0) if fileName.lower().endswith(".csv") else pd.read_excel(filePath, header=0)
+
+                if df.shape[1] < 2:
+                    print(f"⚠ Warning: {fileName} does not have enough columns")
+                    continue
+
+                wavenumbers = pd.to_numeric(df.iloc[:, 0].values, errors="coerce")
+                intensities = pd.to_numeric(df.iloc[:, 1].values, errors="coerce")
+
+                mask = ~np.isnan(intensities)
+                wavenumbers, intensities = wavenumbers[mask], intensities[mask]
+
+                intensities[np.abs(intensities) < self.smallValueThreshold] = 0
+
+                if len(intensities) == 0:
+                    print(f"⚠ Warning: All intensities in {fileName} are NaN or invalid")
+                    continue
+
+                # Track wavenumber range
+                minWavenumber = min(minWavenumber, wavenumbers.min())
+                maxWavenumber = max(maxWavenumber, wavenumbers.max())
+
+                # Interpolate onto common grid
+                if self.allWavenumbers is None:
+                    self.allWavenumbers = np.arange(minWavenumber, maxWavenumber, targetResolution)
+
+                interpFunc = interp1d(wavenumbers, intensities, kind='linear', bounds_error=False, fill_value=0)
+                folderIntensities.append(interpFunc(self.allWavenumbers))  # Resample onto common grid
+
+            # ✅ Average across all scans in the folder
+            if len(folderIntensities) > 0:
+                avgIntensity = np.mean(folderIntensities, axis=0)
+                self.originalSpectra.append(avgIntensity)
+                allFolderAverages.append(avgIntensity)
+                self.folderLabels.append(folderIndex)
+
+        # Convert to numpy arrays
+        self.allAverages = np.array(allFolderAverages)
+        self.folderLabels = np.array(self.folderLabels)
+
+        print(f"✅ Loaded {len(self.folderLabels)} averaged IR spectra from {len(folders)} folders")
+        
+    def trimData(self):
+        """Trims data based on user-defined left and right trim points."""
+        if self.trimLeft == 0 and self.trimRight == 0:
+            return
+        if self.trimLeft + self.trimRight < self.allAverages.shape[1]:
+            self.allWavenumbers = self.allWavenumbers[self.trimLeft:-self.trimRight]
+            self.allAverages = self.allAverages[:, self.trimLeft:-self.trimRight]
+        else:
+            print("🚨 Warning: Trimming exceeds data length. Skipping trim operation.")
+
+    def detectHighChangeRegions(self):
+        """Detects high-change regions in the IR spectrum."""
+
+        ZGradient = np.abs(np.gradient(self.allAverages, axis=1))
+        highChangeThreshold = np.percentile(ZGradient, self.gradientPercentile)
+        highChangeIndices = np.where(ZGradient > highChangeThreshold)
+
+        highChangeWavenumbers = self.allWavenumbers[highChangeIndices[1]]
+        sortedWavenumbers = np.sort(highChangeWavenumbers)
+
+        groupedRanges = []
+        currentRange = [sortedWavenumbers[0]]
+
+        for i in range(1, len(sortedWavenumbers)):
+            if sortedWavenumbers[i] - sortedWavenumbers[i - 1] <= self.thresholdDistance:
+                currentRange.append(sortedWavenumbers[i])
+            else:
+                minCurrentRange, maxCurrentRange = min(currentRange), max(currentRange)
+                if maxCurrentRange - minCurrentRange > self.minRangeWidth:
+                    groupedRanges.append((minCurrentRange, maxCurrentRange))
+                currentRange = [sortedWavenumbers[i]]
+
+        if currentRange:
+            groupedRanges.append((min(currentRange), max(currentRange)))
+
+        print("Identified high-change wavenumber ranges:")
+        for i, (start, end) in enumerate(groupedRanges, 1):
+            
+            print(f"Range {i}: {start} - {end} cm⁻¹")
+            
+        if self.highChangeRanges is None:
+            self.highChangeRanges=groupedRanges
+        print(f"ranges please: {groupedRanges}")
+
+        return groupedRanges
+    
+    def filterDataInterpolate(self, groupedRanges, interpolationFactor=5):
+        """
+        Filters intensity values, setting regions outside high-change areas to zero,
+        and interpolates additional scans without applying a triangle transformation.
+
+        Parameters:
+        - groupedRanges (list of tuples): Identified high-change wavenumber ranges.
+        - interpolationFactor (int): Number of interpolated scans between each standard scan.
+        """
+        mask = np.zeros_like(self.allAverages, dtype=bool)
+        ZFiltered = np.zeros_like(self.allAverages)  # Store filtered intensity values
+
+        for start, end in groupedRanges:
+            rangeMask = (self.allWavenumbers >= start) & (self.allWavenumbers <= end)
+
+            for i in range(self.allAverages.shape[0]):  # Iterate over each scan
+                intensities = self.allAverages[i, rangeMask]
+
+                if len(intensities) < 3:
+                    continue  # Skip if not enough points to process
+
+                # Preserve the original intensity values inside high-change regions
+                ZFiltered[i, rangeMask] = intensities
+                mask[i, rangeMask] = True  # Mark valid regions
+
+        # Preserve only values within detected regions
+        self.Z = np.where(mask, ZFiltered, 0)
+
+        # Original scan indices
+        originalIndices = np.arange(self.allAverages.shape[0])
+
+        # Generate new indices with interpolated points
+        interpolatedIndices = np.linspace(0, len(originalIndices) - 1, num=len(originalIndices) + (len(originalIndices) - 1) * interpolationFactor)
+
+        # Interpolate additional scans
+        ZInterpolated = np.zeros((len(interpolatedIndices), self.allAverages.shape[1]))
+
+        for j in range(self.allAverages.shape[1]):  # Iterate over each wavenumber column
+            validPoints = originalIndices[mask[:, j]]  # Get valid scan indices
+            validValues = ZFiltered[:, j][mask[:, j]]  # Get corresponding intensity values
+
+            if len(validPoints) > 1:
+                interpFunc = interp1d(validPoints, validValues, kind='linear', fill_value="interpolate")  # Linear interpolation
+                ZInterpolated[:, j] = interpFunc(interpolatedIndices)
+            else:
+                ZInterpolated[:, j] = 0  # Keep as zero if no valid data to interpolate
+
+        # Update dataset with interpolated scans
+        self.Z = ZInterpolated
+        self.X, self.Y = np.meshgrid(self.allWavenumbers, interpolatedIndices)
+
+    def filterDataTriangleInterpolate(self, groupedRanges, interpolationFactor=5):
+        """
+        Filters intensity values, setting regions outside high-change areas to zero,
+        converts each peak into a triangular shape, and interpolates additional scans.
+
+        Parameters:
+        - groupedRanges (list of tuples): Identified high-change wavenumber ranges.
+        - interpolationFactor (int): Number of interpolated scans between each standard scan.
+        """
+        mask = np.zeros_like(self.allAverages, dtype=bool)
+        ZTransformed = np.zeros_like(self.allAverages)  # Store transformed triangular peaks
+
+        for start, end in groupedRanges:
+            rangeMask = (self.allWavenumbers >= start) & (self.allWavenumbers <= end)
+
+            for i in range(self.allAverages.shape[0]):  # Iterate over each scan
+                intensities = self.allAverages[i, rangeMask]
+                wavenumbers = self.allWavenumbers[rangeMask]
+
+                if len(intensities) < 3:
+                    continue  # Skip if not enough points to form a triangle
+
+                # Find peak position (highest intensity in the range)
+                peakIndex = np.argmax(intensities)
+                peakValue = intensities[peakIndex]
+
+                # Force start and end to be zero
+                intensities[0] = 0
+                intensities[-1] = 0
+
+                # Create a linear ramp up to the peak, then back down
+                leftSlope = np.linspace(0, peakValue, num=peakIndex + 1)
+                rightSlope = np.linspace(peakValue, 0, num=len(intensities) - peakIndex)
+
+                # Combine left and right slopes
+                triangleShape = np.concatenate([leftSlope[:-1], rightSlope])
+
+                # Apply the transformed shape
+                ZTransformed[i, rangeMask] = triangleShape
+                mask[i, rangeMask] = True  # Mark processed areas
+
+        # Preserve only values within detected regions
+        ZFiltered = np.where(mask, ZTransformed, 0)
+
+        # Original scan indices
+        originalIndices = np.arange(self.allAverages.shape[0])
+
+        # Generate new indices with interpolated points
+        interpolatedIndices = np.linspace(0, len(originalIndices) - 1, num=len(originalIndices) + (len(originalIndices) - 1) * interpolationFactor)
+
+        # Interpolate additional scans
+        ZInterpolated = np.zeros((len(interpolatedIndices), self.allAverages.shape[1]))
+
+        for j in range(self.allAverages.shape[1]):  # Iterate over each wavenumber column
+            validPoints = originalIndices[mask[:, j]]  # Get valid scan indices
+            validValues = ZFiltered[:, j][mask[:, j]]  # Get corresponding intensity values
+
+            if len(validPoints) > 1:
+                interpFunc = interp1d(validPoints, validValues, kind='linear', fill_value="extrapolate")  # Linear interpolation
+                ZInterpolated[:, j] = interpFunc(interpolatedIndices)
+            else:
+                ZInterpolated[:, j] = 0  # Keep as zero if no valid data to interpolate
+
+        # Update dataset with interpolated scans
+        self.Z = ZInterpolated
+        self.X, self.Y = np.meshgrid(self.allWavenumbers, interpolatedIndices)
+        
+    def filterData(self, groupedRanges):
+        """
+        Filters intensity values, setting regions outside high-change areas to zero.
+        
+        Parameters:
+        - groupedRanges (list of tuples): Identified high-change wavenumber ranges.
+        """
+        mask = np.zeros_like(self.allAverages, dtype=bool)
+        ZFiltered = np.zeros_like(self.allAverages)  # Store filtered intensity values
+
+        for start, end in groupedRanges:
+            rangeMask = (self.allWavenumbers >= start) & (self.allWavenumbers <= end)
+
+            for i in range(self.allAverages.shape[0]):  # Iterate over each scan
+                intensities = self.allAverages[i, rangeMask]
+
+                if len(intensities) < 3:
+                    continue  # Skip if not enough points to process
+
+                # Preserve the original intensity values inside high-change regions
+                ZFiltered[i, rangeMask] = intensities
+                mask[i, rangeMask] = True  # Mark valid regions
+
+        # Preserve only values within detected regions
+        self.Z = np.where(mask, ZFiltered, 0)
+
+        # Use only standard scans → No interpolation
+        self.X, self.Y = np.meshgrid(self.allWavenumbers, self.folderLabels)
+
+    def filterDataTriangle(self, groupedRanges):
+        """
+        Filters intensity values, setting regions outside high-change areas to zero,
+        and converts each peak into a triangular shape.
+
+        Parameters:
+        - groupedRanges (list of tuples): Identified high-change wavenumber ranges.
+        """
+        mask = np.zeros_like(self.allAverages, dtype=bool)
+        ZTransformed = np.zeros_like(self.allAverages)  # Store transformed triangular peaks
+
+        for start, end in groupedRanges:
+            rangeMask = (self.allWavenumbers >= start) & (self.allWavenumbers <= end)
+
+            for i in range(self.allAverages.shape[0]):  # Iterate over each scan
+                intensities = self.allAverages[i, rangeMask]
+                wavenumbers = self.allWavenumbers[rangeMask]
+
+                if len(intensities) < 3:
+                    continue  # Skip if not enough points to form a triangle
+
+                # Find peak position (highest intensity in the range)
+                peakIndex = np.argmax(intensities)
+                peakValue = intensities[peakIndex]
+
+                # Force start and end to be zero
+                intensities[0] = 0
+                intensities[-1] = 0
+
+                # Create a linear ramp up to the peak, then back down
+                leftSlope = np.linspace(0, peakValue, num=peakIndex + 1)
+                rightSlope = np.linspace(peakValue, 0, num=len(intensities) - peakIndex)
+
+                # Combine left and right slopes
+                triangleShape = np.concatenate([leftSlope[:-1], rightSlope])
+
+                # Apply the transformed shape
+                ZTransformed[i, rangeMask] = triangleShape
+                mask[i, rangeMask] = True  # Mark processed areas
+
+        # Preserve only values within detected regions
+        self.Z = np.where(mask, ZTransformed, 0)
+
+        # Use only standard scans → No interpolation
+        self.X, self.Y = np.meshgrid(self.allWavenumbers, self.folderLabels)
+        
+    def processRawScan(self, rawWavenumbers, rawIntensities):
+        """
+        Processes a raw IR scan:
+        1. Aligns the scan to the common wavenumber grid.
+        2. Mutes values outside pre-detected high-change regions.
+        3. Returns the processed scan for comparison.
+        """
+
+        # Ensure NumPy arrays
+        rawWavenumbers = np.array(rawWavenumbers)
+        rawIntensities = np.array(rawIntensities)
+        print(f"First, last wavenumber: {[rawWavenumbers[0], rawWavenumbers[-1]]}")
+
+        print(f"🔎 Raw Wavenumbers Shape: {rawWavenumbers.shape}, Raw Intensities Shape: {rawIntensities.shape}")
+
+        # 🔍 Step 1: Ensure matching sizes (Prevent Shape Mismatch)
+        if len(rawWavenumbers) > len(rawIntensities):
+            interpFunc = interp1d(np.arange(len(rawIntensities)), rawIntensities, kind='linear', bounds_error=False, fill_value=0)
+            rawIntensities = interpFunc(np.linspace(0, len(rawIntensities) - 1, num=len(rawWavenumbers)))
+
+        print(f"First, last wavenumber: {[rawWavenumbers[0], rawWavenumbers[-1]]}")
+
+        print(f"🔎 Raw Wavenumbers Shape: {rawWavenumbers.shape}, Raw Intensities Shape: {rawIntensities.shape}")
+
+        # 🔍 Step 2: Remove NaNs
+        validMask = ~np.isnan(rawWavenumbers) & ~np.isnan(rawIntensities)
+        rawWavenumbers, rawIntensities = rawWavenumbers[validMask], rawIntensities[validMask]
+
+        if len(rawWavenumbers) == 0:
+            raise ValueError("❌ Error: rawWavenumbers is empty after NaN removal.")
+
+        # 🔍 Step 3: Interpolate test scan onto **standard wavenumber grid** (`self.allWavenumbers`)
+        interpFunc = interp1d(rawWavenumbers, rawIntensities, kind='linear', bounds_error=False, fill_value=0)
+        alignedIntensities = interpFunc(self.allWavenumbers)
+        print(f"First, last wavenumber: {[self.allWavenumbers[0], self.allWavenumbers[-1]]}")
+
+        print(f"🔍 Interpolated Intensities Shape: {alignedIntensities.shape}")
+
+        # 🔍 Step 4: Apply small value threshold (mute small noise)
+        alignedIntensities[np.abs(alignedIntensities) < self.smallValueThreshold] = 0
+
+        # 🔍 Step 5: Mute values outside detected high-change regions
+        ZFiltered = np.zeros_like(alignedIntensities)
+
+        for start, end in self.highChangeRanges:
+            print(f"Processing range: {start} - {end}")
+
+            # Find indices where `self.allWavenumbers` falls within the range
+            rangeMask = (self.allWavenumbers >= start) & (self.allWavenumbers <= end)
+            intensities = alignedIntensities[rangeMask]
+
+            #print(f"🔎 Active Points: {np.sum(rangeMask)} | Nonzero Points: {np.sum(intensities != 0)}")
+
+            if len(intensities) < 3 or np.all(intensities == 0):
+                #print(f"🚨 Skipping range {start}-{end}: No valid intensities.")
+                continue  # Skip empty or zero regions
+
+            # Preserve the original intensity values inside high-change regions
+            ZFiltered[rangeMask] = intensities
+
+        return self.allWavenumbers, ZFiltered
+
+    def processRawScanTriangle(self, rawWavenumbers, rawIntensities):
+        """
+        Processes a raw IR scan:
+        1. Aligns the scan to the common wavenumber grid.
+        2. Mutes values outside pre-detected high-change regions.
+        3. Applies the triangle method to transform peaks.
+        4. Returns the processed scan for comparison.
+        """
+
+        # Ensure NumPy arrays
+        rawWavenumbers = np.array(rawWavenumbers)
+        rawIntensities = np.array(rawIntensities)
+        print(f"First, last wavenumber: {[rawWavenumbers[0],rawWavenumbers[-1]]}")
+
+        print(f"🔎 Raw Wavenumbers Shape: {rawWavenumbers.shape}, Raw Intensities Shape: {rawIntensities.shape}")
+
+        # 🔍 Step 1: Ensure matching sizes (Prevent Shape Mismatch)
+        if len(rawWavenumbers) > len(rawIntensities):
+            interpFunc = interp1d(np.arange(len(rawIntensities)), rawIntensities, kind='linear', bounds_error=False, fill_value=0)
+            rawIntensities = interpFunc(np.linspace(0, len(rawIntensities) - 1, num=len(rawWavenumbers)))
+
+        print(f"First, last wavenumber: {[rawWavenumbers[0],rawWavenumbers[-1]]}")
+
+        print(f"🔎 Raw Wavenumbers Shape: {rawWavenumbers.shape}, Raw Intensities Shape: {rawIntensities.shape}")
+
+        # 🔍 Step 2: Remove NaNs
+        validMask = ~np.isnan(rawWavenumbers) & ~np.isnan(rawIntensities)
+        rawWavenumbers, rawIntensities = rawWavenumbers[validMask], rawIntensities[validMask]
+
+        if len(rawWavenumbers) == 0:
+            raise ValueError("❌ Error: rawWavenumbers is empty after NaN removal.")
+
+        # 🔍 Step 3: Interpolate test scan onto **standard wavenumber grid** (`self.allWavenumbers`)
+        interpFunc = interp1d(rawWavenumbers, rawIntensities, kind='linear', bounds_error=False, fill_value=0)
+        alignedIntensities = interpFunc(self.allWavenumbers)
+        print(f"First, last wavenumber: {[self.allWavenumbers[0],self.allWavenumbers[-1]]}")
+
+        print(f"🔍 Interpolated Intensities Shape: {alignedIntensities.shape}")
+
+        # 🔍 Step 4: Apply small value threshold (mute small noise)
+        alignedIntensities[np.abs(alignedIntensities) < self.smallValueThreshold] = 0
+
+        # 🔍 Step 5: Mute values outside detected high-change regions
+        ZTransformed = np.zeros_like(alignedIntensities)
+
+        for start, end in self.highChangeRanges:
+            print(f"Processing range: {start} - {end}")
+
+            # Find indices where `self.allWavenumbers` falls within the range
+            rangeMask = (self.allWavenumbers >= start) & (self.allWavenumbers <= end)
+            intensities = alignedIntensities[rangeMask]
+
+            print(f"🔎 Active Points: {np.sum(rangeMask)} | Nonzero Points: {np.sum(intensities != 0)}")
+
+            if len(intensities) < 3 or np.all(intensities == 0):
+                print(f"🚨 Skipping range {start}-{end}: No valid intensities.")
+                continue  # Skip empty or zero regions
+
+            # Find peak index & validate it
+            peakIndex = np.argmax(intensities)
+            peakValue = intensities[peakIndex]
+
+            if peakValue == 0:
+                print(f"🚨 Skipping range {start}-{end}: Peak is zero.")
+                continue  # Avoid processing a zero peak
+
+            # Force start and end to be zero
+            intensities[0] = 0
+            intensities[-1] = 0
+
+            # Create a linear ramp up to the peak, then back down
+            leftSlope = np.linspace(0, peakValue, num=peakIndex + 1)
+            rightSlope = np.linspace(peakValue, 0, num=len(intensities) - peakIndex)
+
+            print(f"Left/Right slope: {[leftSlope, rightSlope]}")
+
+            # Combine slopes
+            triangleShape = np.concatenate([leftSlope[:-1], rightSlope])
+
+            # Store the transformed peak back in the output array
+            ZTransformed[rangeMask] = triangleShape
+
+        return self.allWavenumbers, ZTransformed
+
+    def plotSurface(self):
+        """Plots the final filtered IR spectra as a 3D surface plot."""
+        fig = plt.figure(figsize=(10, 6))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.set_proj_type('ortho')
+        
+        print(f"Thebug: {[self.X.shape,self.Y.shape,self.Z.shape]}")
+
+        ax.plot_surface(self.X, self.Y, self.Z, cmap='viridis')
+
+        ax.set_xlabel("Wavenumber (cm⁻¹)")
+        ax.set_ylabel("Sample Index")
+        ax.set_zlabel("Average Intensity")
+        ax.set_title("Averaged IR Spectra Surface Plot (Filtered)")
+
+        plt.show()
+
+    def analyzeNewScanDTW(self, rawWavenumbers, rawIntensities, referenceZ=None):
+        """
+        Uses Dynamic Time Warping (DTW) to compare a new IR scan against the standard dataset.
+
+        Parameters:
+        - rawWavenumbers (np.array): Wavenumber values from the raw IR scan.
+        - rawIntensities (np.array): Corresponding intensity values.
+        - referenceZ (np.array): Optional. If provided, uses this as the reference dataset.
+
+        Returns:
+        - bestMatchIndex (int): The index of the best-matching reference scan.
+        - bestScore (float): The DTW similarity score (lower is better).
+        - yieldValue (float): Estimated yield, scaled between 0 and 1.
+        """
+        
+        # 🛠 Process the raw spectrum onto the standard grid
+        processedScan = self.processRawScan(rawWavenumbers, rawIntensities)
+
+        # 🔍 Ensure test spectrum is a **strict 1D NumPy array**
+        testSpectrum = processedScan[1]
+        print(f"Test Spectrum Shape: {testSpectrum.shape}")  # Debug
+
+        # Use provided reference dataset or default to self.Z
+        if referenceZ is None:
+            referenceZ = self.Z  
+
+        # 🔎 Step 1: Compare test spectrum to each reference using DTW
+        bestMatchIndex = None
+        bestScore = float("inf")  # Lower DTW distance = better match
+
+        for i in range(referenceZ.shape[0]):
+            # 🔍 Ensure reference spectrum is **strict 1D**
+            refScan = referenceZ[i, :]
+            print(f"Ref Scan {i} Shape: {refScan.shape}")  # Debug
+
+            # Compute DTW distance (lower = better match)
+            dtw_distance, _ = fastdtw([testSpectrum], [refScan], dist=euclidean)
+
+            if dtw_distance < bestScore:
+                bestScore = dtw_distance
+                bestMatchIndex = i
+
+        # 🔍 Step 2: Normalize yield based on best match index
+        numStandardScans = referenceZ.shape[0]
+        yieldValue = bestMatchIndex / (numStandardScans - 1)
+
+        print(f"🔍 Best DTW match: Index {bestMatchIndex} | DTW Distance: {bestScore:.3f}")
+        print(f"🌱 Estimated Yield (DTW): {yieldValue:.3f} (0 = first scan, 1 = last scan)")
+
+        return bestMatchIndex, bestScore, yieldValue
+
+    # def analyzeNewScanDTW(self, rawWavenumbers, rawIntensities, referenceZ=None):
+    #     """
+    #     Uses Dynamic Time Warping (DTW) to compare a new IR scan against the standard dataset.
+
+    #     Parameters:
+    #     - rawWavenumbers (np.array): Wavenumber values from the raw IR scan.
+    #     - rawIntensities (np.array): Corresponding intensity values.
+    #     - referenceZ (np.array): Optional. If provided, uses this as the reference dataset.
+
+    #     Returns:
+    #     - bestMatchIndex (int): The index of the best-matching reference scan.
+    #     - bestScore (float): The DTW similarity score (lower is better).
+    #     - yieldValue (float): Estimated yield, scaled between 0 and 1.
+    #     """
+        
+    #     # 🛠 Process the raw spectrum onto the standard grid
+    #     processedScan = self.processRawScan(rawWavenumbers, rawIntensities)
+    #     testSpectrum = processedScan[1].flatten()  # Extract processed intensities
+    #     print(f"testSpectrum shape: {testSpectrum.shape}")
+    #     input()
+
+    #     # Use provided reference dataset or default to self.Z
+    #     if referenceZ is None:
+    #         referenceZ = self.Z  
+
+    #     # 🔎 Step 1: Compare test spectrum to each reference using DTW
+    #     bestMatchIndex = None
+    #     bestScore = float("inf")  # Lower DTW distance = better match
+
+    #     for i in range(referenceZ.shape[0]):
+    #         refScan = referenceZ[i, :].flatten()
+    #         print(f"refScan shape: {refScan.shape}")
+    #         input()
+
+    #         # Compute DTW distance (lower = better match)
+    #         dtw_distance, _ = fastdtw(testSpectrum, refScan, dist=euclidean)
+
+    #         if dtw_distance < bestScore:
+    #             bestScore = dtw_distance
+    #             bestMatchIndex = i
+
+    #     # 🔍 Step 2: Normalize yield based on best match index
+    #     numStandardScans = referenceZ.shape[0]
+    #     yieldValue = bestMatchIndex / (numStandardScans - 1)
+
+    #     print(f"🔍 Best DTW match: Index {bestMatchIndex} | DTW Distance: {bestScore:.3f}")
+    #     print(f"🌱 Estimated Yield (DTW): {yieldValue:.3f} (0 = first scan, 1 = last scan)")
+
+    #     return bestMatchIndex, bestScore, yieldValue
+    def analyzeNewScanPearson(self, rawWavenumbers, rawIntensities, referenceZ=None):
+        """
+        Processes a new raw IR scan and compares it against the standard dataset.
+
+        Parameters:
+        - rawWavenumbers (np.array): Wavenumber values from the raw IR scan.
+        - rawIntensities (np.array): Corresponding intensity values.
+        - referenceZ (np.array): Optional. If provided, uses this as the reference dataset.
+
+        Returns:
+        - bestMatchIndex (int): The best-matching index along the standard dataset.
+        - bestScore (float): The similarity score (correlation).
+        - yieldValue (float): Estimated yield, scaled between 0 (first reference scan) and 1 (last reference scan).
+        """
+
+        # 🛠 **Process the raw spectrum first!**
+        processedScan = self.processRawScan(rawWavenumbers, rawIntensities)
+
+        """
+        # Normalize processed scan (0-1 range)
+        processedScan -= processedScan.min()
+        if processedScan.max() > 0:
+            processedScan /= processedScan.max()
+        """
+        # Use provided reference dataset or default to self.Z
+        if referenceZ is None:
+            referenceZ = self.Z  # Default to full dataset
+
+        # Compare to existing standard scans
+        bestMatchIndex = None
+        bestScore = float("-inf")  # Higher score = better match
+
+        for i in range(referenceZ.shape[0]):
+            refScan = referenceZ[i, :]
+
+            # Compute similarity using Pearson correlation
+            corr, _ = pearsonr(processedScan[1], refScan)
+
+            if corr > bestScore:
+                bestScore = corr
+                bestMatchIndex = i
+
+        # Calculate yield as a normalized value between 0 and 1
+        numStandardScans = referenceZ.shape[0] + 1  # Total reference scans
+        print(f"Num: {numStandardScans}")
+        yieldValue = bestMatchIndex / numStandardScans  # Normalize index
+
+        print(f"🔍 Best match found at index {bestMatchIndex} with similarity: {bestScore:.3f}")
+        print(f"🌱 Estimated Yield: {yieldValue:.3f} (0 = first scan, 1 = last scan)")
+
+        return bestMatchIndex, bestScore, yieldValue
+
+    def analyzeNewScan(self, rawWavenumbers, rawIntensities, referenceZ=None):
+        """
+        Processes a new raw IR scan and compares it against the standard dataset.
+
+        Parameters:
+        - rawWavenumbers (np.array): Wavenumber values from the raw IR scan.
+        - rawIntensities (np.array): Corresponding intensity values.
+        - referenceZ (np.array): Optional. If provided, uses this as the reference dataset.
+
+        Returns:
+        - bestMatchIndex (int): The best-matching index along the standard dataset.
+        - bestScore (float): The similarity score (correlation).
+        - yieldValue (float): Estimated yield, scaled between 0 (first reference scan) and 1 (last reference scan).
+        """
+
+        # # 🛠 **Process the raw spectrum first!**
+        # rawIntensities -= rawIntensities.min()
+        # if rawIntensities.max() > 0:
+        #     rawIntensities /= rawIntensities.max()
+
+        # print([rawWavenumbers.shape,processedScan[0].shape,processedScan[1].shape])
+        # plt.figure(figsize=(10, 5))
+        # plt.plot( processedScan[0], processedScan[1], label="Processed Scan", color="blue", alpha=0.7)
+        # plt.xlabel("Wavenumber (cm⁻¹)")
+        # plt.ylabel("Processed Intensity")
+        # plt.title("Processed IR Scan after Filtering & Triangle Transformation")
+        # plt.legend()
+        # plt.grid(True)
+        # plt.show()
+        # Normalize processed scan (0-1 range)
+
+        # Use provided reference dataset or default to self.Z
+        if referenceZ is None:
+            referenceZ = self.Z  # Default to full dataset
+            
+        processedScan = self.processRawScan(rawWavenumbers, rawIntensities)
+        if processedScan[1].shape != self.Z[1].shape:
+            print(f"🚨 Shape mismatch! Expected {(self.Z.shape[1],)} but got {processedScan[1].shape}")
+
+        # Compare to existing standard scans
+        bestMatchIndex = None
+        bestScore = float("-inf")  # Higher score = better match
+
+        if not np.allclose(processedScan[0], self.allWavenumbers):
+            print("🚨 Processed scan wavenumbers do NOT match standard dataset wavenumbers!")
+            print(f"First 5 wavenumbers: {processedScan[0][:5]} vs {self.allWavenumbers[:5]}")
+
+        for i in range(referenceZ.shape[0]):
+            refScan = referenceZ[i, :]
+
+            # Compute similarity using Pearson correlation
+            scan=processedScan[1].flatten()
+            ref=refScan.flatten()
+            
+            bestMatchIndex = None
+            bestScore = float("-inf")  # Higher = better match
+
+            processedScanNorm = processedScan[1].reshape(1, -1)  # Ensure 2D
+            for i in range(self.Z.shape[0]):
+                refScanNorm = self.Z[i, :].reshape(1, -1)
+                
+                # Compute cosine similarity
+                score = cosine_similarity(processedScanNorm, refScanNorm)[0, 0]
+
+                if score > bestScore:
+                    bestScore = score
+                    bestMatchIndex = i
+
+        # Calculate yield as a normalized value between 0 and 1
+        numStandardScans = referenceZ.shape[0]  # Total reference scans
+        print(f"Num: {numStandardScans},shape: {referenceZ.shape}")
+        yieldValue = bestMatchIndex / (numStandardScans - 1)  # Normalize index
+
+        print(f"🔍 Best match found at index {bestMatchIndex} with similarity: {bestScore:.3f}")
+        print(f"🌱 Estimated Yield: {yieldValue:.3f} (0 = first scan, 1 = last scan)")
+
+        return bestMatchIndex, bestScore, yieldValue
+
+    def generateInterpolatedSpectraLinear(self, numInterpolated=5):
+        """
+        Generates interpolated test spectra between existing scans.
+
+        Parameters:
+        - numInterpolated (int): Number of interpolated spectra to generate between each pair.
+
+        Returns:
+        - interpolatedZ (np.array): New interpolated intensity dataset.
+        - interpolatedY (np.array): Updated sample indices including interpolated points.
+        """
+        originalY = self.folderLabels  # Existing sample indices
+        interpolatedZ = [self.Z[0, :]]  # Start with the first scan
+
+        newY = [originalY[0]]
+
+        for i in range(len(originalY) - 1):
+            scan1 = self.Z[i, :]
+            scan2 = self.Z[i + 1, :]
+
+            for j in range(1, numInterpolated + 1):
+                weight = j / (numInterpolated + 1)
+                interpolatedScan = (1 - weight) * scan1 + weight * scan2  # Linear interpolation
+                interpolatedZ.append(interpolatedScan)
+                newY.append(originalY[i] + weight)  # Position between existing scans
+
+            interpolatedZ.append(scan2)
+            newY.append(originalY[i + 1])
+
+        interpolatedZ = np.array(interpolatedZ)
+        interpolatedY = np.array(newY)
+
+        print(f"✅ Generated {numInterpolated} interpolated spectra per pair. New total scans: {len(interpolatedY)}")
+
+        return interpolatedZ, interpolatedY
+    
+    def generateInterpolatedSpectraSpline(self, numInterpolated=5, method='cubic'):
+        """
+        Generates interpolated test spectra between existing scans.
+
+        Parameters:
+        - numInterpolated (int): Number of interpolated spectra to generate between each pair.
+        - method (str): Interpolation method ('linear', 'cubic', 'quadratic').
+
+        Returns:
+        - interpolatedZ (np.array): New interpolated intensity dataset.
+        - interpolatedY (np.array): Updated sample indices including interpolated points.
+        """
+        originalY = self.folderLabels  # Existing sample indices
+        interpolatedZ = [self.Z[0, :]]  # Start with the first scan
+        newY = [originalY[0]]
+
+        for i in range(len(originalY) - 1):
+            scan1 = self.Z[i, :]
+            scan2 = self.Z[i + 1, :]
+
+            for j in range(1, numInterpolated + 1):
+                weight = j / (numInterpolated + 1)
+
+                if method == 'linear':
+                    interpolatedScan = (1 - weight) * scan1 + weight * scan2  # Linear interpolation
+                elif method == 'cubic':
+                    cs = CubicSpline([0, 1], np.vstack([scan1, scan2]), axis=0)  # Cubic spline interpolation
+                    interpolatedScan = cs(weight)
+                elif method == 'quadratic':
+                    interpFunc = interp1d([0, 1], np.vstack([scan1, scan2]), kind='quadratic', axis=0, fill_value="extrapolate")
+                    interpolatedScan = interpFunc(weight)
+                else:
+                    raise ValueError("Unsupported interpolation method. Choose 'linear', 'cubic', or 'quadratic'.")
+
+                interpolatedZ.append(interpolatedScan)
+                newY.append(originalY[i] + weight)  # Position between existing scans
+
+            interpolatedZ.append(scan2)
+            newY.append(originalY[i + 1])
+
+        interpolatedZ = np.array(interpolatedZ)
+        interpolatedY = np.array(newY)
+
+        print(f"✅ Generated {numInterpolated} interpolated spectra per pair using {method} interpolation. New total scans: {len(interpolatedY)}")
+
+        # 🛠️ **Fix meshgrid for plotting**
+        self.Z = interpolatedZ
+        self.Y = interpolatedY
+        self.X, self.Y = np.meshgrid(self.allWavenumbers, self.Y)  # 🔥 Ensure correct shape!
+
+        return self.Z, self.Y
+    
+    def normalizeSpectrum(intensities):
+        return (intensities - np.mean(intensities)) / np.std(intensities)
+
+    @staticmethod
+    def naturalSortKey(folderName):
+        """Extracts numbers from folder names for correct numerical sorting."""
+        numbers = re.findall(r'\d+', folderName)
+        return int(numbers[0]) if numbers else float('inf')
+    
+if __name__ == "__main__":
+    # Step 1: Initialize and process the standard curve
+    irAnalysis = IrStandard(mainDir="isovanillin+allylbromide+product", trimLeft=200, trimRight=40)
+    irAnalysis.originalSpectra = []  # Store raw spectra for later testing
+
+    irAnalysis.loadData()
+    irAnalysis.trimData()
+    highChangeRanges = irAnalysis.detectHighChangeRegions()
+    print(f"Ranges: {highChangeRanges}")
+    #exit()
+    irAnalysis.filterDataInterpolate(highChangeRanges,interpolationFactor=3)
+
+    # Step 2: Convert original raw spectra to test cases
+    #Middle
+    test_cases = copy.deepcopy(irAnalysis.Z)
+    test_ref = copy.deepcopy(irAnalysis.Z)
+    
+    print(f"✅ Created {len(test_cases)} test cases from original raw spectra.")
+
+    # Step 3: Iterate through raw spectra, process, and analyze
+    problemScans = 0
+    results = []
+    rawWavenumbers = irAnalysis.allWavenumbers  # Assume original wavenumbers match common grid
+    noramlized=[]
+
+    # Step 6: Visualize the result
+    irAnalysis.plotSurface()
+
+    for i, testSpectrum in enumerate(test_cases):
+        rawIntensities = (np.array(testSpectrum))  # Convert back to array
+        print(f"Raw Wavenumbers Shape: {rawWavenumbers.shape}, Raw Intensities Shape: {rawIntensities.shape}")
+
+        # plt.plot(rawWavenumbers, rawIntensities, label=f"Raw Scan {i}")
+        # plt.xlabel("Wavenumber (cm⁻¹)")
+        # plt.ylabel("Intensity")
+        # plt.legend()
+        # plt.show()
+
+        # 🛠 Apply jitter (±5% random variation)
+        jitterFactor = 0.05  # Max 5% variation
+        noise = 0#(np.random.rand(*rawIntensities.shape) - 0.5) * 2 * jitterFactor
+        jitteredTestSpectrum = np.clip(rawIntensities + rawIntensities * noise, 0, 1)
+
+        print(f"\n🔬 Testing raw spectrum {i + 1}/{len(test_cases)} with jitter:")
+
+        # Step 4: Compare test spectrum **against original standard scans only**
+        bestMatchIndex, bestScore, yieldValue = irAnalysis.analyzeNewScan(rawWavenumbers,jitteredTestSpectrum,referenceZ=test_ref)
+        noramlized.append(yieldValue)
+
+        # Compute true yield from test spectrum position
+        trueYield = i/((len(irAnalysis.Z)))  # Normalize to range 0-1
+        error = abs(trueYield - yieldValue) * 100
+
+        if error > 5:
+            results.append(f"🚨 {i}: [Yield={yieldValue:.3f}, True={trueYield:.3f}, Index={bestMatchIndex}, Error={error:.2f}%]")
+            reference_intensities = irAnalysis.Z[bestMatchIndex]
+
+            plt.figure(figsize=(10, 5))
+            plt.plot(rawWavenumbers, rawIntensities, label=f"Test Scan {i + 1}", color="blue", alpha=0.7)
+            plt.plot(rawWavenumbers, reference_intensities, label=f"Matched Ref {bestMatchIndex + 1}", color="red", linestyle="dashed", alpha=0.7)
+
+            # Plot difference spectrum
+            plt.fill_between(rawWavenumbers, rawIntensities - reference_intensities, color="gray", alpha=0.3, label="Difference (Test - Ref)")
+
+            plt.xlabel("Wavenumber (cm⁻¹)")
+            plt.ylabel("Intensity")
+            plt.title(f"Test Scan {i + 1} vs. Matched Reference {bestMatchIndex + 1}")
+            plt.legend()
+            plt.grid()
+            plt.show()
+            
+            problemScans += 1
+        else:
+            results.append(f"✅ {i}: [Yield={yieldValue:.3f}, True={trueYield:.3f}, Index={bestMatchIndex}]")
+
+    # Step 5: Print results
+    print("\n📊 Yield Estimation Results:")
+    for result in results:
+        print(result)
+        
+    minMax=[min(noramlized),max(noramlized)]
+    noramlized=np.array(noramlized)
+    noramlized -= minMax[0]
+    if minMax[1] > 0:
+        noramlized /= minMax[1]
+    print(noramlized)
+    diff=[]
+    for _i, _x in enumerate(noramlized):
+        if _i == 0:
+            diff.append(0)
+            continue
+        diff.append(noramlized[_i] - noramlized[_i - 1])
+
+    print(diff)
+    print(f"\n🚨 {problemScans}/{len(test_cases)} ({(problemScans / len(test_cases)) * 100:.1f}%) scans had >5% error.")
+
+    print("Folder Labels (Scan Indices):", irAnalysis.folderLabels)
+    print("Differences:", np.diff(irAnalysis.folderLabels))

@@ -350,25 +350,25 @@ class ArrowPainter extends CustomPainter {
     double distance = (to - from).distance / 3;
     double dx = 0, dy = 0;
 
-    if (params.startArrowPosition.x > 0)
+    if (params.startArrowPosition.x > 0) {
       dx = distance;
-    else if (params.startArrowPosition.x < 0) dx = -distance;
+    } else if (params.startArrowPosition.x < 0) dx = -distance;
 
-    if (params.startArrowPosition.y > 0)
+    if (params.startArrowPosition.y > 0) {
       dy = distance;
-    else if (params.startArrowPosition.y < 0) dy = -distance;
+    } else if (params.startArrowPosition.y < 0) dy = -distance;
 
     Offset p1 = Offset(from.dx + dx, from.dy + dy);
     dx = 0;
     dy = 0;
 
-    if (params.endArrowPosition.x > 0)
+    if (params.endArrowPosition.x > 0) {
       dx = distance;
-    else if (params.endArrowPosition.x < 0) dx = -distance;
+    } else if (params.endArrowPosition.x < 0) dx = -distance;
 
-    if (params.endArrowPosition.y > 0)
+    if (params.endArrowPosition.y > 0) {
       dy = distance;
-    else if (params.endArrowPosition.y < 0) dy = -distance;
+    } else if (params.endArrowPosition.y < 0) dy = -distance;
 
     Offset p3 = params.endArrowPosition == const Alignment(0.0, 0.0)
         ? to
