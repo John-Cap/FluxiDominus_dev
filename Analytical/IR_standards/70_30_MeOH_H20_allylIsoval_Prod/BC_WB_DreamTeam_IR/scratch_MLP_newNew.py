@@ -8,9 +8,10 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics.pairwise import cosine_similarity
 
 class IRMLPTrainer:
-    def __init__(self, csv_path, num_interpolated=5, jitter_factor=0.05):
+    def __init__(self, csv_path, csv_path_unaveraged, csv_path_unmasked, num_interpolated=10, jitter_factor=0.05):
         """
         Initializes the IRMLPTrainer with a dataset from a CSV file.
         
@@ -20,6 +21,9 @@ class IRMLPTrainer:
         - jitter_factor (float): Maximum percentage noise to add for jittered data augmentation.
         """
         self.csv_path = csv_path
+        self.csv_path_unaveraged = csv_path_unaveraged
+        self.csv_path_unmasked = csv_path_unmasked
+        
         self.num_interpolated = num_interpolated
         self.jitter_factor = jitter_factor
         self.scaler = None  # MinMaxScaler will be initialized during training
@@ -29,6 +33,8 @@ class IRMLPTrainer:
         
         self.trimLeft=0
         self.trimRight=0
+        
+        self.smallValueThreshold=0.01
 
     def load_and_prepare_data(self):
         """
@@ -37,20 +43,36 @@ class IRMLPTrainer:
         """
         # Load the dataset
         df = pd.read_csv(self.csv_path)
+        dfUnaveraged = pd.read_csv(self.csv_path_unaveraged)
+        dfUnmasked = pd.read_csv(self.csv_path_unmasked)
 
         # Separate features and labels
         X = df.iloc[:, :-1].values  # All columns except the last one (intensities)
         y = df.iloc[:, -1].values   # Last column (yield)
+        
+        Xunaveraged = dfUnaveraged.iloc[:, :-1].values  # All columns except the last one (intensities)
+        yUnaveraged = dfUnaveraged.iloc[:, -1].values   # Last column (yield)
+        
+        Xunmasked = dfUnmasked.iloc[:, :-1].values  # All columns except the last one (intensities)
+        yUnmasked = dfUnmasked.iloc[:, -1].values   # Last column (yield)
 
         # Interpolate additional samples
         X_interp, y_interp = self.interpolate_spectra(X, y)
+        # Interpolate additional samples unaveraqged
+        X_interpUnaveraged, y_interpUnaveraged = self.interpolate_spectra(Xunaveraged, yUnaveraged)
+        # Interpolate additional samples unmasked
+        X_interpUnmasked, y_interpUnmasked = self.interpolate_spectra(Xunmasked, yUnmasked)
 
         # Apply jitter to interpolated samples
         X_jittered = self.apply_jitter(X_interp)
+        X_jitteredUnaveraged = self.apply_jitter(Xunaveraged)
+        X_jitteredUnmasked = self.apply_jitter(Xunmasked)
 
         # Combine original, interpolated, and jittered data
-        X_final = np.vstack((X, X_interp, X_jittered))
-        y_final = np.concatenate((y, y_interp, y_interp))  # Duplicating y_interp for jittered versions
+        X_final = np.vstack((X, X_interp, X_jittered, Xunaveraged, Xunmasked, X_jitteredUnaveraged, X_jitteredUnmasked, X_interpUnaveraged, X_interpUnmasked))
+        y_final = np.concatenate((y, y_interp, y_interp, yUnaveraged, yUnmasked, yUnaveraged, yUnmasked, y_interpUnaveraged, y_interpUnmasked))  # Duplicates for jittered versions
+
+        X_final[np.abs(X_final) < self.smallValueThreshold] = 0
 
         # Normalize the feature set
         self.scaler = MinMaxScaler()
@@ -124,7 +146,7 @@ class IRMLPTrainer:
         model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
         history = model.fit(X_train, y_train, validation_data=(X_test, y_test),
-                            epochs=50, batch_size=4, verbose=1)
+                            epochs=55, batch_size=30, verbose=1)
         
         self.model = model
         model.save("ir_yield_mlp.keras")
@@ -148,7 +170,7 @@ class IRMLPTrainer:
 
         print(f"✅ Model loaded from {path}")
 
-    def estimateYield(self, input_scan):
+    def estimateYield(self, input_scan, normalize=True, applySmallValueThreshold=True):
         """
         Estimates the yield from a new IR scan.
 
@@ -163,9 +185,15 @@ class IRMLPTrainer:
 
         # Convert input to NumPy array
         input_scan = np.array(input_scan, dtype=np.float32)
+        
+        if applySmallValueThreshold:
+            input_scan[np.abs(input_scan) < self.smallValueThreshold] = 0
 
-        # Normalize input using the same scaler as training
-        normalized_input = input_scan #self.scaler.transform([input_scan])[0]
+        if normalize:
+            # Normalize input using the same scaler as training
+            normalized_input = self.scaler.transform([input_scan])[0]
+        else:
+            normalized_input=input_scan
 
         # Predict yield
         yield_value = self.model.predict(np.array([normalized_input]))[0][0]
@@ -219,7 +247,7 @@ class IRMLPTrainer:
 
 if __name__ == "__main__":
     # Initialize Trainer with the CSV file
-    trainer = IRMLPTrainer(csv_path="ir_yield_no_resample.csv", num_interpolated=5, jitter_factor=0.05)
+    trainer = IRMLPTrainer(csv_path="ir_yield_no_resample_averages.csv", csv_path_unaveraged= 'ir_yield_no_resample_unaveraged.csv', csv_path_unmasked='ir_yield_no_resample_unmasked.csv', num_interpolated=5, jitter_factor=0.05)
 
     # Load, process, and prepare training data
     trainer.load_and_prepare_data()
@@ -237,18 +265,21 @@ if __name__ == "__main__":
 
     # Test loop
     _i=0
+    _wrong=0
     for _x in trainer.X:
-        print(f"Estimated yield: {trainer.estimateYield(_x)}, true: {trainer.y[_i]}")
+        _est=trainer.estimateYield(_x,False,False)
+        _true=trainer.y[_i]
+        _err=error = abs(_true - _est) * 100
+        if _err > 5:
+            _wrong+=1
+        print(f"Estimated yield: {_est}, true: {_true}, error: {_err}")
         _i+=1
+    print(f"Percentage of incorrect predictions: {100*(_wrong/(trainer.X.shape[0]))}")
 
     # Interactive prediction loop
     while True:
         _input = input("Input vector: ")
         _input = eval(_input)  # Convert input string to a list
-        _inputNonFlipped=copy.deepcopy(_input)
-        _input=_input[::-1]
         _input=trainer.trimDataSingle(_input)
-        _inputNonFlipped=trainer.trimDataSingle(_inputNonFlipped)
         
-        print(f"Estimated yield: {trainer.estimateYield(_inputNonFlipped)}")
-        print(f"Estimated yield array flipped: {trainer.estimateYield(_input)}")
+        print(f"Estimated yield standard: {trainer.estimateYield(_input)}")

@@ -14,7 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.metrics.pairwise import cosine_similarity
 
 class IrStandard:
-    def __init__(self, mainDir, smallValueThreshold=0.015, trimLeft=0, trimRight=0, gradientPercentile=84, thresholdDistance=50, minRangeWidth=50):
+    def __init__(self, mainDir, smallValueThreshold=0.010, trimLeft=0, trimRight=0, gradientPercentile=84, thresholdDistance=50, minRangeWidth=50):
         """
         Initializes the IR Standard analysis class.
 
@@ -109,7 +109,7 @@ class IrStandard:
 
         print(f"✅ Loaded {len(self.folderLabels)} averaged IR spectra from {len(folders)} folders")
 
-    def loadDataNoResample(self, output_csv="ir_yield_no_resample.csv"):
+    def loadDataNoResample(self, output_csv_averages="ir_yield_no_resample_averages.csv", output_csv_unaveraged="ir_yield_no_resample_unaveraged.csv", output_csv_unmasked="ir_yield_no_resample_unmasked.csv"):
         """
         Loads and processes IR data from multiple folders without resampling onto a new grid.
         Saves the averaged intensities along with calculated yields to a CSV file.
@@ -127,7 +127,11 @@ class IrStandard:
         )
 
         allFolderAverages = []  # Store averaged intensities per folder
+        allUnaveraged = []
+        allUnmasked = []
         allYields = []  # Store yield values
+        allYieldsUnaveraged = []
+        allYieldsUnmasked = []
 
         for folderIndex, folder in enumerate(folders):
             folderPath = os.path.join(self.mainDir, folder)
@@ -138,6 +142,7 @@ class IrStandard:
                 continue
 
             folderIntensities = []  # Store all scans within a folder
+            yieldValue = folderIndex / 10.0
 
             for fileName in files:
                 filePath = os.path.join(folderPath, fileName)
@@ -148,33 +153,49 @@ class IrStandard:
                     continue
 
                 intensities = pd.to_numeric(df.iloc[:, 1].values, errors="coerce")
-
-                # Remove NaNs and small noise
-                intensities[np.abs(intensities) < self.smallValueThreshold] = 0
+                
                 if np.isnan(intensities).all():
                     print(f"⚠ Warning: All intensities in {fileName} are NaN or invalid")
                     continue
+                
+                allUnmasked.append(intensities)
+                allYieldsUnmasked.append(yieldValue)
 
+                # Remove NaNs and small noise
+                intensities[np.abs(intensities) < self.smallValueThreshold] = 0
+                allUnaveraged.append(intensities)
+                allYieldsUnaveraged.append(yieldValue)
+                
                 folderIntensities.append(intensities)
 
             # ✅ Compute average intensity per folder
             if len(folderIntensities) > 0:
+                
                 avgIntensity = np.mean(folderIntensities, axis=0)
                 allFolderAverages.append(avgIntensity)
 
                 # Compute yield: folder index / 10
-                yieldValue = folderIndex / 10.0
                 allYields.append(yieldValue)
 
-        self.allFolderAverages=allFolderAverages                
+        self.allFolderAverages=allFolderAverages
+        self.allUnmasked=allUnmasked
+        self.allUnaveraged=allUnaveraged
         self.trimData()
 
         # Convert to pandas DataFrame and save
         df = pd.DataFrame(self.allFolderAverages)
         df['Yield'] = allYields
-        df.to_csv(output_csv, index=False)
+        df.to_csv(output_csv_averages, index=False)
+        
+        dfUnaveraged = pd.DataFrame(self.allUnaveraged)
+        dfUnaveraged['Yield'] = allYieldsUnaveraged
+        dfUnaveraged.to_csv(output_csv_unaveraged, index=False)
+        
+        dfUnmasked = pd.DataFrame(self.allUnmasked)
+        dfUnmasked['Yield'] = allYieldsUnmasked
+        dfUnmasked.to_csv(output_csv_unmasked, index=False)
 
-        print(f"✅ Processed and saved {len(allFolderAverages)} averaged IR spectra to {output_csv}")
+        print(f"✅ Processed and saved {len(allFolderAverages)} averaged IR spectra to {output_csv_averages}")
 
     def trimDataSingle(self, data_array):
         """
@@ -227,6 +248,8 @@ class IrStandard:
 
         # Convert to numpy array if not already, then trim each scan
         self.allFolderAverages = np.array(self.allFolderAverages)[:, self.trimLeft:-self.trimRight]
+        self.allUnaveraged = np.array(self.allUnaveraged)[:, self.trimLeft:-self.trimRight]
+        self.allUnmasked = np.array(self.allUnmasked)[:, self.trimLeft:-self.trimRight]
 
         print(f"✅ Trimmed allFolderAverages: New shape {self.allFolderAverages.shape}")
 
