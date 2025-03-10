@@ -14,7 +14,7 @@ class IRMLPTrainer:
     def __init__(self, ir_standard):
         self.ir_standard = ir_standard  # IR data handler
         self.scaler = MinMaxScaler()  # For feature scaling
-
+    
     def extract_high_change_features(self):
         """
         Extracts high-change regions and concatenates them into a smaller input vector.
@@ -80,6 +80,35 @@ class IRMLPTrainer:
 
         return X_final, y_final
 
+    def estimateYield(self, input_scan):
+        """
+        Estimates the yield from a new IR scan.
+
+        Parameters:
+        - input_scan (list of 839 elements): Raw IR spectrum.
+
+        Returns:
+        - yield_value (float): Predicted yield in range [0,1].
+        """
+        if self.model is None:
+            raise ValueError("Model not loaded. Use loadModel() first.")
+
+        # Convert list to NumPy array
+        input_scan = np.array(input_scan, dtype=np.float32)
+
+        # Process raw scan: interpolate onto standard grid
+        _, processed_scan = self.ir_standard.processRawScan(self.ir_standard.allWavenumbers, input_scan)
+
+        # Extract high-change regions
+        extracted_features = processed_scan #self.extract_high_change_features(processed_scan)
+
+        # Normalize the input
+        normalized_input = self.normalize_data(extracted_features)
+
+        # Predict yield
+        yield_value = self.model.predict(np.array([normalized_input]))[0][0]
+        return yield_value
+
     def train_mlp(self, X, y):
         """
         Trains an MLP to predict yield from IR spectra.
@@ -97,17 +126,19 @@ class IRMLPTrainer:
 
         history = model.fit(X_train, y_train, validation_data=(X_test, y_test),
                             epochs=100, batch_size=8, verbose=1)
-
-        model.save("ir_yield_mlp.h5")
+        
+        self.model=model
+        np.save("scaler.npy", self.scaler)
+        
+        model.save("ir_yield_mlp.keras")
         return model, history
 
 if __name__ == "__main__":
     # Load and process IR data
     irAnalysis = IrStandard(mainDir="isovanillin+allylbromide+product", trimLeft=200, trimRight=40)
     irAnalysis.loadData()
-    irAnalysis.trimData()
-    highChangeRanges = irAnalysis.detectHighChangeRegions()
-    irAnalysis.filterDataInterpolate(highChangeRanges, interpolationFactor=5)
+    
+    print(f"Length: {len(irAnalysis.Z[0])}")
 
     trainer = IRMLPTrainer(irAnalysis)
     X, y = trainer.prepare_training_data()
@@ -125,3 +156,8 @@ if __name__ == "__main__":
     plt.title('MLP Training Loss')
     
     plt.show()
+    
+    while True:
+        _input=input("Input vector: ")
+        _input = eval(_input)
+        print(f"Estimated yield: {trainer.estimateYield(_input)}")
