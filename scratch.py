@@ -245,7 +245,6 @@ if __name__ == "__main__":
     rig.registerTweakableParam(device2, flowrateParam2)
 
     # Set a mock optimizer and evaluator
-    
     trainer = IRMLPTrainer(csv_path="ir_yield_no_resample_averages.csv", csv_path_unaveraged= 'ir_yield_no_resample_unaveraged.csv', csv_path_unmasked='ir_yield_no_resample_unmasked.csv')
     rig.optimizer = SummitOptimizer()
     rig.objectiveEvaluator = mockObjectiveEvaluator

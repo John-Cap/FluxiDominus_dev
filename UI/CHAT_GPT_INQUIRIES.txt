@@ -1,1593 +1,505 @@
-Attached is a picture of the flowsketcher in action. How can I add logic that allows you to 'click' on a connecting line (circled) to bring up an option to set a value? ->
-
-I want the connecting lines to be able to be expressed as a 'Component' ('Tubing'):
-
-components.dart:
-
-import 'dart:ui';
-
-import 'package:flutter/material.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/connection_params.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
-
-class Component extends FlowElement {
-  @override
-  final String deviceName;
-  final String deviceType;
-  final double volume;
-
-  Component({
-    required this.deviceName,
-    required this.deviceType,
-    required this.volume,
-    Offset position = Offset.zero,
-    Size size = Size.zero,
-    String text = '',
-    Color textColor = Colors.black,
-    String? fontFamily,
-    double textSize = 10,
-    bool textIsBold = false,
-    ElementKind kind = ElementKind.rectangle,
-    List<Handler> handlers = const [
-      Handler.topCenter,
-      Handler.bottomCenter,
-      Handler.rightCenter,
-      Handler.leftCenter,
-    ],
-    double handlerSize = 15.0,
-    Color backgroundColor = Colors.white,
-    Color borderColor = Colors.blue,
-    double borderThickness = 3,
-    double elevation = 4,
-    List<ConnectionParams>? next,
-  }) : super(
-          position: position,
-          size: size,
-          text: text,
-          textColor: textColor,
-          fontFamily: fontFamily,
-          textSize: textSize,
-          textIsBold: textIsBold,
-          kind: kind,
-          handlers: handlers,
-          handlerSize: handlerSize,
-          backgroundColor: backgroundColor,
-          borderColor: borderColor,
-          borderThickness: borderThickness,
-          elevation: elevation,
-          next: next,
-        );
-}
-
-
-dashboard.dart:
-
-import 'dart:io';
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:flutter_flow_chart/includes/components.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/connection_params.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/draw_arrow.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/grid_background.dart';
-import 'package:uuid/uuid.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter/cupertino.dart';
-
-/// Class to store all the scene elements.
-/// This also acts as the controller to the flow_chart widget
-/// It notifies changes to [FlowChart]
-class Dashboard extends ChangeNotifier {
-  List<Component> elements;
-  Offset dashboardPosition;
-  Size dashboardSize;
-  Map<String, List<dynamic>> connections;
-  Map<String, String> idToName;
-
-  String? nameFromId(String id) {
-    return idToName[id];
-  }
-
-  /// [handlerFeedbackOffset] sets an offset for the handler when user is dragging it
-  /// This can be used to prevent the handler being covered by user's finger on touch screens
-  late Offset handlerFeedbackOffset;
-
-  GridBackgroundParams gridBackgroundParams;
-  bool blockDefaultZoomGestures;
-
-  void appendElementUnique(String key, String value) {
-    // Get the list associated with the key, or create a new list if it doesn't exist
-    connections.putIfAbsent(key, () => []);
-
-    // Check if the list already contains the value
-    if (!connections[key]!.contains(value)) {
-      connections[key]!
-          .add(value); // Add the value to the list if it's not already present
-    }
-  }
-
-  /// minimum zoom factor allowed
-  /// default is 0.25
-  /// setting it to 1 will prevent zooming out
-  /// setting it to 0 will remove the limit
-  double minimumZoomFactor;
-
-  ///////////////////////////////////
-  /// WJ additional methods/properties
-  void addConnection(
-      FlowElement sourceElement, String destId, ArrowParams arrowParams,
-      {bool notify = true}) {
-    FlowElement? destElement = findElementById(destId);
-    if (destElement == null) {
-      debugPrint('Destination element with ID $destId not found!');
-      return;
-    }
-    // Method to find a connection by source and destination elements
-    ConnectionParams? findConnection(
-        FlowElement sourceElement, FlowElement destElement) {
-      try {
-        return sourceElement.next.firstWhere(
-            (connection) => connection.destElementId == destElement.id);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    arrowParams.setScale(1, gridBackgroundParams.scale);
-    // Remove any existing connection to the same destination
-    sourceElement.next
-        .removeWhere((connection) => connection.destElementId == destId);
-    // Add the new connection
-    sourceElement.next
-        .add(ConnectionParams(destElementId: destId, arrowParams: arrowParams));
-
-    if (notify) {
-      notifyListeners();
-    }
-  }
-
-  // Method to remove a connection by source and destination elements
-  void removeConnection(FlowElement sourceElement, FlowElement destElement,
-      {bool notify = true}) {
-    sourceElement.next.removeWhere(
-        (connection) => connection.destElementId == destElement.id);
-    if (notify) {
-      notifyListeners();
-    }
-  }
-
-  // Method to remove all connections for a specific element
-  void removeAllConnections(FlowElement element, {bool notify = true}) {
-    element.next.clear();
-    if (notify) {
-      notifyListeners();
-    }
-  }
-
-  ///////////////////////////////////
-
-  /// callback when the scale is updated
-  void Function(double scale)? onScaleUpdate;
-
-  Dashboard({
-    Offset? handlerFeedbackOffset,
-    this.blockDefaultZoomGestures = false,
-    this.minimumZoomFactor = 0.25,
-  })  : elements = [],
-        dashboardPosition = Offset.zero,
-        dashboardSize = const Size(0, 0),
-        connections = {},
-        idToName = {},
-        gridBackgroundParams = GridBackgroundParams() {
-    // This is a workaround to set the handlerFeedbackOffset
-    // to improve the user experience on devices with touch screens
-    // This will prevent the handler being covered by user's finger
-    if (handlerFeedbackOffset != null) {
-      this.handlerFeedbackOffset = handlerFeedbackOffset;
-    } else {
-      if (kIsWeb) {
-        this.handlerFeedbackOffset = const Offset(0, 0);
-      } else {
-        if (Platform.isIOS || Platform.isAndroid) {
-          this.handlerFeedbackOffset = const Offset(0, -50);
-        } else {
-          this.handlerFeedbackOffset = const Offset(0, 0);
-        }
-      }
-    }
-  }
-
-  /// set grid background parameters
-  setGridBackgroundParams(GridBackgroundParams params) {
-    gridBackgroundParams = params;
-    if (onScaleUpdate != null) {
-      params.addOnScaleUpdateListener(onScaleUpdate!);
-    }
-    notifyListeners();
-  }
-
-  /// set the feedback offset to help on mobile device to see the
-  /// end of arrow and not hiding behind the finger when moving it
-  setHandlerFeedbackOffset(Offset offset) {
-    handlerFeedbackOffset = offset;
-  }
-
-  /// set [isResizable] element property
-  setElementResizable(FlowElement element, bool resizable,
-      {bool notify = true}) {
-    element.isResizing = resizable;
-    if (notify) notifyListeners();
-  }
-
-  /// add a [FlowElement] to the dashboard
-  addElement(Component element, {bool notify = true}) {
-    if (element.id.isEmpty) {
-      element.id = const Uuid().v4();
-    }
-    idToName[element.id] = element.text;
-    // element.scale = _currentZoomFactor;
-    element.setScale(1, gridBackgroundParams.scale);
-    elements.add(element);
-    if (notify) {
-      notifyListeners();
-    }
-  }
-
-  /// find the element by its [id]
-  int findElementIndexById(String id) {
-    return elements.indexWhere((element) => element.id == id);
-  }
-
-  /// find the element by its [id] for convenience
-  /// return null if not found
-  FlowElement? findElementById(String id) {
-    try {
-      return elements.firstWhere((element) => element.id == id);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// find the connection from [srcElement] to [destElement]
-  /// return null if not found
-  /// In case of multiple connections, first connection is returned
-  ConnectionParams? findConnectionByElements(
-      FlowElement srcElement, FlowElement destElement) {
-    try {
-      return srcElement.next
-          .firstWhere((element) => element.destElementId == destElement.id);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  /// remove all elements
-  removeAllElements({bool notify = true}) {
-    elements.clear();
-    if (notify) notifyListeners();
-  }
-
-  /// remove the [handler] connection of [element]
-  removeElementConnection(
-    FlowElement element,
-    Handler handler, {
-    bool notify = true,
-  }) {
-    Alignment alignment;
-    switch (handler) {
-      case Handler.topCenter:
-        alignment = const Alignment(0.0, -1.0);
-        break;
-      case Handler.bottomCenter:
-        alignment = const Alignment(0.0, 1.0);
-        break;
-      case Handler.leftCenter:
-        alignment = const Alignment(-1.0, 0.0);
-        break;
-      case Handler.rightCenter:
-      default:
-        alignment = const Alignment(1.0, 0.0);
-    }
-    element.next.removeWhere((handlerParam) =>
-        handlerParam.arrowParams.startArrowPosition == alignment);
-    if (notify) notifyListeners();
-  }
-
-  /// remove the connection from [srcElement] to [destElement]
-  removeConnectionByElements(FlowElement srcElement, FlowElement destElement,
-      {bool notify = true}) {
-    srcElement.next.removeWhere(
-        (handlerParam) => handlerParam.destElementId == destElement.id);
-    if (notify) notifyListeners();
-  }
-
-  /// remove all the connection from the [element]
-  removeElementConnections(FlowElement element, {bool notify = true}) {
-    element.next.clear();
-    if (notify) notifyListeners();
-  }
-
-  /// remove all the elements with [id] from the dashboard
-  removeElementById(String id, {bool notify = true}) {
-    // remove the element
-    String elementId = '';
-    elements.removeWhere((element) {
-      if (element.id == id) {
-        elementId = element.id;
-      }
-      return element.id == id;
-    });
-
-    // remove all connections to the elements found
-    for (FlowElement e in elements) {
-      e.next.removeWhere((handlerParams) {
-        return elementId.contains(handlerParams.destElementId);
-      });
-    }
-    if (notify) notifyListeners();
-  }
-
-  /// remove element
-  /// return true if it has been removed
-  bool removeElement(FlowElement element, {bool notify = true}) {
-    // remove the element
-    bool found = false;
-    String elementId = element.id;
-    elements.removeWhere((e) {
-      if (e.id == element.id) found = true;
-      return e.id == element.id;
-    });
-
-    // remove all connections to the element
-    for (FlowElement e in elements) {
-      e.next.removeWhere(
-          (handlerParams) => handlerParams.destElementId == elementId);
-    }
-    if (notify) notifyListeners();
-    return found;
-  }
-
-  /// [factor] needs to be a non negative value
-  /// 1 is the default value
-  /// giving a value above 1 will zoom the dashboard by the given factor and vice versa
-  /// Negative values will be ignored
-  /// [zoomFactor] will not go below [minimumZoomFactor]
-  /// [focalPoint] is the point where the zoom is centered
-  /// default is the center of the dashboard
-  void setZoomFactor(double factor, {Offset? focalPoint}) {
-    if (factor < minimumZoomFactor || gridBackgroundParams.scale == factor) {
-      return;
-    }
-
-    focalPoint ??= Offset(dashboardSize.width / 2, dashboardSize.height / 2);
-
-    for (FlowElement element in elements) {
-      // reversing current zoom
-      element.position =
-          (element.position - focalPoint) / gridBackgroundParams.scale +
-              focalPoint;
-      // applying new zoom
-      element.position = (element.position - focalPoint) * factor + focalPoint;
-      element.setScale(gridBackgroundParams.scale, factor);
-    }
-
-    gridBackgroundParams.setScale(factor, focalPoint);
-
-    notifyListeners();
-  }
-
-  /// shorthand to get the current zoom factor
-  double get zoomFactor {
-    return gridBackgroundParams.scale;
-  }
-
-  /// needed to know the diagram widget position to compute
-  /// offsets for drag and drop elements
-  setDashboardPosition(Offset position) {
-    dashboardPosition = position;
-  }
-
-  /// needed to know the diagram widget size
-  setDashboardSize(Size size) {
-    dashboardSize = size;
-  }
-
-  /// make an arrow connection from [sourceElement] to
-  /// the elements with id [destId]
-  /// [arrowParams] definition of arrow parameters
-  addNextById(
-    FlowElement sourceElement,
-    String destId,
-    ArrowParams arrowParams, {
-    bool notify = true,
-  }) {
-    int found = 0;
-    arrowParams.setScale(1, gridBackgroundParams.scale);
-    for (int i = 0; i < elements.length; i++) {
-      if (elements[i].id == destId) {
-        // if the [id] already exist, remove it and add this new connection
-        sourceElement.next
-            .removeWhere((element) => element.destElementId == destId);
-        sourceElement.next.add(ConnectionParams(
-          destElementId: elements[i].id,
-          arrowParams: arrowParams,
-        ));
-
-        found++;
-      }
-    }
-
-    if (found == 0) {
-      debugPrint('Element with $destId id not found!');
-      return;
-    }
-    if (notify) {
-      notifyListeners();
-    }
-  }
-
-  //******************************* */
-  /// manage load/save using json
-  Map<String, dynamic> toMap() {
-    print('WJ - Factory delivered dashboard 3');
-    notifyListeners();
-    return <String, dynamic>{
-      'elements': elements.map((x) => x.toMap()).toList(),
-    };
-  }
-
-  factory Dashboard.fromMap(Map<String, dynamic> map) {
-    Dashboard d = Dashboard();
-    d.elements = List<Component>.from(
-      (map['elements'] as List<dynamic>).map<FlowElement>(
-        (x) => FlowElement.fromMap(x as Map<String, dynamic>),
-      ),
-    );
-    print('WJ - Factory delivered dashboard 1');
-    return d;
-  }
-
-  String toJson() {
-    print('WJ - Factory delivered dashboard 4');
-    print('WJ - the JSON -> "${json.encode(toMap())}"');
-    return json.encode(toMap());
-  }
-
-  void refreshDashboard() {
-    notifyListeners();
-  }
-
-  factory Dashboard.fromJson(String source) {
-    print('WJ - Factory delivered dashboard 2');
-    return Dashboard.fromMap(json.decode(source) as Map<String, dynamic>);
-  }
-
-  String prettyJson() {
-    var spaces = ' ' * 2;
-    var encoder = JsonEncoder.withIndent(spaces);
-    return encoder.convert(toMap());
-  }
-
-  /// recenter the dashboard
-  void recenter() {
-    Offset center = Offset(dashboardSize.width / 2, dashboardSize.height / 2);
-    gridBackgroundParams.offset = center;
-    if (elements.isNotEmpty) {
-      Offset currentDeviation = elements.first.position - center;
-      for (FlowElement element in elements) {
-        element.position -= currentDeviation;
-      }
-    }
-    notifyListeners();
-  }
-
-  /// save the dashboard into mqttService
-  saveDashboard() {
-    return toJson();
-  }
-
-  /// clear the dashboard and load the new one from mqttService
-  loadDashboard(String currDashboardJson) {
-    return Dashboard.fromJson(currDashboardJson);
-  }
-
-  void setStateFrom(Dashboard loadedDashboard) {}
-}
-
-sketcher.dart:
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter_flow_chart/includes/components.dart';
-import 'package:flutter_flow_chart/includes/plutter.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/flow_chart.dart';
-import 'package:star_menu/star_menu.dart';
-import 'src/ui/element_settings_menu.dart';
-import 'src/ui/text_menu.dart';
-
-// ignore: must_be_immutable
-class FlowSketcher extends StatefulWidget {
-  FlowSketcher({
-    super.key,
-    required this.mqttService,
-    required this.topic,
-    required this.dashboard,
-  });
-  final MqttService mqttService;
-  final String topic;
-  Dashboard dashboard;
-
-  @override
-  State<FlowSketcher> createState() => FlowSketcherState();
-}
-
-class FlowSketcherState extends State<FlowSketcher>
-    with AutomaticKeepAliveClientMixin {
-  ConnectionMqttReport mqttReport = ConnectionMqttReport();
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context); // Ensure this line is added to keep the state alive
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('FlowSketcher'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              widget.dashboard.setZoomFactor(1.5 * widget.dashboard.zoomFactor);
-            },
-            icon: const Text(
-              '+',
-              textScaler: TextScaler.linear(1.5),
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              widget.dashboard.setZoomFactor(widget.dashboard.zoomFactor / 1.5);
-            },
-            icon: const Text(
-              '-',
-              textAlign: TextAlign.center,
-              textScaler: TextScaler.linear(2),
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: Colors.black12,
-      body: Container(
-        constraints: const BoxConstraints.expand(),
-        child: FlowChart(
-          dashboard: widget.dashboard,
-          onDashboardTapped: ((context, position) {
-            debugPrint('Dashboard tapped $position');
-            //debugPrint('WJ - ${dashboard.elements[0].next[0].destElementId}');
-            _displayDashboardMenu(context, position);
-          }),
-          onScaleUpdate: (newScale) {
-            debugPrint('Scale updated. new scale: $newScale');
-          },
-          onDashboardSecondaryTapped: (context, position) {
-            debugPrint('Dashboard right clicked $position');
-            _displayDashboardMenu(context, position);
-          },
-          onDashboardLongTapped: ((context, position) {
-            debugPrint('Dashboard long tapped $position');
-          }),
-          onDashboardSecondaryLongTapped: ((context, position) {
-            debugPrint(
-                'Dashboard long tapped with mouse right click $position');
-          }),
-          onElementLongPressed: (context, position, element) {
-            debugPrint('Element with "${element.text}" text long pressed');
-          },
-          onElementSecondaryLongTapped: (context, position, element) {
-            debugPrint(
-                'Element with "${element.text}" text long tapped with mouse right click');
-          },
-          onElementPressed: (context, position, element) {
-            debugPrint('Element with "${element.text}" text pressed');
-            _displayElementMenu(context, position, element);
-          },
-          onElementSecondaryTapped: (context, position, element) {
-            //debugPrint('WJ - Element details: $element');
-            debugPrint('Element with "${element.text}" text pressed');
-            _displayElementMenu(context, position, element);
-          },
-          onHandlerPressed: (context, position, handler, element) {
-            debugPrint(
-                'handler pressed: position $position handler $handler" of element $element');
-            _displayHandlerMenu(position, handler, element);
-          },
-          onHandlerLongPressed: (context, position, handler, element) {
-            debugPrint(
-                'handler long pressed: position $position handler $handler" of element $element');
-          },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: widget.dashboard.recenter,
-        child: const Text(
-          '>|<',
-          textScaler: TextScaler.linear(2),
-        ),
-      ),
-    );
-  }
-
-  @override
-  bool get wantKeepAlive => true;
-
-  //*********************
-  //* POPUP MENUS
-  //*********************
-
-  /// Display a drop down menu when tapping on a handler
-  void _displayHandlerMenu(
-      Offset position, Handler handler, FlowElement element) {
-    StarMenuOverlay.displayStarMenu(
-      context,
-      StarMenu(
-        params: StarMenuParameters(
-          shape: MenuShape.linear,
-          openDurationMs: 60,
-          linearShapeParams: const LinearShapeParams(
-            angle: 270,
-            space: 10,
-          ),
-          onHoverScale: 1.1,
-          useTouchAsCenter: true,
-          centerOffset: position -
-              Offset(
-                widget.dashboard.dashboardSize.width / 2,
-                widget.dashboard.dashboardSize.height / 2,
-              ),
-        ),
-        onItemTapped: (index, controller) => controller.closeMenu!(),
-        items: [
-          FloatingActionButton(
-            child: const Icon(Icons.delete),
-            onPressed: () {
-              widget.dashboard.removeElementConnection(element, handler);
-              _updateConnections();
-            },
-          )
-        ],
-        parentContext: context,
-      ),
-    );
-  }
-
-  /// Display a drop down menu when tapping on an element
-  void _displayElementMenu(
-      BuildContext context, Offset position, FlowElement element) {
-    StarMenuOverlay.displayStarMenu(
-      context,
-      StarMenu(
-        params: StarMenuParameters(
-          shape: MenuShape.linear,
-          openDurationMs: 60,
-          linearShapeParams: const LinearShapeParams(
-            angle: 270,
-            alignment: LinearAlignment.left,
-            space: 10,
-          ),
-          onHoverScale: 1.1,
-          centerOffset: position - const Offset(50, 0),
-          backgroundParams: const BackgroundParams(
-            backgroundColor: Colors.transparent,
-          ),
-          boundaryBackground: BoundaryBackground(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Theme.of(context).cardColor,
-              boxShadow: kElevationToShadow[6],
-            ),
-          ),
-        ),
-        onItemTapped: (index, controller) {
-          if (!(index == 5 || index == 2)) {
-            controller.closeMenu!();
-          }
-        },
-        items: [
-          Text(
-            element.text,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-          InkWell(
-            onTap: () {
-              widget.dashboard.removeElement(element);
-              _updateConnections();
-            },
-            child: const Text('Delete'),
-          ),
-          TextMenu(element: element),
-          InkWell(
-            onTap: () {
-              widget.dashboard.removeElementConnections(element);
-              _updateConnections();
-            },
-            child: const Text('Remove all connections'),
-          ),
-          InkWell(
-            onTap: () {
-              widget.dashboard.setElementResizable(element, true);
-            },
-            child: const Text('Resize'),
-          ),
-          ElementSettingsMenu(element: element),
-        ],
-        parentContext: context,
-      ),
-    );
-  }
-
-  /// Print all connections of all elements in the dashboard
-  void _updateConnections() {
-    for (var element in widget.dashboard.elements) {
-      debugPrint(
-          'WJ - Element ${widget.dashboard.nameFromId(element.id)} connections:');
-      for (var connection in element.next) {
-        debugPrint('WJ -> ${connection.destElementId}');
-        widget.dashboard
-            .appendElementUnique(element.id, connection.destElementId);
-      }
-      _buildMqttReport();
-    }
-    setState(() {});
-    //debugPrint(('WJ -> ${widget.dashboard.connections.toString()}'));
-  }
-
-  void _buildMqttReport() {
-    widget.mqttService.availableDevices = ["Delay", "WaitUntil"];
-
-    for (var element in widget.dashboard.elements) {
-      if (element.deviceName != "null" &&
-          !widget.mqttService.availableDevices.contains(element.deviceName)) {
-        widget.mqttService.availableDevices.add(element.deviceName);
-      }
-      mqttReport.report[element.id] = {
-        "name": widget.dashboard.nameFromId(element.id),
-        "flowsInto": widget.dashboard.connections[element.id],
-        "deviceName": element.deviceName,
-        "deviceType": element.deviceType,
-        "volume": element.volume
-      };
-      print('WJ connections of dash -> ${jsonEncode(mqttReport.report)}');
-      widget.mqttService.currFlowScript = mqttReport.report;
-    }
-    //print("WJ - $availableDevices");
-  }
-
-  /// Display a linear menu for the dashboard with menu entries built with [menuEntries]
-  void _displayDashboardMenu(BuildContext context, Offset position) {
-    StarMenuOverlay.displayStarMenu(
-      context,
-      StarMenu(
-        params: StarMenuParameters(
-          shape: MenuShape.linear,
-          openDurationMs: 60,
-          linearShapeParams: const LinearShapeParams(
-            angle: 270,
-            alignment: LinearAlignment.left,
-            space: 10,
-          ),
-          // calculate the offset from the dashboard center
-          centerOffset: position -
-              Offset(
-                widget.dashboard.dashboardSize.width / 2,
-                widget.dashboard.dashboardSize.height / 2,
-              ),
-        ),
-        onItemTapped: (index, controller) => controller.closeMenu!(),
-        parentContext: context,
-        items: [
-          Wrap(
-            children: [
-              ActionChip(
-                label: const Text('Add valve'),
-                onPressed: () {
-                  widget.dashboard.addElement(
-                    Component(
-                      position: position,
-                      deviceName: "null",
-                      volume: 0.25,
-                      size: const Size(100, 50),
-                      text: 'Valve',
-                      handlerSize: 15,
-                      kind: ElementKind.rectangle,
-                      handlers: [
-                        Handler.leftCenter,
-                        Handler.rightCenter,
-                      ],
-                      deviceType: 'Valve',
-                    ),
-                  );
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add column (2 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    textSize: 15,
-                    text: 'Column (2 mL)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Column',
-                    volume: 2,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add column (5 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    textSize: 15,
-                    text: 'Column (5 mL)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Column',
-                    volume: 5,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add column (10 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    textSize: 15,
-                    text: 'Column (10 mL)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Column',
-                    volume: 10,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Magritek 60'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Magritek 60',
-                    deviceName: 'reactIR702L1', //TODO - correct name
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    volume: 0.25,
-                    deviceType: 'NMR',
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add ReactIR 702L1'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'ReactIR 702L1',
-                    deviceName: 'reactIR702L1',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'IR',
-                    volume: 0.25,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add BPR (2 Bar)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'BPR (2 Bar)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'BPR',
-                    volume: 0.1,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add BPR (5 Bar)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'BPR (5 Bar)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'BPR',
-                    volume: 0.1,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add BPR (8 Bar)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'BPR (8 Bar)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'BPR',
-                    volume: 0.1,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add BPR (10 Bar)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'BPR (10 Bar)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'BPR',
-                    volume: 0.1,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Stock Solution'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Stock',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceName: 'null',
-                    deviceType: 'FlowOrigin',
-                    volume: 0,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Pushing Solvent'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Push',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceName: 'null',
-                    deviceType: 'FlowOrigin',
-                    volume: 0,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add collection point'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Collection point',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceName: 'null',
-                    deviceType: 'FlowTerminus',
-                    volume: 0,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Flowsyn Maxi 1'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Flowsyn Maxi 1',
-                    deviceName: 'flowsynmaxi2',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'FlowsynMaxi',
-                    volume: 5,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Flowsyn Maxi 2'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Flowsyn Maxi 2',
-                    deviceName: 'flowsynmaxi1',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'FlowsynMaxi',
-                    volume: 5,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Vapourtec R4 (HPLC)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'R4 (HPLC)',
-                    deviceName: 'vapourtecR4P1700',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'vapourtecR4',
-                    volume: 5,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Vapourtec R4 (Peristaltic)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'R4 (Peristaltic)',
-                    deviceName: 'vapourtecR4P1700',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'vapourtecR4',
-                    volume: 5,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Vapourtec SF10'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'SF10',
-                    deviceName: 'sf10vapourtec1',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Pump',
-                    volume: 5,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add hotcoil (10 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Hotcoil (10 mL)',
-                    deviceName: "hotcoil1",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Coil',
-                    volume: 10,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add hotcoil (20 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Hotcoil (20 mL)',
-                    deviceName: "hotcoil1",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Coil',
-                    volume: 20,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add hotcoil (40 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Hotcoil (40 mL)',
-                    deviceName: "hotcoil1",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Coil',
-                    volume: 40,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              /*
-              ActionChip(
-                label: const Text('Set'),
-                onPressed: () {
-                  print('WJ - Attempting to publish');
-                  _updateConnections();
-                  _buildMqttReport();
-                  //_publishMqttReport();
-                },
-              ),
-              */
-              ActionChip(
-                label: const Text('Save'),
-                onPressed: () {
-                  print('WJ - Attempting to publish');
-                  _updateConnections();
-                  _buildMqttReport();
-                  widget.mqttService.currDashboardJson =
-                      widget.dashboard.saveDashboard();
-                  //setState(() {});
-                },
-              ),
-              ActionChip(
-                label: const Text('Load'),
-                onPressed: () {
-                  widget.dashboard = widget.dashboard
-                      .loadDashboard(widget.mqttService.currDashboardJson);
-                  _updateConnections();
-                },
-              )
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void updateConnections() {
-    widget.dashboard =
-        widget.dashboard.loadDashboard(widget.mqttService.currDashboardJson);
-  }
-}
-
-class ConnectionMqttReport {
-  Map<String, Map<String, dynamic>> report = {};
-  String toJsonString() {
-    return jsonEncode(report);
-  }
-}
-
-Some flow element definitions:
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/connection_params.dart';
-import 'package:uuid/uuid.dart';
-//import 'package:flutter_flow_chart/src/elements/connection_params.dart';
-
-enum ElementKind {
-  rectangle,
-  diamond,
-  storage,
-  oval,
-  parallelogram,
-  hexagon,
-}
-
-enum Handler {
-  topCenter,
-  bottomCenter,
-  rightCenter,
-  leftCenter,
-}
-
-/// Class to store [ElementWidget]s and notify its changes
-class FlowElement extends ChangeNotifier {
-  /// Unique id set when adding a [FlowElement] with [Dashboard.addElement()]
-  String id;
-
-  /// The position of the [FlowElement]
-  Offset position;
-
-  /// The size of the [FlowElement]
-  Size size;
-
-  /// Element text
-  String text;
-
-  /// Text color
-  Color textColor;
-
-  /// Text font family
-  String? fontFamily;
-
-  /// Text size
-  double textSize;
-
-  /// Makes text bold if true
-  bool textIsBold;
-
-  /// Element shape
-  ElementKind kind;
-
-  /// Connection handlers
-  List<Handler> handlers;
-
-  /// The size of element handlers
-  double handlerSize;
-
-  /// Background color of the element
-  Color backgroundColor;
-
-  /// Border color of the element
-  Color borderColor;
-
-  /// Border thickness of the element
-  double borderThickness;
-
-  /// Shadow elevation
-  double elevation;
-
-  /// List of connections of this element
-  List<ConnectionParams> next;
-
-  /// Element text
-  bool isResizing;
-
-  String deviceName;
-
-  FlowElement({
-    position = Offset.zero,
-    this.size = Size.zero,
-    this.text = '',
-    this.deviceName = 'null',
-    this.textColor = Colors.black,
-    this.fontFamily,
-    this.textSize = 10,
-    this.textIsBold = false,
-    this.kind = ElementKind.rectangle,
-    this.handlers = const [
-      Handler.topCenter,
-      Handler.bottomCenter,
-      Handler.rightCenter,
-      Handler.leftCenter,
-    ],
-    this.handlerSize = 15.0,
-    this.backgroundColor = Colors.white,
-    this.borderColor = Colors.blue,
-    this.borderThickness = 3,
-    this.elevation = 4,
-    next,
-  })  : next = next ?? [],
-        id = const Uuid().v4(),
-        isResizing = false,
-        position = position -
-            Offset(
-              size.width / 2 + handlerSize / 2,
-              size.height / 2 + handlerSize / 2,
-            );
-
-  @override
-  String toString() {
-    return 'kind: $kind  text: $text';
-  }
-
-  /// When setting to true, a handler will disply at the element bottom right
-  /// to let the user to resize it. When finish it will disappear.
-  setIsResizing(bool resizing) {
-    isResizing = resizing;
-    notifyListeners();
-  }
-
-  setScale(double currentZoom, double factor) {
-    size = size / currentZoom * factor;
-    handlerSize = handlerSize / currentZoom * factor;
-    textSize = textSize / currentZoom * factor;
-    for (ConnectionParams element in next) {
-      element.arrowParams.setScale(currentZoom, factor);
-    }
-
-    notifyListeners();
-  }
-
-  /// Used internally to set an unique Uuid to this element
-  setId(String id) {
-    this.id = id;
-  }
-
-  /// Set text
-  setText(String text) {
-    this.text = text;
-    notifyListeners();
-  }
-
-  /// Set text color
-  setTextColor(Color color) {
-    textColor = color;
-    notifyListeners();
-  }
-
-  /// Set text font family
-  setFontFamily(String? fontFamily) {
-    this.fontFamily = fontFamily;
-    notifyListeners();
-  }
-
-  /// Set text size
-  setTextSize(double size) {
-    textSize = size;
-    notifyListeners();
-  }
-
-  /// Set text bold
-  setTextIsBold(bool isBold) {
-    textIsBold = isBold;
-    notifyListeners();
-  }
-
-  /// Set background color
-  setBackgroundColor(Color color) {
-    backgroundColor = color;
-    notifyListeners();
-  }
-
-  /// Set border color
-  setBorderColor(Color color) {
-    borderColor = color;
-    notifyListeners();
-  }
-
-  /// Set border thickness
-  setBorderThickness(double thickness) {
-    borderThickness = thickness;
-    notifyListeners();
-  }
-
-  /// Set elevation
-  setElevation(double elevation) {
-    this.elevation = elevation;
-    notifyListeners();
-  }
-
-  /// Change element position in the dashboard
-  changePosition(Offset newPosition) {
-    position = newPosition;
-    notifyListeners();
-  }
-
-  /// Change element size
-  changeSize(Size newSize) {
-    if (newSize.width < 40) newSize = Size(40, newSize.height);
-    if (newSize.height < 40) newSize = Size(newSize.width, 40);
-    size = newSize;
-    notifyListeners();
-  }
-
-  @override
-  bool operator ==(covariant FlowElement other) {
-    if (identical(this, other)) return true;
-
-    return other.id == id;
-  }
-
-  @override
-  int get hashCode {
-    return position.hashCode ^
-        size.hashCode ^
-        text.hashCode ^
-        textColor.hashCode ^
-        fontFamily.hashCode ^
-        textSize.hashCode ^
-        textIsBold.hashCode ^
-        id.hashCode ^
-        kind.hashCode ^
-        handlers.hashCode ^
-        handlerSize.hashCode ^
-        backgroundColor.hashCode ^
-        borderColor.hashCode ^
-        borderThickness.hashCode ^
-        elevation.hashCode ^
-        next.hashCode;
-  }
-
-  Map<String, dynamic> toMap() {
-    //print("WJ - " + (next.map((x) => x.toMap()).toList()).toString());
-    return <String, dynamic>{
-      'positionDx': position.dx,
-      'positionDy': position.dy,
-      'size.width': size.width,
-      'size.height': size.height,
-      'text': text,
-      'textColor': textColor.value,
-      'fontFamily': fontFamily,
-      'textSize': textSize,
-      'textIsBold': textIsBold,
-      'id': id,
-      'kind': kind.index,
-      'handlers': handlers.map((x) => x.index).toList(),
-      'handlerSize': handlerSize,
-      'backgroundColor': backgroundColor.value,
-      'borderColor': borderColor.value,
-      'borderThickness': borderThickness,
-      'elevation': elevation,
-      'next': next.map((x) => x.toMap()).toList(),
-    };
-  }
-
-  factory FlowElement.fromMap(Map<String, dynamic> map) {
-    FlowElement e = FlowElement(
-      position: Offset(
-        map['positionDx'].toDouble(),
-        map['positionDy'].toDouble(),
-      ),
-      size: Size(map['size.width'].toDouble(), map['size.height'].toDouble()),
-      text: map['text'] as String,
-      textColor: Color(map['textColor'] as int),
-      fontFamily: map['fontFamily'] as String?,
-      textSize: map['textSize'].toDouble(),
-      textIsBold: map['textIsBold'] as bool,
-      kind: ElementKind.values[map['kind'] as int],
-      handlers: List<Handler>.from(
-        (map['handlers'] as List<dynamic>).map<Handler>(
-          (x) => Handler.values[x],
-        ),
-      ),
-      handlerSize: map['handlerSize'].toDouble(),
-      backgroundColor: Color(map['backgroundColor'] as int),
-      borderColor: Color(map['borderColor'] as int),
-      borderThickness: map['borderThickness'].toDouble(),
-      elevation: map['elevation'].toDouble(),
-      next: map['next'] != []
-          ? List<ConnectionParams>.from(
-              (map['next'] as List<dynamic>).map<dynamic>(
-                (x) => ConnectionParams.fromMap(x as Map<String, dynamic>),
-              ),
-            )
-          : [],
-    );
-    e.setId(map['id'] as String);
-    //print(e);
-    return e;
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory FlowElement.fromJson(String source) =>
-      FlowElement.fromMap(json.decode(source) as Map<String, dynamic>);
-}
-
-import 'dart:convert';
-import '../ui/draw_arrow.dart';
-
-class ConnectionParams {
-  final String destElementId;
-  final ArrowParams arrowParams;
-
-  const ConnectionParams({
-    required this.destElementId,
-    required this.arrowParams,
-  });
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'destElementId': destElementId,
-      'arrowParams': arrowParams.toMap(),
-    };
-  }
-
-  factory ConnectionParams.fromMap(Map<String, dynamic> map) {
-    return ConnectionParams(
-      destElementId: map['destElementId'] as String,
-      arrowParams:
-          ArrowParams.fromMap(map['arrowParams'] as Map<String, dynamic>),
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-
-  factory ConnectionParams.fromJson(String source) =>
-      ConnectionParams.fromMap(json.decode(source) as Map<String, dynamic>);
-}
+
+This class handles an optimization loop, featuring mock optimizer/object evaluator, and spits out recommended parametres:
+
+import threading
+import random
+import time
+
+from Core.Control.ScriptGenerator import FlowChemAutomation
+from Core.parametres.reaction_parametres import Flowrate, ReactionParametres, Temp
+
+class OptimizationRig:
+    def __init__(self, mqttService):
+        self.automation = FlowChemAutomation()  # Handles command parsing
+        self.reactionParametres = ReactionParametres()  # Holds different parameters that can be optimized
+        self.availableParams = {}  # Reaction parameters that can be tweaked, per device
+        self.availableCommands = {}  # Links a tweakable parameter to a specific device command name
+        self.availableDeviceCommands = {}  # Links device to commands
+        self.currentRecommendation = {}
+        self.recommendationHistory = []
+        self._rigThread = None
+        self.optimizer = None
+        self.optimizing = False
+        self.objectiveEvaluator = None  # Function handle for evaluation
+        self.objectiveEvaluationKwargs = {}  # Additional args for evaluation
+        self.objectiveScore = None  # Score between 0 and 1
+        self.targetScore = None
+        self.mqttService = mqttService
+        
+    def registerDevice(self, device):
+        """ Registers a device and its available commands. """
+        if device in self.automation.commandTemplatesNested:
+            self.availableDeviceCommands[device] = self.automation.commandTemplatesNested[device]
+        else:
+            print(f"Warning: Unknown device {device}!")
+
+    def registerTweakableParam(self, device, parameter):
+        """ Registers a tweakable parameter for a specific device. """
+        self.reactionParametres.addTweakable(parameter)
+        if device in self.availableParams:
+            self.availableParams[device].append(parameter)
+        else:
+            self.availableParams[device] = [parameter]
+            
+    def generateRecommendation(self):
+        """ Generates recommendations using the optimizer. """
+        if self.optimizer is None:
+            print("Warning: No optimizer set. Cannot generate recommendations.")
+            return
+
+        recommendedValues = self.optimizer.recommend(self.reactionParametres.getAllTweakables())
+
+        if not recommendedValues:
+            print("Warning: Optimizer returned empty recommendations.")
+            return
+
+        self.currentRecommendation = {}
+
+        for param, value in recommendedValues.items():
+            for device, params in self.availableParams.items():
+                if param in params:
+                    if device not in self.currentRecommendation:
+                        self.currentRecommendation[device] = {}
+                    self.currentRecommendation[device][param.id] = value
+
+        self.recommendationHistory.append(self.currentRecommendation)
+
+        print("\nGenerated Recommendation:")
+        for device, params in self.currentRecommendation.items():
+            print(f"  Device: {device}")
+            for paramId, val in params.items():
+                print(f"    {paramId}: {val:.3f}")
+                
+    def evaluateRecommendation(self):
+        """ Evaluates the latest recommendation using the provided objective function. """
+        if self.objectiveEvaluator is None:
+            print("Warning: No objective evaluator function set.")
+            self.objectiveScore = None
+            return
+
+        print("\nEvaluating recommendation with objective function:")
+        print(self.currentRecommendation)  # Debugging print
+
+        try:
+            self.objectiveScore = self.objectiveEvaluator(self.currentRecommendation, **self.objectiveEvaluationKwargs)
+
+            if not (0 <= self.objectiveScore <= 1):
+                raise ValueError(f"Invalid objective score: {self.objectiveScore}. Must be between 0 and 1.")
+
+        except Exception as e:
+            print(f"Error in objective evaluation: {e}")
+            self.objectiveScore = None
+
+    def executeRecommendation(self):
+        """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
+        # First, clear current automation
+        self.automation.reset()
+
+        for device, params in self.currentRecommendation.items():
+            for paramId, value in params.items():
+                # Find the parameter by ID
+                for param in self.reactionParametres.getAllTweakables():
+                    if param.id == paramId:
+                        command = param.associatedCommand
+                        self.automation.addBlockElement(param.name, device, command, value)
+                        break
+
+        # Convert to script and send to MQTT
+        self.automation.parseToScript()
+        self.mqttService.script = self.automation.output
+
+    def start(self):
+        """ Starts a background thread to continuously optimize until the target score is reached. """
+        if not self.optimizing:
+            self.optimizing = True
+            self._rigThread = threading.Thread(target=self._optimizationLoop)
+            self._rigThread.start()
+            
+    def _optimizationLoop(self):
+        """ Runs the optimization loop in the background until the target score is reached. """
+        print("\n--- Starting Optimization Loop ---")
+        while self.optimizing:
+            self.generateRecommendation()
+            self.evaluateRecommendation()
+            print(f"Current Objective Score: {self.objectiveScore:.3f}")
+
+            if self.objectiveScore and self.objectiveScore >= self.targetScore:
+                print("\n🎯 Target Score Reached! Stopping optimization. 🎯")
+                self.optimizing = False
+                break  # Stop loop
+
+            time.sleep(1)  # Prevents excessive CPU usage
+            
+if __name__ == "__main__":
+
+    class MockMQTTService:
+        """ Mock service to emulate MQTT script execution. """
+        def __init__(self):
+            self.script = None
+
+        def execute(self):
+            print("\n--- Executing Script ---")
+            print(self.script)
+            print("------------------------\n")
+
+    class MockOptimizer:
+        """ Mock optimizer that generates random values within the tweakable range. """
+        def recommend(self, tweakables):
+            recommendations = {}
+            for param in tweakables:
+                if param.getRanges():
+                    lower, upper = param.getRanges()[0]  # Use the first range
+                    recommendations[param] = random.uniform(lower, upper)
+            return recommendations
+        
+    def mockObjectiveEvaluator(recommendation, targetTemp=50, targetFlowrate=2.5):
+        """ Objective function that evaluates recommendation accuracy based on target values. """
+        totalScore = 0
+        numParams = 0
+
+        print("\nObjective Evaluator Received:")
+        print(recommendation)  # Debugging print
+
+        for device, params in recommendation.items():
+            for paramId, value in params.items():
+                if "hotcoil1" in device:
+                    score = max(0, 1 - abs(value - targetTemp) / 50)
+                    print(f"  Temp {paramId}: {value:.2f} → Score: {score:.3f}")
+                    totalScore += score
+                elif "flowsynmaxi2" in device:
+                    score = max(0, 1 - abs(value - targetFlowrate) / 5)
+                    print(f"  Flowrate {paramId}: {value:.2f} → Score: {score:.3f}")
+                    totalScore += score
+                numParams += 1
+
+        return totalScore / numParams if numParams else 0
+
+    print("Initializing Optimization Rig...")
+
+    # Create mock MQTT service and optimization rig
+    mqttService = MockMQTTService()
+    rig = OptimizationRig(mqttService)
+
+    # Create mock devices and parameters
+    device1 = "hotcoil1"
+    device2 = "flowsynmaxi2"
+
+    tempParam = Temp("ReactionTemp", associatedCommand="temp", ranges=[[25, 100]])
+    flowrateParam1 = Flowrate("FlowRatePumpA", associatedCommand="pafr", ranges=[[0.1, 5]])
+    flowrateParam2 = Flowrate("FlowRatePumpB", associatedCommand="pbfr", ranges=[[0.5, 7]])
+
+    # Register devices
+    rig.registerDevice(device1)
+    rig.registerDevice(device2)
+
+    # Register tweakable parameters to the devices
+    rig.registerTweakableParam(device1, tempParam)
+    rig.registerTweakableParam(device2, flowrateParam1)
+    rig.registerTweakableParam(device2, flowrateParam2)
+
+    # Set a mock optimizer and evaluator
+    rig.optimizer = MockOptimizer()
+    rig.objectiveEvaluator = mockObjectiveEvaluator
+    rig.objectiveEvaluationKwargs = {"targetTemp": 50, "targetFlowrate": 2.5}
+
+    # Set a target score for stopping the loop
+    rig.targetScore = 0.80
+
+    # Start background optimization loop
+    print("\n🚀 Starting Optimization Process 🚀")
+    rig.start()
+
+This is the objective evaluator. It takes in a IR vector and estimates the current yield between 0 - 1.
+
+import copy
+import keras
+import os
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics.pairwise import cosine_similarity
+
+class IRMLPTrainer:
+    def __init__(self, csv_path, csv_path_unaveraged, csv_path_unmasked, num_interpolated=10, jitter_factor=0.05):
+        """
+        Initializes the IRMLPTrainer with a dataset from a CSV file.
+        
+        Parameters:
+        - csv_path (str): Path to the CSV file containing intensities and yield.
+        - num_interpolated (int): Number of additional interpolated samples between each real sample.
+        - jitter_factor (float): Maximum percentage noise to add for jittered data augmentation.
+        """
+        self.csv_path = csv_path
+        self.csv_path_unaveraged = csv_path_unaveraged
+        self.csv_path_unmasked = csv_path_unmasked
+        
+        self.num_interpolated = num_interpolated
+        self.jitter_factor = jitter_factor
+        self.scaler = None  # MinMaxScaler will be initialized during training
+        self.model = None   # Trained MLP model
+        self.X = None       # Feature matrix
+        self.y = None       # Yield values
+        
+        self.trimLeft=0
+        self.trimRight=0
+        
+        self.smallValueThreshold=0.01
+
+    def load_and_prepare_data(self):
+        """
+        Loads the dataset from CSV, normalizes it, interpolates additional samples, 
+        applies jitter augmentation, and saves the processed dataset.
+        """
+        # Load the dataset
+        df = pd.read_csv(self.csv_path)
+        dfUnaveraged = pd.read_csv(self.csv_path_unaveraged)
+        dfUnmasked = pd.read_csv(self.csv_path_unmasked)
+
+        # Separate features and labels
+        X = df.iloc[:, :-1].values  # All columns except the last one (intensities)
+        y = df.iloc[:, -1].values   # Last column (yield)
+        
+        Xunaveraged = dfUnaveraged.iloc[:, :-1].values  # All columns except the last one (intensities)
+        yUnaveraged = dfUnaveraged.iloc[:, -1].values   # Last column (yield)
+        
+        Xunmasked = dfUnmasked.iloc[:, :-1].values  # All columns except the last one (intensities)
+        yUnmasked = dfUnmasked.iloc[:, -1].values   # Last column (yield)
+
+        # Interpolate additional samples
+        X_interp, y_interp = self.interpolate_spectra(X, y)
+        # Interpolate additional samples unaveraqged
+        X_interpUnaveraged, y_interpUnaveraged = self.interpolate_spectra(Xunaveraged, yUnaveraged)
+        # Interpolate additional samples unmasked
+        X_interpUnmasked, y_interpUnmasked = self.interpolate_spectra(Xunmasked, yUnmasked)
+
+        # Apply jitter to interpolated samples
+        X_jittered = self.apply_jitter(X_interp)
+        X_jitteredUnaveraged = self.apply_jitter(Xunaveraged)
+        X_jitteredUnmasked = self.apply_jitter(Xunmasked)
+
+        # Combine original, interpolated, and jittered data
+        X_final = np.vstack((X, X_interp, X_jittered, Xunaveraged, Xunmasked, X_jitteredUnaveraged, X_jitteredUnmasked, X_interpUnaveraged, X_interpUnmasked))
+        y_final = np.concatenate((y, y_interp, y_interp, yUnaveraged, yUnmasked, yUnaveraged, yUnmasked, y_interpUnaveraged, y_interpUnmasked))  # Duplicates for jittered versions
+
+        X_final[np.abs(X_final) < self.smallValueThreshold] = 0
+
+        # Normalize the feature set
+        self.scaler = MinMaxScaler()
+        X_final = self.scaler.fit_transform(X_final)
+
+        # Save processed training data
+        processed_df = pd.DataFrame(X_final)
+        processed_df["Yield"] = y_final
+        processed_df.to_csv("ir_yield_training_data.csv", index=False)
+
+        print(f"✅ Processed training data saved to ir_yield_training_data.csv")
+        
+        # Store the training data
+        self.X, self.y = X_final, y_final
+
+    def interpolate_spectra(self, X, y):
+        """
+        Generates additional samples by interpolating between real spectra.
+
+        Parameters:
+        - X (np.array): Original feature matrix.
+        - y (np.array): Original yield values.
+
+        Returns:
+        - X_interpolated (np.array): Interpolated spectra.
+        - y_interpolated (np.array): Corresponding interpolated yields.
+        """
+        X_interpolated = []
+        y_interpolated = []
+
+        for i in range(len(X) - 1):
+            for j in range(1, self.num_interpolated + 1):
+                alpha = j / (self.num_interpolated + 1)
+                interpolated_spectrum = (1 - alpha) * X[i] + alpha * X[i + 1]
+                interpolated_yield = (1 - alpha) * y[i] + alpha * y[i + 1]
+
+                X_interpolated.append(interpolated_spectrum)
+                y_interpolated.append(interpolated_yield)
+
+        return np.array(X_interpolated), np.array(y_interpolated)
+
+    def apply_jitter(self, X):
+        """
+        Applies jittering (small random noise) to spectra to improve model generalization.
+
+        Parameters:
+        - X (np.array): Feature matrix.
+
+        Returns:
+        - X_jittered (np.array): Jittered version of the input data.
+        """
+        noise = np.random.uniform(-self.jitter_factor, self.jitter_factor, X.shape)
+        return np.clip(X + X * noise, 0, 1)  # Ensure values remain within [0,1]
+
+    def train_mlp(self):
+        """
+        Trains an MLP model using the processed dataset.
+        """
+        if self.X is None or self.y is None:
+            raise ValueError("Data not prepared. Run load_and_prepare_data() first.")
+
+        X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
+
+        model = Sequential([
+            Dense(256, activation='relu', input_shape=(self.X.shape[1],)),
+            Dense(128, activation='relu'),
+            Dense(32, activation='relu'),
+            Dense(1, activation='relu')  # Output yield in range [0,1]
+        ])
+
+        model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+
+        history = model.fit(X_train, y_train, validation_data=(X_test, y_test),
+                            epochs=55, batch_size=30, verbose=1)
+        
+        self.model = model
+        model.save("ir_yield_mlp.keras")
+
+        # Save the scaler
+        np.save("scaler.npy", self.scaler)
+
+        print("✅ Model training complete and saved as ir_yield_mlp.keras")
+
+    def loadModel(self, path="ir_yield_mlp.keras"):
+        """
+        Loads a trained MLP model and the associated MinMaxScaler.
+        """
+        self.model = tf.keras.models.load_model(path)
+
+        # Load the scaler
+        try:
+            self.scaler = np.load("scaler.npy", allow_pickle=True).item()
+        except FileNotFoundError:
+            raise ValueError("Scaler file not found. Make sure to train the model first.")
+
+        print(f"✅ Model loaded from {path}")
+
+    def estimateYield(self, input_scan, normalize=True, applySmallValueThreshold=True):
+        """
+        Estimates the yield from a new IR scan.
+
+        Parameters:
+        - input_scan (list of float): Raw IR spectrum.
+
+        Returns:
+        - yield_value (float): Predicted yield in range [0,1].
+        """
+        if self.model is None:
+            raise ValueError("Model not loaded. Use loadModel() first.")
+
+        # Convert input to NumPy array
+        input_scan = np.array(input_scan, dtype=np.float32)
+        
+        if applySmallValueThreshold:
+            input_scan[np.abs(input_scan) < self.smallValueThreshold] = 0
+
+        if normalize:
+            # Normalize input using the same scaler as training
+            normalized_input = self.scaler.transform([input_scan])[0]
+        else:
+            normalized_input=input_scan
+
+        # Predict yield
+        yield_value = self.model.predict(np.array([normalized_input]))[0][0]
+        return yield_value
+    
+    def trimDataSingle(self, data_array):
+        """
+        Trims the given data array based on user-defined left and right trim points.
+
+        Parameters:
+        - data_array (np.array or list): The dataset to be trimmed.
+
+        Returns:
+        - trimmed_data (np.array): The trimmed version of the input dataset.
+        """
+        if self.trimLeft == 0 and self.trimRight == 0:
+            return np.array(data_array)  # Return unmodified if no trimming needed
+
+        # Ensure input is a NumPy array
+        data_array = np.array(data_array)
+
+        # Check if data_array is empty
+        if data_array.size == 0:
+            print("🚨 Warning: No data available to trim.")
+            return data_array  # Return empty array
+
+        # Determine if data is 1D or 2D
+        if data_array.ndim == 1:  # If 1D (single spectrum)
+            scan_length = len(data_array)
+
+            if self.trimLeft + self.trimRight >= scan_length:
+                print("🚨 Warning: Trimming exceeds data length. Skipping trim operation.")
+                return data_array  # Return unmodified
+
+            trimmed_data = data_array[self.trimLeft:-self.trimRight]
+
+        elif data_array.ndim == 2:  # If 2D (multiple spectra)
+            scan_length = data_array.shape[1]
+
+            if self.trimLeft + self.trimRight >= scan_length:
+                print("🚨 Warning: Trimming exceeds data length. Skipping trim operation.")
+                return data_array  # Return unmodified
+
+            trimmed_data = data_array[:, self.trimLeft:-self.trimRight]
+
+        else:
+            raise ValueError("🚨 Unexpected data shape. Expected 1D or 2D array.")
+
+        print(f"✅ Trimmed data: New shape {trimmed_data.shape}")
+        return trimmed_data
+
+if __name__ == "__main__":
+    # Initialize Trainer with the CSV file
+    trainer = IRMLPTrainer(csv_path="ir_yield_no_resample_averages.csv", csv_path_unaveraged= 'ir_yield_no_resample_unaveraged.csv', csv_path_unmasked='ir_yield_no_resample_unmasked.csv', num_interpolated=5, jitter_factor=0.05)
+
+    # Load, process, and prepare training data
+    #trainer.load_and_prepare_data()
+    
+    # print(f"Number of examples: {trainer.X.shape}")
+
+    # Train the MLP model
+    #trainer.train_mlp()
+
+    # Load trained model
+    trainer.loadModel("ir_yield_mlp.keras")
+    
+    trainer.trimLeft=200
+    trainer.trimRight=40
+
+    # Test loop
+    # _i=0
+    # _wrong=0
+    # for _x in trainer.X:
+    #     _est=trainer.estimateYield(_x,False,False)
+    #     _true=trainer.y[_i]
+    #     _err=error = abs(_true - _est) * 100
+    #     if _err > 5:
+    #         _wrong+=1
+    #     print(f"Estimated yield: {_est}, true: {_true}, error: {_err}")
+    #     _i+=1
+    # print(f"Percentage of incorrect predictions: {100*(_wrong/(trainer.X.shape[0]))}")
+
+    # Interactive prediction loop
+    while True:
+        _input = input("Input vector: ")
+        _input = eval(_input)  # Convert input string to a list
+        _input=trainer.trimDataSingle(_input)
+        
+        print(f"Estimated yield standard: {trainer.estimateYield(_input)}")
+
+
+The Summit optimizer must recommend flowrate and temperature as it optimizes, testing the current yield with the evaluator.
+
+The goal is to achieve maximum yield 1.
+
+How do I set this up???
