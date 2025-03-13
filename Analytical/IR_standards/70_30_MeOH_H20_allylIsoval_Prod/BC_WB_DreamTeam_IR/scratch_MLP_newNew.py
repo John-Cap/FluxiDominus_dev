@@ -137,10 +137,10 @@ class IRMLPTrainer:
         X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, test_size=0.2, random_state=42)
 
         model = Sequential([
-            Dense(128, activation='relu', input_shape=(self.X.shape[1],)),
-            Dense(64, activation='relu'),
+            Dense(256, activation='relu', input_shape=(self.X.shape[1],)),
+            Dense(128, activation='relu'),
             Dense(32, activation='relu'),
-            Dense(1, activation='sigmoid')  # Output yield in range [0,1]
+            Dense(1, activation='relu')  # Output yield in range [0,1]
         ])
 
         model.compile(optimizer='adam', loss='mse', metrics=['mae'])
