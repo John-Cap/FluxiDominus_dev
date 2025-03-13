@@ -2,6 +2,8 @@ import threading
 import random
 import time
 
+import numpy as np
+
 from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.parametres.reaction_parametres import Flowrate, ReactionParametres, Temp
 
@@ -67,6 +69,28 @@ class OptimizationRig:
             for paramId, val in params.items():
                 print(f"    {paramId}: {val:.3f}")
                 
+    def evaluateRecommendationIRMLP(self):
+        """ Uses the IRMLPTrainer model to estimate the yield of the recommended parameters. """
+        if self.objectiveEvaluator is None:
+            print("Warning: No objective evaluator function set.")
+            self.objectiveScore = None
+            return
+
+        # Extract temperature and flowrate from recommendation
+        temp = self.currentRecommendation["hotcoil1"]["ReactionTemp"]
+        flowrate = self.currentRecommendation["flowsynmaxi2"]["FlowRatePumpA"]
+
+        # Generate a mock IR spectrum for evaluation (replace with real data if available)
+        ir_spectrum = np.random.rand(839)  # Mock IR spectrum
+
+        # Estimate yield using IRMLPTrainer
+        self.objectiveScore = self.objectiveEvaluator.estimateYield(ir_spectrum)
+
+        print(f"Evaluated Yield: {self.objectiveScore:.3f}")
+
+        # Update optimizer with new result
+        self.optimizer.update(temp, flowrate, self.objectiveScore)
+                
     def evaluateRecommendation(self):
         """ Evaluates the latest recommendation using the provided objective function. """
         if self.objectiveEvaluator is None:
@@ -86,6 +110,31 @@ class OptimizationRig:
         except Exception as e:
             print(f"Error in objective evaluation: {e}")
             self.objectiveScore = None
+            
+    def generateRecommendationSMT(self):
+        """ Uses the Summit optimizer to generate a new recommendation. """
+        if self.optimizer is None:
+            print("Warning: No optimizer set. Cannot generate recommendations.")
+            return
+
+        recommendedValues = self.optimizer.recommend(self.reactionParametres.getAllTweakables())
+
+        if not recommendedValues:
+            print("Warning: Optimizer returned empty recommendations.")
+            return
+
+        self.currentRecommendation = {
+            "hotcoil1": {"ReactionTemp": recommendedValues["temperature"]},
+            "flowsynmaxi2": {"FlowRatePumpA": recommendedValues["flowrate"]}
+        }
+
+        self.recommendationHistory.append(self.currentRecommendation)
+
+        print("\nGenerated Recommendation:")
+        for device, params in self.currentRecommendation.items():
+            print(f"  Device: {device}")
+            for paramId, val in params.items():
+                print(f"    {paramId}: {val:.3f}")
 
     def executeRecommendation(self):
         """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """

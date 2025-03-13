@@ -252,7 +252,7 @@ if __name__ == "__main__":
     # Load, process, and prepare training data
     #trainer.load_and_prepare_data()
     
-    print(f"Number of examples: {trainer.X.shape}")
+    #print(f"Number of examples: {trainer.X.shape}")
 
     # Train the MLP model
     #trainer.train_mlp()
