@@ -250,12 +250,12 @@ if __name__ == "__main__":
     trainer = IRMLPTrainer(csv_path="ir_yield_no_resample_averages.csv", csv_path_unaveraged= 'ir_yield_no_resample_unaveraged.csv', csv_path_unmasked='ir_yield_no_resample_unmasked.csv', num_interpolated=5, jitter_factor=0.05)
 
     # Load, process, and prepare training data
-    trainer.load_and_prepare_data()
+    #trainer.load_and_prepare_data()
     
     print(f"Number of examples: {trainer.X.shape}")
 
     # Train the MLP model
-    trainer.train_mlp()
+    #trainer.train_mlp()
 
     # Load trained model
     trainer.loadModel("ir_yield_mlp.keras")
@@ -264,17 +264,17 @@ if __name__ == "__main__":
     trainer.trimRight=40
 
     # Test loop
-    _i=0
-    _wrong=0
-    for _x in trainer.X:
-        _est=trainer.estimateYield(_x,False,False)
-        _true=trainer.y[_i]
-        _err=error = abs(_true - _est) * 100
-        if _err > 5:
-            _wrong+=1
-        print(f"Estimated yield: {_est}, true: {_true}, error: {_err}")
-        _i+=1
-    print(f"Percentage of incorrect predictions: {100*(_wrong/(trainer.X.shape[0]))}")
+    # _i=0
+    # _wrong=0
+    # for _x in trainer.X:
+    #     _est=trainer.estimateYield(_x,False,False)
+    #     _true=trainer.y[_i]
+    #     _err=error = abs(_true - _est) * 100
+    #     if _err > 5:
+    #         _wrong+=1
+    #     print(f"Estimated yield: {_est}, true: {_true}, error: {_err}")
+    #     _i+=1
+    # print(f"Percentage of incorrect predictions: {100*(_wrong/(trainer.X.shape[0]))}")
 
     # Interactive prediction loop
     while True:

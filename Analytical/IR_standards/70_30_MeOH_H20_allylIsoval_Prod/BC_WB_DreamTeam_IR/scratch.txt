@@ -4,6 +4,8 @@ IrStandard now prepares two additional csv files:
 ir_yield_no_resample_unaveraged.csv -> all spectra from all folders, unaveraged
 ir_yield_no_resample_unmasked.csv -> all spectra from all folders, no masking and no averaging applied
 
+modify load_and_prepare_data to include these two new files of examples in X_final. .
+
     def load_and_prepare_data(self):
         """
         Loads the dataset from CSV, normalizes it, interpolates additional samples, 
