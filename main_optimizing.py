@@ -8,6 +8,7 @@ from pytz import utc
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator import FlowChemAutomation
+from Core.Optimization.optimization_rig import OptimizationRig
 from Core.UI.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
@@ -49,6 +50,10 @@ mySqlPngDelay=30;
 lstPngTime=time.time();
 runOptimization=False
 noTestDetails=True
+
+#Optimizer rig
+optRig=OptimizationRig(updater)
+
 # Main loop!
 while True:
     #TODO - Smarter way to manage this:
@@ -94,6 +99,8 @@ while True:
         print('WJ - Parsed script is: '+updater.script)
         print('#######')
         
+        updater.script=""
+        
         runOptimization=True
 
     except:
@@ -102,7 +109,7 @@ while True:
         #updater.script=""
         continue
     
-    while runOptimization:
+    while runOptimization and not updater.abort:
         #dbConnection ping
         if time.time() - lstPngTime > mySqlPngDelay:
             if updater.databaseOperations.mySqlDb.connection.is_connected():
@@ -129,7 +136,7 @@ while True:
                 updater.dataQueue.dataPoints=[]
             _reportDelay=Delay(_reportSleep)
 
-        time.sleep(0.1)
+        time.sleep(0.15)
         
     #TODO - in own thread
     if updater.logData and not noTestDetails:

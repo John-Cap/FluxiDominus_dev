@@ -29,6 +29,9 @@ class OptimizationRig:
         self.targetScore = None
         self.mqttService = mqttService
         
+        self.evalYielded=False
+        self.recommYielded=False
+        
         self.lastRecommendedVal={}
         
     def registerDevice(self, device):
@@ -125,7 +128,11 @@ class OptimizationRig:
 
             self.recommendationHistory.append(self.currentRecommendation)
 
-            print(f"CURRENT self.currentRecommendation: {self.currentRecommendation}")
+            # Remove the recommendation file to prevent duplicate reads
+            os.remove(recommendation_path)
+            
+            self.recommYielded=True
+            
             print("\n✅ Generated Recommendation:")
             for device, params in self.currentRecommendation.items():
                 print(f"  Device: {device}")
@@ -133,6 +140,8 @@ class OptimizationRig:
                     print(f"    {paramId}: {val:.3f}")
 
         except FileNotFoundError:
+            if self.recommYielded:
+                self.recommYielded=False
             print("⚠️ No recommendation file found, waiting for Summit...")
 
     def evaluateRecommendation(self):
@@ -186,10 +195,14 @@ class OptimizationRig:
 
             print(f"✅ Received Estimated Yield: {self.objectiveScore:.3f}")
 
+            self.evalYielded=True
+
             # Remove the yield file to prevent duplicate reads
             os.remove(yield_path)
 
         except FileNotFoundError:
+            if self.evalYielded:
+                self.evalYielded=False
             print("⚠️ Evaluator has not provided yield yet, waiting...")
 
         except Exception as e:

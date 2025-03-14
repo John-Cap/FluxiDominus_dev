@@ -48,32 +48,33 @@ if __name__ == "__main__":
 
     print("\n✅ Rig Initialized!\n")
 
-    # --- MANUAL INPUT SECTION ---
-    print("\n🔹 Copy-Paste this into 'SharedData/recommendation.json':")
-    print(json.dumps({
-        "temperature": 75.0,
-        "flowrate": 3.0  # Summit recommends total flowrate (before division)
-    }, indent=4))
-    
-    input("\nPress Enter after pasting into 'SharedData/recommendation.json'...")
+    while True:
+        # --- MANUAL INPUT SECTION ---
+        print("\n🔹 Copy-Paste this into 'SharedData/recommendation.json':")
+        print(json.dumps({
+            "temperature": 75.0,
+            "flowrate": 3.0  # Summit recommends total flowrate (before division)
+        }, indent=4))
+        
+        input("\nPress Enter after pasting into 'SharedData/recommendation.json'...")
 
-    # --- TEST 1: Read and Process Recommendation ---
-    print("\n🚀 Running generateRecommendation_TEMP()...")
-    rig.generateRecommendation_TEMP()
-    rig.executeRecommendation_TEMP()
+        # --- TEST 1: Read and Process Recommendation ---
+        print("\n🚀 Running generateRecommendation_TEMP()...")
+        rig.generateRecommendation_TEMP()
+        rig.executeRecommendation_TEMP()
 
-    # --- MANUAL INPUT SECTION ---
-    print("\n🔹 Copy-Paste this into 'SharedData/yield.json':")
-    print(json.dumps({
-        "temperature": 75.0,
-        "flowrate": 3.0,
-        "yield": 0.87  # Simulated yield from Evaluator
-    }, indent=4))
+        # --- MANUAL INPUT SECTION ---
+        print("\n🔹 Copy-Paste this into 'SharedData/yield.json':")
+        print(json.dumps({
+            "temperature": 75.0,
+            "flowrate": 3.0,
+            "yield": 0.87  # Simulated yield from Evaluator
+        }, indent=4))
 
-    input("\nPress Enter after pasting into 'SharedData/yield.json'...")
+        input("\nPress Enter after pasting into 'SharedData/yield.json'...")
 
-    # --- TEST 2: Read Evaluated Yield ---
-    print("\n🚀 Running evaluateRecommendation_TEMP()...")
-    rig.evaluateRecommendation_TEMP()
+        # --- TEST 2: Read Evaluated Yield ---
+        print("\n🚀 Running evaluateRecommendation_TEMP()...")
+        rig.evaluateRecommendation_TEMP()
 
-    print("\n✅ Test Cycle Complete!")
+        print("\n✅ Test Cycle Complete!")
