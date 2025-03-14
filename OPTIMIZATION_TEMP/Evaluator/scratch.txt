@@ -1,0 +1,43 @@
+
+IrStandard now prepares two additional csv files:
+
+ir_yield_no_resample_unaveraged.csv -> all spectra from all folders, unaveraged
+ir_yield_no_resample_unmasked.csv -> all spectra from all folders, no masking and no averaging applied
+
+modify load_and_prepare_data to include these two new files of examples in X_final. .
+
+    def load_and_prepare_data(self):
+        """
+        Loads the dataset from CSV, normalizes it, interpolates additional samples, 
+        applies jitter augmentation, and saves the processed dataset.
+        """
+        # Load the dataset
+        df = pd.read_csv(self.csv_path)
+
+        # Separate features and labels
+        X = df.iloc[:, :-1].values  # All columns except the last one (intensities)
+        y = df.iloc[:, -1].values   # Last column (yield)
+
+        # Interpolate additional samples
+        X_interp, y_interp = self.interpolate_spectra(X, y)
+
+        # Apply jitter to interpolated samples
+        X_jittered = self.apply_jitter(X_interp)
+
+        # Combine original, interpolated, and jittered data
+        X_final = np.vstack((X, X_interp, X_jittered))
+        y_final = np.concatenate((y, y_interp, y_interp))  # Duplicating y_interp for jittered versions
+
+        # Normalize the feature set
+        self.scaler = MinMaxScaler()
+        X_final = self.scaler.fit_transform(X_final)
+
+        # Save processed training data
+        processed_df = pd.DataFrame(X_final)
+        processed_df["Yield"] = y_final
+        processed_df.to_csv("ir_yield_training_data.csv", index=False)
+
+        print(f"✅ Processed training data saved to ir_yield_training_data.csv")
+        
+        # Store the training data
+        self.X, self.y = X_final, y_final

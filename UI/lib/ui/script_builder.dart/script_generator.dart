@@ -344,6 +344,10 @@ class ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget>
               },
             ),
             DropdownButton<String>(
+              icon: const Text(
+                '↓',
+                textScaler: TextScaler.linear(1.5),
+              ),
               hint: const Text('Select Device'),
               value: _selectedDevice.isEmpty ? null : _selectedDevice,
               items: widget.mqttService.availableDevices.map((String device) {
@@ -361,6 +365,10 @@ class ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget>
             ),
             if (_selectedDevice.isNotEmpty)
               DropdownButton<String>(
+                icon: const Text(
+                  '↓',
+                  textScaler: TextScaler.linear(1.5),
+                ),
                 hint: const Text('Select Setting'),
                 value: _selectedSetting.isEmpty ? null : _selectedSetting,
                 items: availableSettings.map((String setting) {

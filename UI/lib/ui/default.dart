@@ -7,6 +7,7 @@ import 'package:flutter_flow_chart/ui/gauges/gauge_page_widget.dart';
 import 'package:flutter_flow_chart/ui/gauges/gauge_widgets.dart';
 import 'package:flutter_flow_chart/ui/graphing/graph_panel.dart';
 import 'package:flutter_flow_chart/ui/list_generators/project_browser.dart';
+import 'package:flutter_flow_chart/ui/optimization_tab/optimization_tab.dart';
 import 'package:flutter_flow_chart/ui/script_builder.dart/script_generator.dart';
 import 'package:flutter_flow_chart/ui/tabs/includes/dynamic_tabbar.dart';
 
@@ -20,6 +21,7 @@ class FluxiDominusDefTabs {
       mqttService: mqttService,
       key: scriptGeneratorKey,
     );
+    OptimizationTab optimizationTab = OptimizationTab(mqttService: mqttService);
     mqttService.scriptGeneratorWidget = scriptGeneratorWidget;
     mqttService.scriptGeneratorWidgetKey = scriptGeneratorKey;
     //Pre-initialize flowsketcher
@@ -350,7 +352,9 @@ class FluxiDominusDefTabs {
             children: graphWidgets.widgets.cast<Widget>(),
           ),
         ),
-      )
+      ),
+      TabData(
+          index: 5, title: Tab(text: 'Optimization'), content: optimizationTab)
     ];
   }
 
