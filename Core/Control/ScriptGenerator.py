@@ -139,7 +139,7 @@ if __name__ == "__main__":
     automation.addBlockElement("block_2","sf10vapourtec2","fr",1.0)
     automation.addBlockElement("block_2","flowsynmaxi2","pbfr",1.0)
     automation.addBlockElement("block_3","Delay","sleepTime",100.0)
-    automation.addBlockElement("block_2","flowsynmaxi1","svcw",True)
+    automation.addBlockElement("block_2","vapourtecR4P1700","svasr",True)
 
     automation.parseToScript()
     print(automation.output)

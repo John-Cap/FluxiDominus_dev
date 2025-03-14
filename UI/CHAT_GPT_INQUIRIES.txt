@@ -1,90 +1,58 @@
-The following excerpt from main_optimizing must remain:
 
-# Main loop!
-while True:
-    #TODO - Smarter way to manage this:
-    updater.currTestlistId=None
-    updater.currTestrunId=None
-    
-    print("WJ - Waiting for script")
-    updater.dataQueue.dataPoints=[] #Pasop!
-    updater.abort=False
-    
-    #And notify backend
-    updater.runTest=False
-    updater.registeredTeleDevices={}
-    updater.script=""
-    updater.databaseOperations.mongoDb.currZeroTime=None
-    
-    while updater.script=="" and not updater.abort:
-        #dbConnection ping
-        if time.time() - lstPngTime > mySqlPngDelay:
-            if updater.databaseOperations.mySqlDb.connection.is_connected():
-                lstPngTime=time.time();
-                print('mySQL db pinged!');
-            else:
-                print('mySQL db ping not answered!');
-                updater.databaseOperations.mySqlDb.connect();
-                time.sleep(0.5);
-        #
-        time.sleep(0.1)
+Kinda works but recommendation script cannot be parsed. Remember, generateRecommendation_TEMP must output shape of standard self.currentRecommendation:
 
-    if updater.abort:
-        print('WJ - Testrun aborted!')
-        if updater.runTest:
-            updater.runTest=False
-        updater.abort=False
-        continue
-    
-    try:
-
-        parser = ScriptParser(updater.script, client)
-        procedure = parser.createProcedure(updater.fdpDecoder)
-
-        print('#######')
-        print('WJ - Parsed script is: '+updater.script)
-        print('#######')
-        
-        runOptimization=True
-
-    except:
-        print("Script parsing error!")
-        runOptimization=False
-        #updater.script=""
-        continue
-    
-    while runOptimization:
-        #dbConnection ping
-        if time.time() - lstPngTime > mySqlPngDelay:
-            if updater.databaseOperations.mySqlDb.connection.is_connected():
-                lstPngTime=time.time();
-                print('mySQL db pinged!');
-            else:
-                print('mySQL db ping not answered!');
-                updater.databaseOperations.mySqlDb.connect();
-                time.sleep(0.5);
-        #
-        if len(procedure.currConfig.commands) == 0:
-            procedure.next()
-            if procedure.currConfig is None:
-                print("Procedure complete")
-                updater.abort = True
-            else:
-                print("Next procedure!")
-        else:
-            procedure.currConfig.sendMQTT(waitForDelivery=True)
+(From old function)
             
-        if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
-            if len(updater.dataQueue.dataPoints) != 0:
-                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-                updater.dataQueue.dataPoints=[]
-            _reportDelay=Delay(_reportSleep)
+    def generateRecommendation(self):
+        """ Generates recommendations using the optimizer. """
+        if self.optimizer is None:
+            print("Warning: No optimizer set. Cannot generate recommendations.")
+            return
 
-        time.sleep(0.1)
-        
-    #TODO - in own thread
-    if updater.logData and not noTestDetails:
-        if len(updater.dataQueue.dataPoints) != 0:
-            updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-            updater.dataQueue.dataPoints=[]
-        updater.databaseOperations.setStopTime(updater.currTestrunId)
+        recommendedValues = self.optimizer.recommend(self.reactionParametres.getAllTweakables())
+
+        if not recommendedValues:
+            print("Warning: Optimizer returned empty recommendations.")
+            return
+
+        self.currentRecommendation = {}
+
+        for param, value in recommendedValues.items():
+            for device, params in self.availableParams.items():
+                if param in params:
+                    if device not in self.currentRecommendation:
+                        self.currentRecommendation[device] = {}
+                    self.currentRecommendation[device][param.id] = value
+
+        self.recommendationHistory.append(self.currentRecommendation)
+
+        print(f"CURRENT self.currentRecommendation: {self.currentRecommendation}")
+        print("\nGenerated Recommendation:")
+        for device, params in self.currentRecommendation.items():
+            print(f"  Device: {device}")
+            for paramId, val in params.items():
+                print(f"    {paramId}: {val:.3f}")
+
+gives something like:
+CURRENT self.currentRecommendation: {'hotcoil1': {UUID('1b4d72a9-a704-4120-a7b6-233e16cbefbc'): 83.84280054373028}, 'vapourtecR4P1700': {UUID('53ccac15-bb79-4c63-908a-fd56e9697acc'): 1.8318375184184492}}
+
+which is executed by existing function:
+                        
+    def executeRecommendation(self):
+        """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
+        # First, clear current automation
+        self.automation.reset()
+
+        for device, params in self.currentRecommendation.items():
+            for paramId, value in params.items():
+                # Find the parameter by ID
+                for param in self.reactionParametres.getAllTweakables():
+                    if param.id == paramId:
+                        command = param.associatedCommand
+                        self.automation.addBlockElement(param.name, device, command, value)
+                        break
+
+        # Convert to script and send to MQTT
+        self.automation.parseToScript()
+        self.mqttService.script = self.automation.output
+        print(f"Automization output: {self.automation.output}")
