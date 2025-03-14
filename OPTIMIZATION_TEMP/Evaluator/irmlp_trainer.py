@@ -1,7 +1,10 @@
 import json
+import os
 import time
 import numpy as np
 from main import IRMLPTrainer  # Ensure this file is accessible
+
+SHARED_FOLDER = "../SharedData/"  # Set path to shared folder
 
 # Load trained TensorFlow model
 trainer = IRMLPTrainer(
@@ -26,11 +29,10 @@ while True:
         # Predict yield
         yield_score = trainer.estimateYield(ir_spectrum)
         print(f"🔹 Evaluated yield: {yield_score:.3f} (Temp: {temp}, Flowrate: {flowrate})")
-
-        # Save yield to file for Summit optimizer to read
-        with open("yield.json", "w") as f:
-            json.dump({"temperature": temp, "flowrate": flowrate, "yield": yield_score}, f)
-
+        # Write recommendation to SharedData/
+        
+        with open(os.path.join(SHARED_FOLDER, "recommendation.json"), "w") as f:
+            json.dump(recommendation, f)
         time.sleep(5)  # Wait before checking for a new recommendation
 
     except FileNotFoundError:

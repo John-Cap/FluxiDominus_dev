@@ -1,12 +1,11 @@
-
-# Run optimization loop
 import time
 from main import SummitOptimizer
-
 
 if __name__ == "__main__":
     optimizer = SummitOptimizer()
     
     while True:
-        optimizer.recommend()
-        time.sleep(5)  # Wait for the evaluator to process
+        optimizer.recommend()  # Generate new parameters
+        time.sleep(5)  # Wait for evaluator to process
+        optimizer.update()  # Get yield score and update optimizer
+        time.sleep(5)
