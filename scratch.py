@@ -47,22 +47,28 @@ if __name__ == "__main__":
     rig.registerTweakableParam(device2, flowrateParam2)
 
     print("\n✅ Rig Initialized!\n")
+    # --- MANUAL INPUT SECTION ---
+    print("\n🔹 Copy-Paste this into 'SharedData/recommendation.json':")
+    print(json.dumps({
+        "temperature": 75.0,
+        "flowrate": 3.0  # Summit recommends total flowrate (before division)
+    }, indent=4))
+    
 
     while True:
-        # --- MANUAL INPUT SECTION ---
-        print("\n🔹 Copy-Paste this into 'SharedData/recommendation.json':")
-        print(json.dumps({
-            "temperature": 75.0,
-            "flowrate": 3.0  # Summit recommends total flowrate (before division)
-        }, indent=4))
-        
-        input("\nPress Enter after pasting into 'SharedData/recommendation.json'...")
-
-        # --- TEST 1: Read and Process Recommendation ---
-        print("\n🚀 Running generateRecommendation_TEMP()...")
-        rig.generateRecommendation_TEMP()
+        while not rig.recommYielded:
+            rig.generateRecommendation_TEMP()
+            time.sleep(1)
+            
         rig.executeRecommendation_TEMP()
+        rig.recommYielded=False
+        
+        while not rig.evalYielded:            
+            rig.evaluateRecommendation_TEMP()
+            time.sleep(1)
+ 
 
+        '''
         # --- MANUAL INPUT SECTION ---
         print("\n🔹 Copy-Paste this into 'SharedData/yield.json':")
         print(json.dumps({
@@ -75,6 +81,6 @@ if __name__ == "__main__":
 
         # --- TEST 2: Read Evaluated Yield ---
         print("\n🚀 Running evaluateRecommendation_TEMP()...")
-        rig.evaluateRecommendation_TEMP()
 
         print("\n✅ Test Cycle Complete!")
+        '''

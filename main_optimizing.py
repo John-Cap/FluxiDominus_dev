@@ -53,24 +53,25 @@ noTestDetails=True
 
 #Optimizer rig
 optRig=OptimizationRig(updater)
+optRig.start()
+#TODO - Smarter way to manage this:
+updater.currTestlistId=None
+updater.currTestrunId=None
+
+print("WJ - Waiting for script")
+updater.dataQueue.dataPoints=[] #Pasop!
+updater.abort=False
+
+#And notify backend
+updater.runTest=False
+updater.registeredTeleDevices={}
+updater.script=""
+updater.databaseOperations.mongoDb.currZeroTime=None
 
 # Main loop!
 while True:
-    #TODO - Smarter way to manage this:
-    updater.currTestlistId=None
-    updater.currTestrunId=None
     
-    print("WJ - Waiting for script")
-    updater.dataQueue.dataPoints=[] #Pasop!
-    updater.abort=False
-    
-    #And notify backend
-    updater.runTest=False
-    updater.registeredTeleDevices={}
-    updater.script=""
-    updater.databaseOperations.mongoDb.currZeroTime=None
-    
-    while updater.script=="" and not updater.abort:
+    while updater.script=="":
         #dbConnection ping
         if time.time() - lstPngTime > mySqlPngDelay:
             if updater.databaseOperations.mySqlDb.connection.is_connected():
@@ -106,10 +107,10 @@ while True:
     except:
         print("Script parsing error!")
         runOptimization=False
-        #updater.script=""
+        updater.script=""
         continue
     
-    while runOptimization and not updater.abort:
+    while runOptimization and optRig.optimizing:
         #dbConnection ping
         if time.time() - lstPngTime > mySqlPngDelay:
             if updater.databaseOperations.mySqlDb.connection.is_connected():
@@ -138,9 +139,9 @@ while True:
 
         time.sleep(0.15)
         
-    #TODO - in own thread
-    if updater.logData and not noTestDetails:
-        if len(updater.dataQueue.dataPoints) != 0:
-            updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-            updater.dataQueue.dataPoints=[]
-        updater.databaseOperations.setStopTime(updater.currTestrunId)
+    # #TODO - in own thread
+    # if updater.logData and not noTestDetails:
+    #     if len(updater.dataQueue.dataPoints) != 0:
+    #         updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+    #         updater.dataQueue.dataPoints=[]
+    #     updater.databaseOperations.setStopTime(updater.currTestrunId)

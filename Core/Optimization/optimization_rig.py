@@ -32,6 +32,8 @@ class OptimizationRig:
         self.evalYielded=False
         self.recommYielded=False
         
+        self.awaitYield=False
+        
         self.lastRecommendedVal={}
         
     def registerDevice(self, device):
@@ -166,17 +168,18 @@ class OptimizationRig:
             
     def evaluateRecommendation_TEMP(self):
         """ Sends recommendation to Evaluator, waits for yield, and updates Summit. """
-        recommendation_path = os.path.join(SHARED_FOLDER, "recommendation.json")
+        # recommendation_path = os.path.join(SHARED_FOLDER, "recommendation.json")
         yield_path = os.path.join(SHARED_FOLDER, "yield.json")
 
         if not self.currentRecommendation:
             print("⚠️ Warning: No recommendation available for evaluation.")
+            self.evalYielded=False
             return
 
         try:
             # Write recommendation for Evaluator to process
-            with open(recommendation_path, "w") as f:
-                json.dump(str(self.currentRecommendation), f)
+            # with open(recommendation_path, "w") as f:
+            #     json.dump(str(self.currentRecommendation), f)
 
             print("\n🚀 Sent recommendation to Evaluator, waiting for yield...")
 
@@ -270,6 +273,8 @@ class OptimizationRig:
         # Convert to script and send to MQTT
         self.automation.parseToScript()
         self.mqttService.script = self.automation.output
+        
+        self.awaitYield=True
         print(f"Automization output: {self.automation.output}")
 
     def start(self):
