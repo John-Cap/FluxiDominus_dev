@@ -2,7 +2,8 @@ import json
 import os
 import time
 import numpy as np
-from main import IRMLPTrainer  # Ensure this file is accessible
+
+from main import IRMLPTrainer
 
 SHARED_FOLDER = "../SharedData/"  # Set path to shared folder
 

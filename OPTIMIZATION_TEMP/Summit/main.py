@@ -3,6 +3,7 @@ from summit.domain import Domain, ContinuousVariable
 from summit.strategies import SOBO
 import json
 import pandas as pd
+import numpy as np
 
 SHARED_FOLDER = "../SharedData/"  # Set path to shared folder
 
@@ -14,19 +15,21 @@ class SummitOptimizer:
         self.domain += ContinuousVariable(name="flowrate", bounds=[0.1, 5], is_objective=False, description='temperature')
         self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
 
+        self.randomInitialAssigned=False
+
         # Use SOBO optimizer
         self.strategy = SOBO(self.domain)
         self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yield"])  # Store experiments
 
     def recommend(self):
         """ Generate the next recommendation. """
-        if self.experiments.empty:
+        if self.experiments.empty and not self.randomInitialAssigned:
             # Generate initial random experiments (needed for SOBO)
-            import numpy as np
             temp = np.random.uniform(25, 100)
             flowrate = np.random.uniform(0.1, 5)
             recommendation = {"temperature": temp, "flowrate": flowrate}
             print("🔹 First random experiment:", recommendation)
+            self.randomInitialAssigned=True
         else:
             # Generate recommendation from SOBO
             next_experiment = self.strategy.suggest_experiments(1)
