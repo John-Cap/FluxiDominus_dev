@@ -36,6 +36,8 @@ class OptimizationRig:
         
         self.lastRecommendedVal={}
         
+        # self.lastIR = self.lastMsgFromTopic[topic]
+        
     def registerDevice(self, device):
         """ Registers a device and its available commands. """
         if device in self.automation.commandTemplatesNested:

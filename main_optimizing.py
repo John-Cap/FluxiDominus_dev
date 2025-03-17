@@ -1,6 +1,7 @@
 
 from datetime import datetime
 import json
+import os
 import time
 
 from pytz import utc
@@ -9,7 +10,7 @@ from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptPars
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.Optimization.optimization_rig import OptimizationRig
-from Core.UI.plutter import MqttService
+from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
 updater = MqttService(broker_address="localhost")
@@ -68,6 +69,11 @@ updater.registeredTeleDevices={}
 updater.script=""
 updater.databaseOperations.mongoDb.currZeroTime=None
 
+##############################
+#OPtimization specific var
+SHARED_FOLDER='OPTIMIZATION_TEMP\SharedData'
+irCntr=0
+
 # Main loop!
 while True:
     
@@ -111,6 +117,9 @@ while True:
         continue
     
     while runOptimization and optRig.optimizing:
+        ##################################
+        #Recommendation phase
+        
         #dbConnection ping
         if time.time() - lstPngTime > mySqlPngDelay:
             if updater.databaseOperations.mySqlDb.connection.is_connected():
@@ -120,7 +129,6 @@ while True:
                 print('mySQL db ping not answered!');
                 updater.databaseOperations.mySqlDb.connect();
                 time.sleep(0.5);
-        #
         if len(procedure.currConfig.commands) == 0:
             procedure.next()
             if procedure.currConfig is None:
@@ -131,6 +139,12 @@ while True:
         else:
             procedure.currConfig.sendMQTT(waitForDelivery=True)
             
+        if updater.irAvailable:
+            updater.irAvailable=False
+            with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
+                json.dump({irCntr:updater.IR}, f)
+                irCntr += 1
+            
         if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
             if len(updater.dataQueue.dataPoints) != 0:
                 updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
@@ -138,7 +152,10 @@ while True:
             _reportDelay=Delay(_reportSleep)
 
         time.sleep(0.15)
-        
+
+        ##################################
+        #Evaluation phase
+                
     # #TODO - in own thread
     # if updater.logData and not noTestDetails:
     #     if len(updater.dataQueue.dataPoints) != 0:

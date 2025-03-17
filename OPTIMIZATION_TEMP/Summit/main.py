@@ -21,13 +21,19 @@ class SummitOptimizer:
         self.strategy = SOBO(self.domain)
         self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yield"])  # Store experiments
 
+        self.prevExp={}
+        
+        self.recommendationPath=(os.path.join(SHARED_FOLDER, "recommendation.json"))
+        self.yieldPath=(os.path.join(SHARED_FOLDER, "yield.json"))
+
     def recommend(self):
         """ Generate the next recommendation. """
         if self.experiments.empty and not self.randomInitialAssigned:
             # Generate initial random experiments (needed for SOBO)
-            temp = np.random.uniform(25, 100)
-            flowrate = np.random.uniform(0.1, 5)
+            temp = np.random.uniform(40, 100)
+            flowrate = np.random.uniform(1, 3)
             recommendation = {"temperature": temp, "flowrate": flowrate}
+            self.prevExp=recommendation
             print("🔹 First random experiment:", recommendation)
             self.randomInitialAssigned=True
         else:
@@ -42,9 +48,10 @@ class SummitOptimizer:
                 "temperature": next_experiment["temperature"].iloc[0],
                 "flowrate": next_experiment["flowrate"].iloc[0]
             }
+            self.prevExp=recommendation
             
         # Write recommendation to SharedData/
-        with open(os.path.join(SHARED_FOLDER, "recommendation.json"), "w") as f:
+        with open(self.recommendationPath, "w") as f:
             json.dump(recommendation, f)
             
         print(f"✅ Summit Optimizer recommended: {recommendation}")
@@ -52,10 +59,14 @@ class SummitOptimizer:
     def update(self):
         """ Check for evaluated yield and update optimizer. """
         try:
-            with open("yield.json", "r") as f:
+            with open(self.yieldPath, "r") as f:
                 data = json.load(f)
 
-            temp, flowrate, yield_score = data["temperature"], data["flowrate"], data["yield"]
+            yield_score = data["yield"]
+            temp=self.prevExp["temperature"]
+            flowrate=self.prevExp["flowrate"]
+            
+            os.remove(self.yieldPath)
 
             # Add the new experiment result
             new_data = pd.DataFrame({"temperature": [temp], "flowrate": [flowrate], "yield": [yield_score]})

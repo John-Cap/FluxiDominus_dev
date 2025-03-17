@@ -16,22 +16,32 @@ trainer = IRMLPTrainer(
 trainer.loadModel("ir_yield_mlp.keras")
 trainer.trimLeft=200
 trainer.trimRight=40
+keyPrev=-1
+yieldAvgs=[]
 
 while True:
+    #Open, check if new scan
     try:
-        # Generate a mock IR spectrum (replace with real data if available)
-        ir_spectrum = np.random.rand(839)
-        ir_spectrum = trainer.trimDataSingle(ir_spectrum)
+        with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "r") as f:
+            data = json.load(f)
+    except:
+        time.sleep(4)
+        continue
+    
+    keyStr=(list(data.keys()))[0]
+    key=eval(keyStr)
+    if key > keyPrev:
+        keyPrev=key
+        ir = trainer.trimDataSingle(data[keyStr])
 
         # Predict yield
-        yield_score = trainer.estimateYield(ir_spectrum)
-        print(f"🔹 Evaluated yield: {yield_score:.3f}")
+        yield_score = trainer.estimateYield(ir)
+        print(f"🔹 Evaluated yield: {yield_score*100}")
         # Write recommendation to SharedData/
         
-        with open(os.path.join(SHARED_FOLDER, "yield.json"), "w") as f:
-            json.dump({"yield":float(yield_score)}, f)
-        time.sleep(5)  # Wait before checking for a new recommendation
+        #Before writing, take the averages of IR scans until data["evaluate"] = False
+        if not data["evaluate"]:
+            with open(os.path.join(SHARED_FOLDER, "yield.json"), "w") as f:
+                json.dump({"yield":float(yield_score)}, f)
 
-    except FileNotFoundError:
-        print("🔺 Waiting for Summit recommendations...")
-        time.sleep(5)
+    time.sleep(4)
