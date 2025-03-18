@@ -1,4 +1,5 @@
 import os
+import summit
 from summit.domain import Domain, ContinuousVariable
 from summit.strategies import SOBO
 import json
@@ -16,10 +17,12 @@ class SummitOptimizer:
         self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
 
         self.randomInitialAssigned=False
+        
+        self.recommending=True
 
         # Use SOBO optimizer
         self.strategy = SOBO(self.domain)
-        self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yield"])  # Store experiments
+        self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yieldVal"])  # Store experiments
 
         self.prevExp={}
         
@@ -38,7 +41,7 @@ class SummitOptimizer:
             self.randomInitialAssigned=True
         else:
             # Generate recommendation from SOBO
-            next_experiment = self.strategy.suggest_experiments(1)
+            next_experiment = self.strategy.suggest_experiments(1,summit.DataSet.from_df(self.experiments))
 
             if next_experiment.empty:
                 print("⚠️ Summit returned an empty dataset! Ensure optimizer is correctly updated with past experiments.")
@@ -53,7 +56,9 @@ class SummitOptimizer:
         # Write recommendation to SharedData/
         with open(self.recommendationPath, "w") as f:
             json.dump(recommendation, f)
-            
+        
+        self.recommending=False
+        
         print(f"✅ Summit Optimizer recommended: {recommendation}")
 
     def update(self):
@@ -62,19 +67,24 @@ class SummitOptimizer:
             with open(self.yieldPath, "r") as f:
                 data = json.load(f)
 
-            yield_score = data["yield"]
-            temp=self.prevExp["temperature"]
-            flowrate=self.prevExp["flowrate"]
+            if data["toSummit"]:
+                yield_score = data["yield"]
+                temp=self.prevExp["temperature"]
+                flowrate=self.prevExp["flowrate"]
+            else:
+                return
             
             os.remove(self.yieldPath)
 
             # Add the new experiment result
-            new_data = pd.DataFrame({"temperature": [temp], "flowrate": [flowrate], "yield": [yield_score]})
+            new_data = pd.DataFrame({"temperature": [temp], "flowrate": [flowrate], "yieldVal": [yield_score]})
             self.experiments = pd.concat([self.experiments, new_data], ignore_index=True)
 
             # Update SOBO strategy
-            self.strategy.add_experiments(self.experiments)
+            #self.strategy.add_experiments(self.experiments)
             print(f"✅ Updated Summit with yield: {yield_score:.3f}")
+            
+            self.recommending=True
 
         except FileNotFoundError:
             print("🔺 No evaluated yield found, waiting...")

@@ -17,18 +17,23 @@ trainer.loadModel("ir_yield_mlp.keras")
 trainer.trimLeft=200
 trainer.trimRight=40
 keyPrev=-1
-yieldAvgs=[]
+yields=[]
+
+scanPath=os.path.join(SHARED_FOLDER, "latest_ir_scan.json")
+yieldPath=os.path.join(SHARED_FOLDER, "yield.json")
+
+evaluating=False
 
 while True:
     #Open, check if new scan
     try:
-        with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "r") as f:
+        with open(scanPath, "r") as f:
             data = json.load(f)
     except:
         time.sleep(4)
         continue
     
-    keyStr=(list(data.keys()))[0]
+    keyStr=(list(data.keys()))[0] #TODO - careful!
     key=eval(keyStr)
     if key > keyPrev:
         keyPrev=key
@@ -37,11 +42,26 @@ while True:
         # Predict yield
         yield_score = trainer.estimateYield(ir)
         print(f"🔹 Evaluated yield: {yield_score*100}")
-        # Write recommendation to SharedData/
+        # Write recommendation to SharedData/   
+        
+        if evaluating:
+            yields.append(yield_score)
         
         #Before writing, take the averages of IR scans until data["evaluate"] = False
-        if not data["evaluate"]:
-            with open(os.path.join(SHARED_FOLDER, "yield.json"), "w") as f:
-                json.dump({"yield":float(yield_score)}, f)
+        if data["evaluate"]:
+            if not evaluating:
+                evaluating=True
+                print(f"Yield evaluation started at IR scan index {key}")
+        else:
+            if evaluating:
+                #Take max yield
+                yield_score=max(yields)
+                yields.clear()
+                with open(os.path.join(SHARED_FOLDER, "yield.json"), "w") as f:
+                    json.dump({"yield":float(yield_score),"toSummit":True}, f)
+                
+                evaluating=False
+                print(f"Yield evaluation stopped at IR scan index {key}, peak yield is {yield_score*100}")
+            
 
     time.sleep(4)

@@ -1,5 +1,4 @@
 {
-    "temperature": 75.0,
-    "flowrate": 3.0,
-    "yield": 0.87
+    "toSummit":true,
+    "yield": 0.35
 }
