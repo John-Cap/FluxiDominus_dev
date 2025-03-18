@@ -139,11 +139,29 @@ while True:
         else:
             procedure.currConfig.sendMQTT(waitForDelivery=True)
             
+        if optRig.startScanAt < time.time() and not optRig.scanning:
+            optRig.scanning=True
+            with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
+                json.dump({str(irCntr):updater.IR,"evaluate":True}, f)
+                irCntr += 1              
+        elif optRig.endScanAt < time.time() and optRig.scanning:
+            optRig.scanning=False
+            with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
+                json.dump({str(irCntr):updater.IR,"evaluate":False}, f)
+                irCntr += 1
+            runOptimization=False
+            
         if updater.irAvailable:
             updater.irAvailable=False
-            with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
-                json.dump({irCntr:updater.IR}, f)
-                irCntr += 1
+            if optRig.scanning:
+                with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
+                    json.dump({str(irCntr):updater.IR,"evaluate":True}, f)
+                    irCntr += 1
+            else:
+                with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
+                    json.dump({str(irCntr):updater.IR,"evaluate":False}, f)
+                    irCntr += 1
+                    
             
         if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
             if len(updater.dataQueue.dataPoints) != 0:

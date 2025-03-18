@@ -36,6 +36,13 @@ class OptimizationRig:
         
         self.lastRecommendedVal={}
         
+        self.startScanAt=0
+        self.endScanAt=0
+        
+        self.zeroTime=0
+        
+        self.scanning=False
+        
         # self.lastIR = self.lastMsgFromTopic[topic]
         
     def registerDevice(self, device):
@@ -261,8 +268,10 @@ class OptimizationRig:
         self.automation.addBlockElement("waitAndSwitch","vapourtecR4P1700","svasr",False)
         self.automation.addBlockElement("waitAndSwitch","vapourtecR4P1700","svbsr",False)
         
-        vol=15 #dead volume
-        delayRemaining=((vol/(self.lastRecommendedVal["flowrate"]))*60) - timeToPump #seconds
+        timeToReachExit=((vol/(self.lastRecommendedVal["flowrate"]))*60)
+        
+        vol=15 #wat was dit nou weer??
+        delayRemaining=timeToReachExit - timeToPump #TODO - maak seker
         delayRemaining=delayRemaining - delayRemaining*0.05 #Start scanning a bit earlier to compensate for forwards dispersion
         
         #Wait until reaction stream theoretically reaches IR
@@ -275,6 +284,12 @@ class OptimizationRig:
         # Convert to script and send to MQTT
         self.automation.parseToScript()
         self.mqttService.script = self.automation.output
+        
+        #zero
+        self.zeroTime=time.time()
+        #Delays
+        self.startScanAt=timeToReachExit + self.zeroTime
+        self.endScanAt=timeToScan + self.zeroTime
         
         self.awaitYield=True
         print(f"Automization output: {self.automation.output}")
