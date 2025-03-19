@@ -73,6 +73,8 @@ class MqttService:
         #Telemetry
         self.registeredTeleDevices={}
         
+        self.irAvailable=False
+        
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
 
     def onSubscribe(self, client, userdata, mid, granted_qos):

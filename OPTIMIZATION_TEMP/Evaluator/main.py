@@ -16,8 +16,8 @@ trainer = IRMLPTrainer(
     csv_path_unmasked="ir_yield_no_resample_unmasked.csv"
 )
 trainer.loadModel("ir_yield_mlp.keras")
-trainer.trimLeft=200
-trainer.trimRight=40
+# trainer.trimLeft=200
+# trainer.trimRight=40
 keyPrev=-1
 yields=[]
 

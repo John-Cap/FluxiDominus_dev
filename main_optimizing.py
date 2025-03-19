@@ -10,6 +10,7 @@ from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptPars
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.Optimization.optimization_rig import OptimizationRig
+from Core.parametres.reaction_parametres import Flowrate, Temp
 from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
@@ -52,9 +53,31 @@ lstPngTime=time.time();
 runOptimization=False
 noTestDetails=True
 
+########################################################################
 #Optimizer rig
-optRig=OptimizationRig(updater)
-optRig.start()
+rig=OptimizationRig(updater)
+
+# Define devices
+device1 = "hotcoil1"
+device2 = "vapourtecR4P1700"
+
+# Define tweakable parameters
+tempParam = Temp("temperature", associatedCommand="temp", ranges=[[25, 100]])
+flowrateParam1 = Flowrate("flowrateA", associatedCommand="pafr", ranges=[[0.1, 2]])
+flowrateParam2 = Flowrate("flowrateB", associatedCommand="pbfr", ranges=[[0.1, 2]])
+
+# Register devices
+rig.registerDevice(device1)
+rig.registerDevice(device2)
+
+# Register tweakable parameters to the devices
+rig.registerTweakableParam(device1, tempParam)
+rig.registerTweakableParam(device2, flowrateParam1)
+rig.registerTweakableParam(device2, flowrateParam2)
+
+rig.start()
+########################################################################
+
 #TODO - Smarter way to manage this:
 updater.currTestlistId=None
 updater.currTestrunId=None
@@ -71,7 +94,7 @@ updater.databaseOperations.mongoDb.currZeroTime=None
 
 ##############################
 #OPtimization specific var
-SHARED_FOLDER='OPTIMIZATION_TEMP\SharedData'
+SHARED_FOLDER=r'OPTIMIZATION_TEMP\SharedData'
 irCntr=0
 
 # Main loop!
@@ -116,7 +139,7 @@ while True:
         updater.script=""
         continue
     
-    while runOptimization and optRig.optimizing:
+    while runOptimization and rig.optimizing:
         ##################################
         #Recommendation phase
         
@@ -139,13 +162,13 @@ while True:
         else:
             procedure.currConfig.sendMQTT(waitForDelivery=True)
             
-        if optRig.startScanAt < time.time() and not optRig.scanning:
-            optRig.scanning=True
+        if rig.startScanAt < time.time() and not rig.scanning:
+            rig.scanning=True
             with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
                 json.dump({str(irCntr):updater.IR,"evaluate":True}, f)
                 irCntr += 1              
-        elif optRig.endScanAt < time.time() and optRig.scanning:
-            optRig.scanning=False
+        elif rig.endScanAt < time.time() and rig.scanning:
+            rig.scanning=False
             with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
                 json.dump({str(irCntr):updater.IR,"evaluate":False}, f)
                 irCntr += 1
@@ -153,7 +176,7 @@ while True:
             
         if updater.irAvailable:
             updater.irAvailable=False
-            if optRig.scanning:
+            if rig.scanning:
                 with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
                     json.dump({str(irCntr):updater.IR,"evaluate":True}, f)
                     irCntr += 1

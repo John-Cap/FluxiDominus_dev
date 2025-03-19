@@ -25,7 +25,7 @@ class OptimizationRig:
         self.optimizing = False
         self.objectiveEvaluator = None  # Function handle for evaluation
         self.objectiveEvaluationKwargs = {}  # Additional args for evaluation
-        self.objectiveScore = None  # Score between 0 and 1
+        self.objectiveScore = 0  # Score between 0 and 1
         self.targetScore = None
         self.mqttService = mqttService
         
@@ -149,6 +149,8 @@ class OptimizationRig:
                 print(f"  Device: {device}")
                 for paramId, val in params.items():
                     print(f"    {paramId}: {val:.3f}")
+                    
+            self.executeRecommendation_TEMP()
 
         except FileNotFoundError:
             if self.recommYielded:
@@ -159,7 +161,7 @@ class OptimizationRig:
         """ Evaluates the latest recommendation using the provided objective function. """
         if self.objectiveEvaluator is None:
             print("Warning: No objective evaluator function set.")
-            self.objectiveScore = None
+            self.objectiveScore = 0
             return
 
         print("\nEvaluating recommendation with objective function:")
@@ -260,6 +262,8 @@ class OptimizationRig:
 
         #Calculate and add delay
         volToDispense=2
+        
+        vol=15 #wat was dit nou weer??
         timeToPump=(volToDispense/(self.lastRecommendedVal["flowrate"]))*60
 
         self.automation.addBlockElement("waitAndSwitch","Delay","sleepTime",timeToPump)
@@ -269,8 +273,6 @@ class OptimizationRig:
         self.automation.addBlockElement("waitAndSwitch","vapourtecR4P1700","svbsr",False)
         
         timeToReachExit=((vol/(self.lastRecommendedVal["flowrate"]))*60)
-        
-        vol=15 #wat was dit nou weer??
         delayRemaining=timeToReachExit - timeToPump #TODO - maak seker
         delayRemaining=delayRemaining - delayRemaining*0.05 #Start scanning a bit earlier to compensate for forwards dispersion
         
@@ -305,9 +307,10 @@ class OptimizationRig:
         """ Runs the optimization loop in the background until the target score is reached. """
         print("\n--- Starting Optimization Loop ---")
         while self.optimizing:
-            self.generateRecommendation()
-            self.evaluateRecommendation()
-            print(f"Current Objective Score: {self.objectiveScore:.3f}")
+            self.generateRecommendation_TEMP()
+            time.sleep(1)
+            self.evaluateRecommendation_TEMP()
+            print(f"Current Objective Score: {self.objectiveScore*100}")
 
             if self.objectiveScore and self.objectiveScore >= self.targetScore:
                 print("\n🎯 Target Score Reached! Stopping optimization. 🎯")

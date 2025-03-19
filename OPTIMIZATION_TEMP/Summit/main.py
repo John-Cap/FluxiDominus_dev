@@ -7,7 +7,7 @@ if __name__ == "__main__":
     
     while True:
         if optimizer.recommending:
-            optimizer.recommend()  #Gener  ate new parameters
+            optimizer.recommend()  #Generate new parameters
         else:
             optimizer.update()
         
