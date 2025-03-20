@@ -51,7 +51,10 @@ class IRMLPTrainer:
         self.client.on_message = self.onMessage
         
         self.inputLength=599
-
+        
+        self.yields=[]
+        self.highestYield=0
+        self.evaluatingYields=False
 
     def load_and_prepare_data(self):
         """
@@ -270,9 +273,26 @@ class IRMLPTrainer:
         
         if "goEvaluator" in _msgContents:
             ir=_msgContents["scan"]
-            if len(_msgContents["scan"]) != self.inputLength:
+            length=len(_msgContents["scan"])
+            if length == 0:
+                return
+            if length != self.inputLength:
                 ir = self.trimDataSingle(ir)
             yield_score = self.estimateYield(ir)
+            if _msgContents["goEvaluator"]:
+                if self.evaluatingYields:
+                    self.yields.append(yield_score)
+                else:
+                    self.evaluatingYields=True
+                    self.yields=[]
+                    self.yields.append(yield_score)
+                self.highestYield=max(self.yields)
+                print(f"Yields: {self.yields}")
+            else:
+                if len(self.yields) != 0:
+                    self.highestYield=max(self.yields)
+                    self.evaluatingYields=False
+                    
             print(f"🔹 Evaluated yield: {yield_score*100}")
             
     def onConnect(self, client, userdata, flags, rc):

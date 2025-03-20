@@ -263,6 +263,7 @@ class MqttService:
             pass
         elif topic=="":
             pass
+        
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
