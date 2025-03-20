@@ -13,12 +13,13 @@ from Core.UI.brokers_and_topics import MqttTopics
 from Core.authentication.authenticator import Authenticator
 
 class MqttService:
-    def __init__(self, broker_address="localhost", port=1883, client = None, orgId="NONE",allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
+    def __init__(self, broker_address="localhost", port=1883, client = None, orgId="NONE",allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),allTopicsOptimization=MqttTopics.getOptimizationTopics(),automation=None):
         self.broker_address = broker_address
         self.port = port
         self.allTopics = allTopics
         self.allTopicsTele=allTopicsTele
         self.allTopicsUI=allTopicsUI
+        self.allTopicsOptimization=allTopicsOptimization
         self.temp = 0
         self.IR = []
         
@@ -67,8 +68,11 @@ class MqttService:
         self.currTestrunId=None
         self.abort=False
         
-        #TODO - Temp fix for repeated connecting
+        self.armed=False
+        
+        #TODO - Temp fix for repeated subscription
         #self.connected=False
+        self.subscribed={}
         
         #Telemetry
         self.registeredTeleDevices={}
@@ -82,22 +86,26 @@ class MqttService:
             print("WJ - Subscribed to topic " + self.topicIDs[mid] + " with Qos " + str(granted_qos[0]) + "!")
     
     def onConnect(self, client, userdata, flags, rc):
-        print("WJ - Connected!")
         #if self.connected:
             #return
+        # print("WJ - Connected!")
         if rc == 0:
             for _x in self.allTopics:
                 for tpc in _x.values():
+                    if tpc in self.subscribed:
+                        if self.subscribed[tpc]:
+                            continue
                     qos=MqttTopics.getTopicQos(tpc)
                     ret=self.client.subscribe(tpc,qos=qos)
                     if ret[0].real==0:
                         self.topicIDs[ret[1]]=tpc
+                        self.subscribed[tpc]=True
                     else:
                         print("WJ - could not subscribe to topic "+tpc+"!")
             self.connected=True
         else:
             print("Connection failed with error code " + str(rc))
-        print(self.topicIDs)
+        # print(self.topicIDs)
     
     def onConnectTele(self, client, userdata, flags, rc):
         print("WJ - Connected!")
@@ -252,7 +260,9 @@ class MqttService:
                 self.runTest=True
                 print("WJ - Let's go!")
         elif topic=="ui/parseFlowpath/in":
-            pass   
+            pass
+        elif topic=="":
+            pass
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
@@ -262,12 +272,23 @@ class MqttService:
         thread.start()
         return thread
 
+    def arm(self):
+        if not self.armed:
+            self.armed=True
+
+    def disarm(self):
+        if self.armed:
+            self.armed=False
+
     def _run(self):
         self.client.loop_start()
         
     def publish(self,topic,payload):
-        _ret=self.client.publish(topic,payload)
-        print(f'MQTT message info: {_ret}')
+        if not self.armed:
+            pass
+        else:
+            _ret=self.client.publish(topic,payload)
+            print(f'MQTT message info: {_ret}')
 
     def getTemp(self):
         return self.temp

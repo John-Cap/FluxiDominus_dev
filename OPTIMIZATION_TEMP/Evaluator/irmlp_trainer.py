@@ -1,3 +1,4 @@
+import ast
 import copy
 import keras
 import os
@@ -9,9 +10,12 @@ from tensorflow.keras.layers import Dense
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics.pairwise import cosine_similarity
+import paho.mqtt.client as mqtt
+
+SHARED_FOLDER = "../SharedData/"  # Set path to shared folder
 
 class IRMLPTrainer:
-    def __init__(self, csv_path, csv_path_unaveraged, csv_path_unmasked, num_interpolated=10, jitter_factor=0.05):
+    def __init__(self, csv_path, csv_path_unaveraged, csv_path_unmasked, num_interpolated=10, jitter_factor=0.05, client=None, host="localhost"):
         """
         Initializes the IRMLPTrainer with a dataset from a CSV file.
         
@@ -35,6 +39,19 @@ class IRMLPTrainer:
         self.trimRight=0
         
         self.smallValueThreshold=0.01
+        
+        self.evaluatorCmndPath=(os.path.join(SHARED_FOLDER, "evaluatorCmnd.json"))
+         
+        self.client = client if client else (mqtt.Client(client_id="Evaluator", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
+        self.host=host
+        self.topicIn="eval/out"
+        self.topicOut="eval/in"
+        
+        self.client.on_connect = self.onConnect
+        self.client.on_message = self.onMessage
+        
+        self.inputLength=599
+
 
     def load_and_prepare_data(self):
         """
@@ -245,6 +262,26 @@ class IRMLPTrainer:
         print(f"✅ Trimmed data: New shape {trimmed_data.shape}")
         return trimmed_data
 
+    def onMessage(self, client, userdata, msg):
+        _msgContents = msg.payload.decode()
+        _msgContents = _msgContents.replace("true", "True").replace("false", "False")
+        _msgContents=_msgContents.replace("null","None")
+        _msgContents = ast.literal_eval(_msgContents)
+        
+        if "goEvaluator" in _msgContents:
+            ir=_msgContents["scan"]
+            if len(_msgContents["scan"]) != self.inputLength:
+                ir = self.trimDataSingle(ir)
+            yield_score = self.estimateYield(ir)
+            print(f"🔹 Evaluated yield: {yield_score*100}")
+            
+    def onConnect(self, client, userdata, flags, rc):
+        #if self.connected:
+            #return
+        print(f"WJ - Connected with rc {rc}!")
+        if rc == 0:
+            self.client.subscribe(topic=self.topicIn)
+            
 if __name__ == "__main__":
     # Initialize Trainer with the CSV file
     trainer = IRMLPTrainer(csv_path="ir_yield_no_resample_averages.csv", csv_path_unaveraged= 'ir_yield_no_resample_unaveraged.csv', csv_path_unmasked='ir_yield_no_resample_unmasked.csv', num_interpolated=5, jitter_factor=0.05)

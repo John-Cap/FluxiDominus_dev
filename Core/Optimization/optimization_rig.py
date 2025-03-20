@@ -9,10 +9,8 @@ import numpy as np
 from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.parametres.reaction_parametres import Flowrate, ReactionParametres, Temp
 
-SHARED_FOLDER = "./OPTIMIZATION_TEMP/SharedData"
-
 class OptimizationRig:
-    def __init__(self, mqttService):
+    def __init__(self, mqttService, recommendationPath=r"OPTIMIZATION_TEMP\SharedData\recommendation.json", yieldPath=r"OPTIMIZATION_TEMP\SharedData\yield.json"):
         self.automation = FlowChemAutomation()  # Handles command parsing
         self.reactionParametres = ReactionParametres()  # Holds different parameters that can be optimized
         self.availableParams = {}  # Reaction parameters that can be tweaked, per device
@@ -42,6 +40,15 @@ class OptimizationRig:
         self.zeroTime=0
         
         self.scanning=False
+        
+        self.generateRecommendation_TEMPsaidItOnce=False
+        self.evaluateRecommendation_TEMPsaidItOnce=False
+        
+        self.recommendationPath=recommendationPath
+        self.yieldPath=yieldPath
+        
+        self.summitCmndPath=r'OPTIMIZATION_TEMP\SharedData\summitCmnd.json'
+        self.evaluatorCmndPath=r'OPTIMIZATION_TEMP\SharedData\evaluatorCmnd.json'
         
         # self.lastIR = self.lastMsgFromTopic[topic]
         
@@ -91,10 +98,9 @@ class OptimizationRig:
                 
     def generateRecommendation_TEMP(self):
         """ Reads recommendation from Summit JSON and applies flowrate adjustment. """
-        recommendation_path = os.path.join(SHARED_FOLDER, "recommendation.json")
 
         try:
-            with open(recommendation_path, "r") as f:
+            with open(self.recommendationPath, "r") as f:
                 recommendedValues = json.load(f)  # Load recommendation from Summit
             
             if not recommendedValues:
@@ -140,10 +146,10 @@ class OptimizationRig:
             self.recommendationHistory.append(self.currentRecommendation)
 
             # Remove the recommendation file to prevent duplicate reads
-            os.remove(recommendation_path)
+            os.remove(self.recommendationPath)
             
             self.recommYielded=True
-            
+            self.generateRecommendation_TEMPsaidItOnce=False
             print("\n✅ Generated Recommendation:")
             for device, params in self.currentRecommendation.items():
                 print(f"  Device: {device}")
@@ -153,8 +159,12 @@ class OptimizationRig:
             self.executeRecommendation_TEMP()
 
         except FileNotFoundError:
-            if self.recommYielded:
-                self.recommYielded=False
+            # if self.recommYielded:
+            #     self.recommYielded=False
+            if not self.generateRecommendation_TEMPsaidItOnce:
+                self.generateRecommendation_TEMPsaidItOnce=True
+            else:
+                return
             print("⚠️ No recommendation file found, waiting for Summit...")
 
     def evaluateRecommendation(self):
@@ -180,7 +190,6 @@ class OptimizationRig:
     def evaluateRecommendation_TEMP(self):
         """ Sends recommendation to Evaluator, waits for yield, and updates Summit. """
         # recommendation_path = os.path.join(SHARED_FOLDER, "recommendation.json")
-        yield_path = os.path.join(SHARED_FOLDER, "yield.json")
 
         if not self.currentRecommendation:
             print("⚠️ Warning: No recommendation available for evaluation.")
@@ -195,11 +204,11 @@ class OptimizationRig:
             print("\n🚀 Sent recommendation to Evaluator, waiting for yield...")
 
             # Wait for Evaluator to generate a yield score
-            while not os.path.exists(yield_path):
+            while not os.path.exists(self.yieldPath):
                 time.sleep(2)  # Check every 2 seconds
 
             # Read the yield from Evaluator
-            with open(yield_path, "r") as f:
+            with open(self.yieldPath, "r") as f:
                 yield_data = json.load(f)
 
             self.objectiveScore = yield_data.get("yield", None)
@@ -207,16 +216,22 @@ class OptimizationRig:
             if self.objectiveScore is None or not (0 <= self.objectiveScore <= 1):
                 raise ValueError(f"Invalid objective score: {self.objectiveScore}")
 
+            self.evaluateRecommendation_TEMPsaidItOnce=False
+
             print(f"✅ Received Estimated Yield: {self.objectiveScore:.3f}")
 
             self.evalYielded=True
 
             # Remove the yield file to prevent duplicate reads
-            os.remove(yield_path)
+            os.remove(self.yieldPath)
 
         except FileNotFoundError:
             if self.evalYielded:
                 self.evalYielded=False
+            if not self.evaluateRecommendation_TEMPsaidItOnce:
+                self.evaluateRecommendation_TEMPsaidItOnce=True
+            else:
+                return
             print("⚠️ Evaluator has not provided yield yet, waiting...")
 
         except Exception as e:
@@ -295,6 +310,22 @@ class OptimizationRig:
         
         self.awaitYield=True
         print(f"Automization output: {self.automation.output}")
+        
+    def setGoSummit(self,run):
+        if run:
+            with open(self.summitCmndPath, "w") as f:
+                json.dump({"goSummit":run}, f)
+        else:
+            with open(self.summitCmndPath, "w") as f:
+                json.dump({"goSummit":run}, f)            
+        
+    def setGoEvaluator(self,run):
+        if run:
+            with open(self.evaluatorCmndPath, "w") as f:
+                json.dump({"goEvaluator":run}, f)
+        else:
+            with open(self.evaluatorCmndPath, "w") as f:
+                json.dump({"goEvaluator":run}, f)            
 
     def start(self):
         """ Starts a background thread to continuously optimize until the target score is reached. """
@@ -307,10 +338,10 @@ class OptimizationRig:
         """ Runs the optimization loop in the background until the target score is reached. """
         print("\n--- Starting Optimization Loop ---")
         while self.optimizing:
-            self.generateRecommendation_TEMP()
-            time.sleep(1)
-            self.evaluateRecommendation_TEMP()
-            print(f"Current Objective Score: {self.objectiveScore*100}")
+            if self.recommYielded:
+                self.generateRecommendation_TEMP()
+            elif self.evalYielded:
+                self.evaluateRecommendation_TEMP()
 
             if self.objectiveScore and self.objectiveScore >= self.targetScore:
                 print("\n🎯 Target Score Reached! Stopping optimization. 🎯")

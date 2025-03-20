@@ -1,4 +1,5 @@
 
+import ast
 import os
 import summit
 from summit.domain import Domain, ContinuousVariable
@@ -6,11 +7,12 @@ from summit.strategies import SOBO
 import json
 import pandas as pd
 import numpy as np
+import paho.mqtt.client as mqtt
 
 SHARED_FOLDER = "../SharedData/"  # Set path to shared folder
 
 class SummitOptimizer:
-    def __init__(self):
+    def __init__(self,client=None,host="localhost"):
         # Define the optimization domain
         self.domain = Domain()
         self.domain += ContinuousVariable(name="temperature", bounds=[25, 100], is_objective=False, description='temperature')
@@ -21,6 +23,8 @@ class SummitOptimizer:
         
         self.recommending=True
 
+        self.started=False
+
         # Use SOBO optimizer
         self.strategy = SOBO(self.domain)
         self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yieldVal"])  # Store experiments
@@ -29,6 +33,16 @@ class SummitOptimizer:
         
         self.recommendationPath=(os.path.join(SHARED_FOLDER, "recommendation.json"))
         self.yieldPath=(os.path.join(SHARED_FOLDER, "yield.json"))
+        self.summitCmndPath=(os.path.join(SHARED_FOLDER, "summitCmnd.json"))
+        self.updateSaidItOnce=False
+        
+        self.client = client if client else (mqtt.Client(client_id="SummitOptimizer", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
+        self.host=host
+        self.topicIn="opt/out"
+        self.topicOut="opt/in"
+        
+        self.client.on_connect = self.onConnect
+        self.client.on_message = self.update
 
     def recommend(self):
         """ Generate the next recommendation. """
@@ -54,39 +68,49 @@ class SummitOptimizer:
             }
             self.prevExp=recommendation
             
-        # Write recommendation to SharedData/
-        with open(self.recommendationPath, "w") as f:
-            json.dump(recommendation, f)
-        
+        # Write recommendation
+        self.client.publish(self.topicOut,json.dumps(recommendation))
         self.recommending=False
         
         print(f"✅ Summit Optimizer recommended: {recommendation}")
 
-    def update(self):
+    def update(self, client, userdata, msg):
         """ Check for evaluated yield and update optimizer. """
-        try:
-            with open(self.yieldPath, "r") as f:
-                data = json.load(f)
+        data = msg.payload.decode()
+        data = data.replace("true", "True").replace("false", "False")
+        data=data.replace("null","None")
+        data = ast.literal_eval(data)
+        if not self.started:
+            if "goSummit" in data:
+                if data["goSummit"]:
+                    self.recommend()
+                    self.started=True
+                    return
+        
+        yield_score = data["yield"]
+        temp=self.prevExp["temperature"]
+        flowrate=self.prevExp["flowrate"]
 
-            if data["toSummit"]:
-                yield_score = data["yield"]
-                temp=self.prevExp["temperature"]
-                flowrate=self.prevExp["flowrate"]
-            else:
-                return
-            
-            os.remove(self.yieldPath)
+        if self.updateSaidItOnce:
+            self.updateSaidItOnce=False
 
-            # Add the new experiment result
-            new_data = pd.DataFrame({"temperature": [temp], "flowrate": [flowrate], "yieldVal": [yield_score]})
-            self.experiments = pd.concat([self.experiments, new_data], ignore_index=True)
+        # Add the new experiment result
+        new_data = pd.DataFrame({"temperature": [temp], "flowrate": [flowrate], "yieldVal": [yield_score]})
+        self.experiments = pd.concat([self.experiments, new_data], ignore_index=True)
 
-            # Update SOBO strategy
-            #self.strategy.add_experiments(self.experiments)
-            print(f"✅ Updated Summit with yield: {yield_score:.3f}")
-            
-            self.recommending=True
+        # Update SOBO strategy
+        #self.strategy.add_experiments(self.experiments)
+        print(f"✅ Updated Summit with yield: {yield_score:.3f}")
+        
+        self.recommending=True
 
-        except FileNotFoundError:
-            print("🔺 No evaluated yield found, waiting...")
+    def onMessage(self, client, userdata, msg):
+        _msgContents = msg.payload.decode()
+        topic=msg.topic
 
+    def onConnect(self, client, userdata, flags, rc):
+        #if self.connected:
+            #return
+        print(f"WJ - Connected with rc {rc}!")
+        if rc == 0:
+            self.client.subscribe(topic=self.topicIn)

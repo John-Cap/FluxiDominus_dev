@@ -31,6 +31,13 @@ class MqttTopics:
         "dbCmndIn":"ui/dbCmnd/in" #Ui posts here
     }
 
+    topicsOptimization = {
+        "optimizerIn":"opt/in",
+        "optimizerOut":"opt/out",
+        "evaluatorIn":"eval/in",
+        "evaluatorOut":"eval/out"
+    }
+
     topicsTests={
         "testSettings":"test/settings"
     }
@@ -77,6 +84,10 @@ class MqttTopics:
     @staticmethod
     def getUiTopics():
         return MqttTopics.topicsUI
+
+    @staticmethod
+    def getOptimizationTopics():
+        return MqttTopics.topicsOptimization
 
     @staticmethod
     def getAllTopicSets():

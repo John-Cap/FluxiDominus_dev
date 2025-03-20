@@ -59,6 +59,8 @@ class MqttService:
         
         self.zeroTime=None
         
+        self.armed=False
+        
         self.databaseOperations=None
         
         #TODO - random test related var
@@ -256,6 +258,14 @@ class MqttService:
         thread = threading.Thread(target=self._run)
         thread.start()
         return thread
+
+    def arm(self):
+        if not self.armed:
+            self.armed=True
+
+    def disarm(self):
+        if self.armed:
+            self.armed=False
 
     def _run(self):
         self.client.loop_start()

@@ -15,9 +15,11 @@ from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
 updater = MqttService(broker_address="localhost")
-#updater = MqttService(broker_address="146.64.91.174")
+# updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
+
+updater.disarm()
 
 ###########################################################
 #Package for MongoDB
@@ -75,6 +77,8 @@ rig.registerTweakableParam(device1, tempParam)
 rig.registerTweakableParam(device2, flowrateParam1)
 rig.registerTweakableParam(device2, flowrateParam2)
 
+rig.recommYielded=True
+
 rig.start()
 ########################################################################
 
@@ -96,6 +100,9 @@ updater.databaseOperations.mongoDb.currZeroTime=None
 #OPtimization specific var
 SHARED_FOLDER=r'OPTIMIZATION_TEMP\SharedData'
 irCntr=0
+
+rig.setGoSummit(True)
+rig.setGoEvaluator(True)
 
 # Main loop!
 while True:
@@ -135,12 +142,14 @@ while True:
 
     except:
         print("Script parsing error!")
+        rig.setGoSummit(False)
+        rig.setGoEvaluator(False)
         runOptimization=False
         updater.script=""
         continue
     
     while runOptimization and rig.optimizing:
-        ##################################
+        ##################################  
         #Recommendation phase
         
         #dbConnection ping
