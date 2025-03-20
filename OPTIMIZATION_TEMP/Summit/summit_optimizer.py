@@ -20,8 +20,6 @@ class SummitOptimizer:
         self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
 
         self.randomInitialAssigned=False
-        
-        self.recommending=True
 
         self.started=False
 
@@ -31,9 +29,6 @@ class SummitOptimizer:
 
         self.prevExp={}
         
-        self.recommendationPath=(os.path.join(SHARED_FOLDER, "recommendation.json"))
-        self.yieldPath=(os.path.join(SHARED_FOLDER, "yield.json"))
-        self.summitCmndPath=(os.path.join(SHARED_FOLDER, "summitCmnd.json"))
         self.updateSaidItOnce=False
         
         self.client = client if client else (mqtt.Client(client_id="SummitOptimizer", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
@@ -70,7 +65,6 @@ class SummitOptimizer:
             
         # Write recommendation
         self.client.publish(self.topicOut,json.dumps(recommendation))
-        self.recommending=False
         
         print(f"✅ Summit Optimizer recommended: {recommendation}")
 
@@ -85,6 +79,12 @@ class SummitOptimizer:
                 if data["goSummit"]:
                     self.recommend()
                     self.started=True
+                    return
+        else:
+            if "goSummit" in data:
+                if not data["goSummit"]:
+                    self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yieldVal"])
+                    self.started=False
                     return
         
         yield_score = data["yield"]
@@ -102,8 +102,8 @@ class SummitOptimizer:
         #self.strategy.add_experiments(self.experiments)
         print(f"✅ Updated Summit with yield: {yield_score:.3f}")
         
-        self.recommending=True
-
+        self.recommend()
+        
     def onMessage(self, client, userdata, msg):
         _msgContents = msg.payload.decode()
         topic=msg.topic

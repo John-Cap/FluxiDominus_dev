@@ -1,8 +1,10 @@
+import ast
 import json
 import os
 import threading
 import random
 import time
+import paho.mqtt.client as mqtt
 
 import numpy as np
 
@@ -10,7 +12,7 @@ from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.parametres.reaction_parametres import Flowrate, ReactionParametres, Temp
 
 class OptimizationRig:
-    def __init__(self, mqttService, recommendationPath=r"OPTIMIZATION_TEMP\SharedData\recommendation.json", yieldPath=r"OPTIMIZATION_TEMP\SharedData\yield.json"):
+    def __init__(self, mqttService, host="localhost"):
         self.automation = FlowChemAutomation()  # Handles command parsing
         self.reactionParametres = ReactionParametres()  # Holds different parameters that can be optimized
         self.availableParams = {}  # Reaction parameters that can be tweaked, per device
@@ -44,11 +46,17 @@ class OptimizationRig:
         self.generateRecommendation_TEMPsaidItOnce=False
         self.evaluateRecommendation_TEMPsaidItOnce=False
         
-        self.recommendationPath=recommendationPath
-        self.yieldPath=yieldPath
-        
         self.summitCmndPath=r'OPTIMIZATION_TEMP\SharedData\summitCmnd.json'
         self.evaluatorCmndPath=r'OPTIMIZATION_TEMP\SharedData\evaluatorCmnd.json'
+        
+        self.topicOptOut="opt/out"
+        self.topicOptIn="opt/in"
+        self.topicEvalOut="eval/out"
+        self.topicEvalIn="eval/in"
+        
+        self.client = mqtt.Client(client_id="OptimizerRig", clean_session=True, userdata=None, protocol=mqtt.MQTTv311)
+        self.client.on_message
+        self.host=host
         
         # self.lastIR = self.lastMsgFromTopic[topic]
         
@@ -95,77 +103,81 @@ class OptimizationRig:
             print(f"  Device: {device}")
             for paramId, val in params.items():
                 print(f"    {paramId}: {val:.3f}")
+    
+    def onMessage(self, client, userdata, msg):
+        topic=msg.topic
+        msg = msg.payload.decode()
+        msg = msg.replace("true", "True").replace("false", "False")
+        msg = msg.replace("null","None")
+        msg = ast.literal_eval(msg)
+        if topic == self.topicEvalIn:
+            pass
+        if topic == self.topicOptIn:
+            self.generateRecommendation_TEMP(msg)
+
+    def onConnect(self, client, userdata, flags, rc):
+        #if self.connected:
+            #return
+        print(f"WJ - Connected with rc {rc}!")
+        if rc == 0:
+            self.client.subscribe(topic=self.topicEvalIn)
+            self.client.subscribe(topic=self.topicOptIn)
                 
-    def generateRecommendation_TEMP(self):
-        """ Reads recommendation from Summit JSON and applies flowrate adjustment. """
+    def generateRecommendation_TEMP(self, msg):
+        """ Check for evaluated yield and update optimizer. """
+        
+        recommendedValues = msg.payload.decode()
+        recommendedValues = recommendedValues.replace("true", "True").replace("false", "False")
+        recommendedValues=recommendedValues.replace("null","None")
+        recommendedValues = ast.literal_eval(recommendedValues)
+        
+        self.lastRecommendedVal=recommendedValues
 
-        try:
-            with open(self.recommendationPath, "r") as f:
-                recommendedValues = json.load(f)  # Load recommendation from Summit
-            
-            if not recommendedValues:
-                print("⚠️ Warning: Summit Optimizer returned empty recommendations.")
-                return
-            
-            self.lastRecommendedVal=recommendedValues
+        self.currentRecommendation = {}
 
-            self.currentRecommendation = {}
+        # Iterate over all tweakable parameters to match with recommendation
+        print(f"Current tweakables: {self.reactionParametres.getAllTweakables()}")
+        for param in self.reactionParametres.getAllTweakables():
+            if param.name == "temperature" and "temperature" in recommendedValues:
+                if "hotcoil1" not in self.currentRecommendation:
+                    self.currentRecommendation["hotcoil1"] = {}
+                self.currentRecommendation["hotcoil1"][param.id] = recommendedValues["temperature"]
 
-            # Iterate over all tweakable parameters to match with recommendation
-            print(f"Current tweakables: {self.reactionParametres.getAllTweakables()}")
-            for param in self.reactionParametres.getAllTweakables():
-                if param.name == "temperature" and "temperature" in recommendedValues:
-                    if "hotcoil1" not in self.currentRecommendation:
-                        self.currentRecommendation["hotcoil1"] = {}
-                    self.currentRecommendation["hotcoil1"][param.id] = recommendedValues["temperature"]
+            elif param.name == "flowrateA" and "flowrate" in recommendedValues:
+                adjusted_flowrate = recommendedValues["flowrate"] / 2  # ✅ Divide flowrate for two pumps
+                
+                # Assign flowrates to the correct device
+                if "vapourtecR4P1700" not in self.currentRecommendation:
+                    self.currentRecommendation["vapourtecR4P1700"] = {}
 
-                elif param.name == "flowrateA" and "flowrate" in recommendedValues:
-                    adjusted_flowrate = recommendedValues["flowrate"] / 2  # ✅ Divide flowrate for two pumps
-                    
-                    # Assign flowrates to the correct device
-                    if "vapourtecR4P1700" not in self.currentRecommendation:
-                        self.currentRecommendation["vapourtecR4P1700"] = {}
+                if param.associatedCommand == "pafr":
+                    self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
+                elif param.associatedCommand == "pbfr":
+                    self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
 
-                    if param.associatedCommand == "pafr":
-                        self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
-                    elif param.associatedCommand == "pbfr":
-                        self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
+            elif param.name == "flowrateB" and "flowrate" in recommendedValues:
+                adjusted_flowrate = recommendedValues["flowrate"] / 2  # ✅ Divide flowrate for two pumps
+                
+                # Assign flowrates to the correct device
+                if "vapourtecR4P1700" not in self.currentRecommendation:
+                    self.currentRecommendation["vapourtecR4P1700"] = {}
 
-                elif param.name == "flowrateB" and "flowrate" in recommendedValues:
-                    adjusted_flowrate = recommendedValues["flowrate"] / 2  # ✅ Divide flowrate for two pumps
-                    
-                    # Assign flowrates to the correct device
-                    if "vapourtecR4P1700" not in self.currentRecommendation:
-                        self.currentRecommendation["vapourtecR4P1700"] = {}
+                if param.associatedCommand == "pafr":
+                    self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
+                elif param.associatedCommand == "pbfr":
+                    self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
 
-                    if param.associatedCommand == "pafr":
-                        self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
-                    elif param.associatedCommand == "pbfr":
-                        self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
-
-            self.recommendationHistory.append(self.currentRecommendation)
-
-            # Remove the recommendation file to prevent duplicate reads
-            os.remove(self.recommendationPath)
-            
-            self.recommYielded=True
-            self.generateRecommendation_TEMPsaidItOnce=False
-            print("\n✅ Generated Recommendation:")
-            for device, params in self.currentRecommendation.items():
-                print(f"  Device: {device}")
-                for paramId, val in params.items():
-                    print(f"    {paramId}: {val:.3f}")
-                    
-            self.executeRecommendation_TEMP()
-
-        except FileNotFoundError:
-            # if self.recommYielded:
-            #     self.recommYielded=False
-            if not self.generateRecommendation_TEMPsaidItOnce:
-                self.generateRecommendation_TEMPsaidItOnce=True
-            else:
-                return
-            print("⚠️ No recommendation file found, waiting for Summit...")
+        self.recommendationHistory.append(self.currentRecommendation)
+        
+        self.recommYielded=True
+        self.generateRecommendation_TEMPsaidItOnce=False
+        print("\n✅ Generated Recommendation:")
+        for device, params in self.currentRecommendation.items():
+            print(f"  Device: {device}")
+            for paramId, val in params.items():
+                print(f"    {paramId}: {val:.3f}")
+                
+        self.executeRecommendation_TEMP()
 
     def evaluateRecommendation(self):
         """ Evaluates the latest recommendation using the provided objective function. """
@@ -187,7 +199,7 @@ class OptimizationRig:
             print(f"Error in objective evaluation: {e}")
             self.objectiveScore = None
             
-    def evaluateRecommendation_TEMP(self):
+    def evaluateRecommendation_TEMP(self, msg):
         """ Sends recommendation to Evaluator, waits for yield, and updates Summit. """
         # recommendation_path = os.path.join(SHARED_FOLDER, "recommendation.json")
 
@@ -313,22 +325,28 @@ class OptimizationRig:
         
     def setGoSummit(self,run):
         if run:
-            with open(self.summitCmndPath, "w") as f:
-                json.dump({"goSummit":run}, f)
+            self.client.publish(topic=self.topicOptOut,payload=json.dumps({
+                "goSummit":True
+            }))
         else:
-            with open(self.summitCmndPath, "w") as f:
-                json.dump({"goSummit":run}, f)            
-        
+            self.client.publish(topic=self.topicOptOut,payload=json.dumps({
+                "goSummit":False
+            }))
+            
     def setGoEvaluator(self,run):
         if run:
-            with open(self.evaluatorCmndPath, "w") as f:
-                json.dump({"goEvaluator":run}, f)
+            self.client.publish(topic=self.topicEvalOut,payload=json.dumps({
+                "goEvaluator":True
+            }))
         else:
-            with open(self.evaluatorCmndPath, "w") as f:
-                json.dump({"goEvaluator":run}, f)            
+            self.client.publish(topic=self.topicEvalOut,payload=json.dumps({
+                "goEvaluator":False
+            }))        
 
     def start(self):
         """ Starts a background thread to continuously optimize until the target score is reached. """
+        self.client.connect(host=self.mqttService.host)
+        self.client.loop_start()
         if not self.optimizing:
             self.optimizing = True
             self._rigThread = threading.Thread(target=self._optimizationLoop)
