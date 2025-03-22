@@ -294,7 +294,7 @@ class IRMLPTrainer:
                 if len(self.yields) != 0:
                     self.highestYield=max(self.yields)
                     self.evaluatingYields=False
-                    self.client.publish(self.topicOut,{"maxYield":self.highestYield})
+                    self.client.publish(self.topicOut,{"maxYield":self.highestYield}) #Done, winning yield
                 else:
                     self.client.publish(self.topicOut,{"yield":yield_score})
                     

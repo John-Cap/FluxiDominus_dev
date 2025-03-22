@@ -101,8 +101,8 @@ updater.databaseOperations.mongoDb.currZeroTime=None
 SHARED_FOLDER=r'OPTIMIZATION_TEMP\SharedData'
 irCntr=0
 
-rig.setGoSummit(True)
-rig.setGoEvaluator(True)
+# rig.setGoSummit(True)
+# rig.setGoEvaluator(True)
 
 # Main loop!
 while True:
@@ -173,26 +173,28 @@ while True:
             
         if rig.startScanAt < time.time() and not rig.scanning:
             rig.scanning=True
-            with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
-                json.dump({"scan":updater.IR,"evaluate":True}, f)
-                irCntr += 1              
+            
         elif rig.endScanAt < time.time() and rig.scanning:
             rig.scanning=False
-            with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
-                json.dump({"scan":updater.IR,"evaluate":False}, f)
-                irCntr += 1
-            runOptimization=False
             
         if updater.irAvailable:
             updater.irAvailable=False
             if rig.scanning:
-                with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
-                    json.dump({str(irCntr):updater.IR,"evaluate":True}, f)
-                    irCntr += 1
+                rig.client.publish(
+                    rig.topicEvalOut,
+                    {
+                        "goEvaluator":True,
+                        "scan":updater.IR
+                    }
+                )
             else:
-                with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
-                    json.dump({str(irCntr):updater.IR,"evaluate":False}, f)
-                    irCntr += 1
+                rig.client.publish(
+                    rig.topicEvalOut,
+                    {
+                        "goEvaluator":False,
+                        "scan":updater.IR
+                    }
+                )
                     
             
         if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:

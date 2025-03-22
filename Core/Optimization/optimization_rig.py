@@ -76,33 +76,7 @@ class OptimizationRig:
             self.availableParams[device] = [parameter]
             
     def generateRecommendation(self):
-        """ Generates recommendations using the optimizer. """
-        if self.optimizer is None:
-            print("Warning: No optimizer set. Cannot generate recommendations.")
-            return
-
-        recommendedValues = self.optimizer.recommend(self.reactionParametres.getAllTweakables())
-
-        if not recommendedValues:
-            print("Warning: Optimizer returned empty recommendations.")
-            return
-
-        self.currentRecommendation = {}
-
-        for param, value in recommendedValues.items():
-            for device, params in self.availableParams.items():
-                if param in params:
-                    if device not in self.currentRecommendation:
-                        self.currentRecommendation[device] = {}
-                    self.currentRecommendation[device][param.id] = value
-
-        self.recommendationHistory.append(self.currentRecommendation)
-
-        print("\nGenerated Recommendation:")
-        for device, params in self.currentRecommendation.items():
-            print(f"  Device: {device}")
-            for paramId, val in params.items():
-                print(f"    {paramId}: {val:.3f}")
+        pass
     
     def onMessage(self, client, userdata, msg):
         topic=msg.topic
@@ -126,10 +100,7 @@ class OptimizationRig:
     def generateRecommendation_TEMP(self, msg):
         """ Check for evaluated yield and update optimizer. """
         
-        recommendedValues = msg.payload.decode()
-        recommendedValues = recommendedValues.replace("true", "True").replace("false", "False")
-        recommendedValues=recommendedValues.replace("null","None")
-        recommendedValues = ast.literal_eval(recommendedValues)
+        recommendedValues=msg["recomm"]
         
         self.lastRecommendedVal=recommendedValues
 
@@ -180,76 +151,25 @@ class OptimizationRig:
         self.executeRecommendation_TEMP()
 
     def evaluateRecommendation(self):
-        """ Evaluates the latest recommendation using the provided objective function. """
-        if self.objectiveEvaluator is None:
-            print("Warning: No objective evaluator function set.")
-            self.objectiveScore = 0
-            return
-
-        print("\nEvaluating recommendation with objective function:")
-        print(self.currentRecommendation)  # Debugging print
-
-        try:
-            self.objectiveScore = self.objectiveEvaluator(self.currentRecommendation, **self.objectiveEvaluationKwargs)
-
-            if not (0 <= self.objectiveScore <= 1):
-                raise ValueError(f"Invalid objective score: {self.objectiveScore}. Must be between 0 and 1.")
-
-        except Exception as e:
-            print(f"Error in objective evaluation: {e}")
-            self.objectiveScore = None
-            
+        pass
+    
     def evaluateRecommendation_TEMP(self, msg):
         """ Sends recommendation to Evaluator, waits for yield, and updates Summit. """
-        # recommendation_path = os.path.join(SHARED_FOLDER, "recommendation.json")
-
-        if not self.currentRecommendation:
-            print("⚠️ Warning: No recommendation available for evaluation.")
-            self.evalYielded=False
-            return
-
-        try:
-            # Write recommendation for Evaluator to process
-            # with open(recommendation_path, "w") as f:
-            #     json.dump(str(self.currentRecommendation), f)
-
-            print("\n🚀 Sent recommendation to Evaluator, waiting for yield...")
-
-            # Wait for Evaluator to generate a yield score
-            while not os.path.exists(self.yieldPath):
-                time.sleep(2)  # Check every 2 seconds
-
-            # Read the yield from Evaluator
-            with open(self.yieldPath, "r") as f:
-                yield_data = json.load(f)
-
-            self.objectiveScore = yield_data.get("yield", None)
-
-            if self.objectiveScore is None or not (0 <= self.objectiveScore <= 1):
-                raise ValueError(f"Invalid objective score: {self.objectiveScore}")
-
-            self.evaluateRecommendation_TEMPsaidItOnce=False
-
+        if "maxYield" in msg:
+            self.objectiveScore=msg["maxYield"]
+            
+            # if self.objectiveScore is None or not (0 <= self.objectiveScore <= 1):
+            #     raise ValueError(f"Invalid objective score: {self.objectiveScore}")
+            msgOut={"goSummit":True,"instruct":{
+                "eval":{
+                    "yield":self.objectiveScore
+                }
+            }}
             print(f"✅ Received Estimated Yield: {self.objectiveScore:.3f}")
+            self.client.publish(self.topicOptOut,msgOut)
 
             self.evalYielded=True
 
-            # Remove the yield file to prevent duplicate reads
-            os.remove(self.yieldPath)
-
-        except FileNotFoundError:
-            if self.evalYielded:
-                self.evalYielded=False
-            if not self.evaluateRecommendation_TEMPsaidItOnce:
-                self.evaluateRecommendation_TEMPsaidItOnce=True
-            else:
-                return
-            print("⚠️ Evaluator has not provided yield yet, waiting...")
-
-        except Exception as e:
-            print(f"❌ Error in yield evaluation: {e}")
-            self.objectiveScore = None
-                        
     def executeRecommendation(self):
         """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
         # First, clear current automation
@@ -349,25 +269,7 @@ class OptimizationRig:
         self.client.loop_start()
         if not self.optimizing:
             self.optimizing = True
-            self._rigThread = threading.Thread(target=self._optimizationLoop)
-            self._rigThread.start()
-            
-    def _optimizationLoop(self):
-        """ Runs the optimization loop in the background until the target score is reached. """
-        print("\n--- Starting Optimization Loop ---")
-        while self.optimizing:
-            if self.recommYielded:
-                self.generateRecommendation_TEMP()
-            elif self.evalYielded:
-                self.evaluateRecommendation_TEMP()
 
-            if self.objectiveScore and self.objectiveScore >= self.targetScore:
-                print("\n🎯 Target Score Reached! Stopping optimization. 🎯")
-                self.optimizing = False
-                break  # Stop loop
-
-            time.sleep(1)  # Prevents excessive CPU usage
-            
 if __name__ == "__main__":
 
     class MockMQTTService:

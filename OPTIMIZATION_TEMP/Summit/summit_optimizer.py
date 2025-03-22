@@ -37,7 +37,7 @@ class SummitOptimizer:
         self.topicOut="opt/in"
         
         self.client.on_connect = self.onConnect
-        self.client.on_message = self.update
+        self.client.on_message = self.onMessage
 
     def recommend(self):
         """ Generate the next recommendation. """
@@ -45,7 +45,7 @@ class SummitOptimizer:
             # Generate initial random experiments (needed for SOBO)
             temp = np.random.uniform(40, 100)
             flowrate = np.random.uniform(1, 3)
-            recommendation = {"temperature": temp, "flowrate": flowrate}
+            recommendation = {"recomm":{"temperature": temp, "flowrate": flowrate}}
             self.prevExp=recommendation
             print("🔹 First random experiment:", recommendation)
             self.randomInitialAssigned=True
@@ -58,8 +58,10 @@ class SummitOptimizer:
                 return
 
             recommendation = {
-                "temperature": next_experiment["temperature"].iloc[0],
-                "flowrate": next_experiment["flowrate"].iloc[0]
+                "recomm":{
+                    "temperature": next_experiment["temperature"].iloc[0],
+                    "flowrate": next_experiment["flowrate"].iloc[0]
+                }
             }
             self.prevExp=recommendation
             
