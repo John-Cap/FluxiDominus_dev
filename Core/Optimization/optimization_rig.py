@@ -111,7 +111,7 @@ class OptimizationRig:
         msg = msg.replace("null","None")
         msg = ast.literal_eval(msg)
         if topic == self.topicEvalIn:
-            pass
+            self.evaluateRecommendation_TEMP(msg)
         if topic == self.topicOptIn:
             self.generateRecommendation_TEMP(msg)
 

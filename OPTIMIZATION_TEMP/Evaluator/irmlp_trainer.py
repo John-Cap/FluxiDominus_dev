@@ -282,16 +282,21 @@ class IRMLPTrainer:
             if _msgContents["goEvaluator"]:
                 if self.evaluatingYields:
                     self.yields.append(yield_score)
+                    self.client.publish(self.topicOut,{"yield":yield_score})
                 else:
                     self.evaluatingYields=True
                     self.yields=[]
                     self.yields.append(yield_score)
                 self.highestYield=max(self.yields)
+                self.client.publish(self.topicOut,{"yield":yield_score})
                 print(f"Yields: {self.yields}")
             else:
                 if len(self.yields) != 0:
                     self.highestYield=max(self.yields)
                     self.evaluatingYields=False
+                    self.client.publish(self.topicOut,{"maxYield":self.highestYield})
+                else:
+                    self.client.publish(self.topicOut,{"yield":yield_score})
                     
             print(f"🔹 Evaluated yield: {yield_score*100}")
             

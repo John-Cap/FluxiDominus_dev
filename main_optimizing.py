@@ -174,12 +174,12 @@ while True:
         if rig.startScanAt < time.time() and not rig.scanning:
             rig.scanning=True
             with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
-                json.dump({str(irCntr):updater.IR,"evaluate":True}, f)
+                json.dump({"scan":updater.IR,"evaluate":True}, f)
                 irCntr += 1              
         elif rig.endScanAt < time.time() and rig.scanning:
             rig.scanning=False
             with open(os.path.join(SHARED_FOLDER, "latest_ir_scan.json"), "w") as f:
-                json.dump({str(irCntr):updater.IR,"evaluate":False}, f)
+                json.dump({"scan":updater.IR,"evaluate":False}, f)
                 irCntr += 1
             runOptimization=False
             

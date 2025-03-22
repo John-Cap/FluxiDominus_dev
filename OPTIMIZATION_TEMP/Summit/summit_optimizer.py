@@ -68,12 +68,8 @@ class SummitOptimizer:
         
         print(f"✅ Summit Optimizer recommended: {recommendation}")
 
-    def update(self, client, userdata, msg):
+    def update(self, data):
         """ Check for evaluated yield and update optimizer. """
-        data = msg.payload.decode()
-        data = data.replace("true", "True").replace("false", "False")
-        data=data.replace("null","None")
-        data = ast.literal_eval(data)
         if not self.started:
             if "goSummit" in data:
                 if data["goSummit"]:
@@ -83,30 +79,38 @@ class SummitOptimizer:
         else:
             if "goSummit" in data:
                 if not data["goSummit"]:
+                    #reset
                     self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yieldVal"])
                     self.started=False
                     return
         
-        yield_score = data["yield"]
+        yieldScore = data["yield"]
         temp=self.prevExp["temperature"]
         flowrate=self.prevExp["flowrate"]
-
-        if self.updateSaidItOnce:
-            self.updateSaidItOnce=False
-
+        
         # Add the new experiment result
-        new_data = pd.DataFrame({"temperature": [temp], "flowrate": [flowrate], "yieldVal": [yield_score]})
-        self.experiments = pd.concat([self.experiments, new_data], ignore_index=True)
+        newData = pd.DataFrame({"temperature": [temp], "flowrate": [flowrate], "yieldVal": [yieldScore]})
+        self.experiments = pd.concat([self.experiments, newData], ignore_index=True)
 
-        # Update SOBO strategy
-        #self.strategy.add_experiments(self.experiments)
-        print(f"✅ Updated Summit with yield: {yield_score:.3f}")
+        print(f"✅ Updated Summit with yield: {yieldScore:.3f}")
         
         self.recommend()
         
     def onMessage(self, client, userdata, msg):
-        _msgContents = msg.payload.decode()
-        topic=msg.topic
+        data = msg.payload.decode()
+        data = data.replace("true", "True").replace("false", "False")
+        data=data.replace("null","None")
+        data = ast.literal_eval(data)
+        
+        if data["goSummit"]:
+            if "instruct" in data:
+                if "eval" in data["instruct"]: #Only route for now, will automatically recommend
+                    self.update(
+                        {
+                            "goSummit":data["goSummit"],
+                            "yield":data["instruct"]["eval"]["yield"]
+                        }
+                    )
 
     def onConnect(self, client, userdata, flags, rc):
         #if self.connected:
