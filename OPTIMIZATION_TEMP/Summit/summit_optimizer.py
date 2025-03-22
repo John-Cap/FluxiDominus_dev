@@ -46,7 +46,7 @@ class SummitOptimizer:
             temp = np.random.uniform(40, 100)
             flowrate = np.random.uniform(1, 3)
             recommendation = {"recomm":{"temperature": temp, "flowrate": flowrate}}
-            self.prevExp=recommendation
+            self.prevExp=recommendation["recomm"]
             print("🔹 First random experiment:", recommendation)
             self.randomInitialAssigned=True
         else:
@@ -63,7 +63,7 @@ class SummitOptimizer:
                     "flowrate": next_experiment["flowrate"].iloc[0]
                 }
             }
-            self.prevExp=recommendation
+            self.prevExp=recommendation["recomm"]
             
         # Write recommendation
         self.client.publish(self.topicOut,json.dumps(recommendation))
@@ -104,8 +104,12 @@ class SummitOptimizer:
         data=data.replace("null","None")
         data = ast.literal_eval(data)
         
+        print(f"Summit received message: {data}")
+        
         if data["goSummit"]:
             if "instruct" in data:
+                if "start" in data["instruct"]:
+                    self.update({"goSummit":True})
                 if "eval" in data["instruct"]: #Only route for now, will automatically recommend
                     self.update(
                         {
@@ -117,6 +121,6 @@ class SummitOptimizer:
     def onConnect(self, client, userdata, flags, rc):
         #if self.connected:
             #return
-        print(f"WJ - Connected with rc {rc}!")
         if rc == 0:
             self.client.subscribe(topic=self.topicIn)
+            print(f"WJ - Connected with rc {rc}!")
