@@ -22,6 +22,7 @@ class OptimizationRig:
         self.recommendationHistory = []
         self._rigThread = None
         self.optimizer = None
+        self.terminate = False
         self.optimizing = False
         self.objectiveEvaluator = None  # Function handle for evaluation
         self.objectiveEvaluationKwargs = {}  # Additional args for evaluation
@@ -58,6 +59,8 @@ class OptimizationRig:
         self.client.on_message=self.onMessage
         self.client.on_connect=self.onConnect
         self.host=host
+        
+        self.objTarget=0
         
         # self.lastIR = self.lastMsgFromTopic[topic]
         
@@ -161,6 +164,13 @@ class OptimizationRig:
         """ Sends recommendation to Evaluator, waits for yield, and updates Summit. """
         if "maxYield" in msg:
             self.objectiveScore=msg["maxYield"]
+            
+            if self.objectiveScore >= self.objTarget:
+                self.terminate=True
+                self.setGoSummit(False)
+                self.setGoEvaluator(False)
+                print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
+                return
             
             print(f"Recommendation {self.lastRecommendedVal} delivered conversion of {self.objectiveScore}")
             
@@ -280,12 +290,14 @@ class OptimizationRig:
             "reset":True
         }))
 
-    def start(self):
+    def optimise(self,objTarget=0.9):
         """ Starts a background thread to continuously optimize until the target score is reached. """
+        self.objTarget=objTarget
         self.client.connect(host=self.mqttService.broker_address)
         self.client.loop_start()
         if not self.optimizing:
             self.optimizing = True
+        self.setGoSummit(True)
 
 if __name__ == "__main__":
 

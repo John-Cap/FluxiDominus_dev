@@ -49,6 +49,8 @@ for file, data in data_dict.items():
 """
 now=time.time() + 60
 evaluate=False
+temp=0
+tempPerSec=2
 while True:
     _rand=random.choice(allData)
     '''

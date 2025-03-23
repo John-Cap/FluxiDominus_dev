@@ -6,6 +6,7 @@ import time
 
 from pytz import utc
 
+from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator import FlowChemAutomation
@@ -77,7 +78,7 @@ rig.registerTweakableParam(device1, tempParam)
 rig.registerTweakableParam(device2, flowrateParam1)
 rig.registerTweakableParam(device2, flowrateParam2)
 
-rig.start()
+rig.optimise(objTarget=0.8)
 ########################################################################
 
 #TODO - Smarter way to manage this:
@@ -94,16 +95,15 @@ updater.registeredTeleDevices={}
 updater.script=""
 # updater.databaseOperations.mongoDb.currZeroTime=None
 
-rig.setGoSummit(True)
-
 # Main loop!
+goTime=time.time()
 while True:
 
     scanDone=False #TODO - temp
     rig.resetEvaluator()
-    time.sleep(2)
+    time.sleep(1.5)
     
-    while updater.script=="":
+    while updater.script=="" and not rig.terminate:
         #dbConnection ping
         # if time.time() - lstPngTime > mySqlPngDelay:
         #     if updater.databaseOperations.mySqlDb.connection.is_connected():
@@ -115,7 +115,11 @@ while True:
         #         time.sleep(0.5);
         # #
         time.sleep(0.1)
-
+    
+    if rig.terminate:
+        print(f"Optimisation terminated with objective score {rig.objectiveScore}! Optimisation took {(time.time() - goTime)/60} minutes.")
+        exit()
+        
     if updater.abort:
         print('WJ - Testrun aborted!')
         if updater.runTest:
@@ -144,7 +148,33 @@ while True:
         updater.script=""
         continue
     
+    ###############################################################################
     #TODO - wait for coil to heat up/cool down
+    start=time.time()
+    temp=rig.lastRecommendedVal["temperature"]
+    currTemp=HardcodedTeleKeys.getTeleVal(updater.lastMsgFromTopic["subflow/hotcoil1/tele"],"temp")
+    #Push through cooling solvent?
+    if currTemp > temp:
+        print(f"Cooling hotcoil from {currTemp} deg to {temp} deg! Pushing through cooling solvent.")
+        updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'PumpAFlowRate', 'value': 2}}))
+        updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'PumpBFlowRate', 'value': 2}}))
+        updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'valveASR', 'value': False}}))
+        updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'valveBSR', 'value': False}}))
+    else:
+        print(f"Hotcoil heating up from {currTemp} deg to {temp} deg.")
+    wait=True
+    while wait:
+        if abs(temp - currTemp) < 3.5:
+            print("Target temperature reached!")
+            wait=False
+        else:
+            time.sleep(1)
+            currTemp=HardcodedTeleKeys.getTeleVal(updater.lastMsgFromTopic["subflow/hotcoil1/tele"],"temp")
+    #Adjust scan time!!!
+    shift=time.time() - start
+    rig.startScanAt=rig.startScanAt + shift
+    rig.endScanAt=rig.endScanAt + shift
+    ########################################################################################################
     
     while runOptimization and rig.optimizing:
         ##################################  
