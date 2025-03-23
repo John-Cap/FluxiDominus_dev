@@ -1,5 +1,6 @@
 import ast
 import copy
+import json
 import keras
 import os
 import numpy as np
@@ -272,6 +273,8 @@ class IRMLPTrainer:
         _msgContents = ast.literal_eval(_msgContents)
         
         if "goEvaluator" in _msgContents:
+            if not "scan" in _msgContents:
+                return
             ir=_msgContents["scan"]
             length=len(_msgContents["scan"])
             if length == 0:
@@ -282,21 +285,21 @@ class IRMLPTrainer:
             if _msgContents["goEvaluator"]:
                 if self.evaluatingYields:
                     self.yields.append(yield_score)
-                    self.client.publish(self.topicOut,{"yield":yield_score})
+                    self.client.publish(self.topicOut,json.dumps({"yield":float(yield_score)}))
                 else:
                     self.evaluatingYields=True
                     self.yields=[]
                     self.yields.append(yield_score)
                 self.highestYield=max(self.yields)
-                self.client.publish(self.topicOut,{"yield":yield_score})
+                self.client.publish(self.topicOut,json.dumps({"yield":float(yield_score)}))
                 print(f"Yields: {self.yields}")
             else:
                 if len(self.yields) != 0:
                     self.highestYield=max(self.yields)
                     self.evaluatingYields=False
-                    self.client.publish(self.topicOut,{"maxYield":self.highestYield}) #Done, winning yield
+                    self.client.publish(self.topicOut,json.dumps({"maxYield":float(self.highestYield)})) #Done, winning yield
                 else:
-                    self.client.publish(self.topicOut,{"yield":yield_score})
+                    self.client.publish(self.topicOut,json.dumps({"yield":float(yield_score)}))
                     
             print(f"🔹 Evaluated yield: {yield_score*100}")
             

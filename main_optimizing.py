@@ -94,7 +94,7 @@ updater.abort=False
 updater.runTest=False
 updater.registeredTeleDevices={}
 updater.script=""
-updater.databaseOperations.mongoDb.currZeroTime=None
+# updater.databaseOperations.mongoDb.currZeroTime=None
 
 ##############################
 #OPtimization specific var
@@ -106,18 +106,20 @@ rig.setGoEvaluator(False)
 
 # Main loop!
 while True:
+
+    scanDone=False #TODO - temp
     
     while updater.script=="":
         #dbConnection ping
-        if time.time() - lstPngTime > mySqlPngDelay:
-            if updater.databaseOperations.mySqlDb.connection.is_connected():
-                lstPngTime=time.time();
-                print('mySQL db pinged!');
-            else:
-                print('mySQL db ping not answered!');
-                updater.databaseOperations.mySqlDb.connect();
-                time.sleep(0.5);
-        #
+        # if time.time() - lstPngTime > mySqlPngDelay:
+        #     if updater.databaseOperations.mySqlDb.connection.is_connected():
+        #         lstPngTime=time.time();
+        #         print('mySQL db pinged!');
+        #     else:
+        #         print('mySQL db ping not answered!');
+        #         updater.databaseOperations.mySqlDb.connect();
+        #         time.sleep(0.5);
+        # #
         time.sleep(0.1)
 
     if updater.abort:
@@ -154,13 +156,14 @@ while True:
         
         #dbConnection ping
         if time.time() - lstPngTime > mySqlPngDelay:
-            if updater.databaseOperations.mySqlDb.connection.is_connected():
-                lstPngTime=time.time();
-                print('mySQL db pinged!');
-            else:
-                print('mySQL db ping not answered!');
-                updater.databaseOperations.mySqlDb.connect();
-                time.sleep(0.5);
+            pass
+            # if updater.databaseOperations.mySqlDb.connection.is_connected():
+            #     lstPngTime=time.time();
+            #     print('mySQL db pinged!');
+            # else:
+            #     print('mySQL db ping not answered!');
+            #     updater.databaseOperations.mySqlDb.connect();
+            #     time.sleep(0.5);
         if len(procedure.currConfig.commands) == 0:
             procedure.next()
             if procedure.currConfig is None:
@@ -170,30 +173,37 @@ while True:
                 print("Next procedure!")
         else:
             procedure.currConfig.sendMQTT(waitForDelivery=True)
-            
-        if rig.startScanAt < time.time() and not rig.scanning:
-            rig.scanning=True
-            
-        elif rig.endScanAt < time.time() and rig.scanning:
-            rig.scanning=False
+        
+        if not scanDone:
+            if rig.startScanAt < time.time() and not rig.scanning:
+                rig.scanning=True
+                print("Yield evaluation starting!")
+            elif rig.endScanAt < time.time() and rig.scanning:
+                rig.scanning=False
+                scanDone=True
+                print("Yield evaluation ended!")
             
         if updater.irAvailable:
             updater.irAvailable=False
             if rig.scanning:
                 rig.client.publish(
                     rig.topicEvalOut,
+                    json.dumps(
                     {
                         "goEvaluator":True,
                         "scan":updater.IR
                     }
+                    )
                 )
             else:
                 rig.client.publish(
                     rig.topicEvalOut,
+                    json.dumps(
                     {
                         "goEvaluator":False,
                         "scan":updater.IR
                     }
+                    )
                 )
                     
             

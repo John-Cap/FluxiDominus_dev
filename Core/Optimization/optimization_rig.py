@@ -55,7 +55,8 @@ class OptimizationRig:
         self.topicEvalIn="eval/in"
         
         self.client = mqtt.Client(client_id="OptimizerRig", clean_session=True, userdata=None, protocol=mqtt.MQTTv311)
-        self.client.on_message
+        self.client.on_message=self.onMessage
+        self.client.on_connect=self.onConnect
         self.host=host
         
         # self.lastIR = self.lastMsgFromTopic[topic]
@@ -86,8 +87,10 @@ class OptimizationRig:
         msg = ast.literal_eval(msg)
         if topic == self.topicEvalIn:
             self.evaluateRecommendation_TEMP(msg)
+            # print(f"Received message from evaluator! -> {msg}")
         elif topic == self.topicOptIn:
             self.generateRecommendation_TEMP(msg)
+            print(f"Received message from optimizer! -> {msg}")
 
     def onConnect(self, client, userdata, flags, rc):
         #if self.connected:
@@ -159,6 +162,8 @@ class OptimizationRig:
         if "maxYield" in msg:
             self.objectiveScore=msg["maxYield"]
             
+            print(f"Recommendation {self.lastRecommendedVal} delivered conversion of {self.objectiveScore}")
+            
             # if self.objectiveScore is None or not (0 <= self.objectiveScore <= 1):
             #     raise ValueError(f"Invalid objective score: {self.objectiveScore}")
             msgOut={"goSummit":True,"instruct":{
@@ -167,7 +172,7 @@ class OptimizationRig:
                 }
             }}
             print(f"✅ Received Estimated Yield: {self.objectiveScore:.3f}")
-            self.client.publish(self.topicOptOut,msgOut)
+            self.client.publish(self.topicOptOut,json.dumps(msgOut))
 
             self.optimizing = False
             self.evalYielded=True
@@ -212,7 +217,7 @@ class OptimizationRig:
         #Calculate and add delay
         volToDispense=2
         
-        vol=15 #wat was dit nou weer??
+        vol=5 #wat was dit nou weer??
         timeToPump=(volToDispense/(self.lastRecommendedVal["flowrate"]))*60
 
         self.automation.addBlockElement("waitAndSwitch","Delay","sleepTime",timeToPump)
@@ -240,13 +245,15 @@ class OptimizationRig:
         self.zeroTime=time.time()
         #Delays
         self.startScanAt=timeToReachExit + self.zeroTime
-        self.endScanAt=timeToScan + self.zeroTime
-        
+        self.endScanAt=timeToScan + self.startScanAt
+
         self.awaitYield=True
         self.optimizing = True
         
         print(f"Automization output: {self.automation.output}")
         
+        print(f"IR scanning will commence in {timeToReachExit/60} minutes. Scanning will take {timeToScan} seconds.")
+                
     def setGoSummit(self,run):
         if run:
             self.client.publish(topic=self.topicOptOut,payload=json.dumps(
@@ -269,7 +276,7 @@ class OptimizationRig:
 
     def start(self):
         """ Starts a background thread to continuously optimize until the target score is reached. """
-        self.client.connect(host=self.mqttService.host)
+        self.client.connect(host=self.mqttService.broker_address)
         self.client.loop_start()
         if not self.optimizing:
             self.optimizing = True

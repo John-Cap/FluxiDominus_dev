@@ -51,7 +51,7 @@ now=time.time() + 60
 evaluate=False
 while True:
     _rand=random.choice(allData)
-
+    '''
     if now - time.time() < 0:
         if not evaluate:
             evaluate=True
@@ -63,6 +63,7 @@ while True:
         publishThis=json.dumps({"goEvaluator":True,"scan":list(_rand)})
     else:
         publishThis=json.dumps({"goEvaluator":False,"scan":list(_rand)})
-        
-    mqttClient.publish(topic="eval/out",payload=publishThis)
+    '''
+    payload={"deviceName": "reactIR702L1", "deviceType": "IR", "inUse": True, "remoteEnabled": True, "ipAddr": "192.168.1.50", "port": 62552, "tele": {"cmnd": "POLL", "settings": {}, "state": {"data": list(_rand)}, "timestamp": ""}}
+    mqttClient.publish(topic="subflow/reactIR702L1/tele",payload=json.dumps(payload))
     sleep(6)
