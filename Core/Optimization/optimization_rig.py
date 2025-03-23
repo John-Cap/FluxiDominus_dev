@@ -86,7 +86,7 @@ class OptimizationRig:
         msg = ast.literal_eval(msg)
         if topic == self.topicEvalIn:
             self.evaluateRecommendation_TEMP(msg)
-        if topic == self.topicOptIn:
+        elif topic == self.topicOptIn:
             self.generateRecommendation_TEMP(msg)
 
     def onConnect(self, client, userdata, flags, rc):
@@ -142,6 +142,7 @@ class OptimizationRig:
         
         self.recommYielded=True
         self.generateRecommendation_TEMPsaidItOnce=False
+        
         print("\n✅ Generated Recommendation:")
         for device, params in self.currentRecommendation.items():
             print(f"  Device: {device}")
@@ -168,6 +169,7 @@ class OptimizationRig:
             print(f"✅ Received Estimated Yield: {self.objectiveScore:.3f}")
             self.client.publish(self.topicOptOut,msgOut)
 
+            self.optimizing = False
             self.evalYielded=True
 
     def executeRecommendation(self):
@@ -241,13 +243,15 @@ class OptimizationRig:
         self.endScanAt=timeToScan + self.zeroTime
         
         self.awaitYield=True
+        self.optimizing = True
+        
         print(f"Automization output: {self.automation.output}")
         
     def setGoSummit(self,run):
         if run:
-            self.client.publish(topic=self.topicOptOut,payload=json.dumps({
-                "goSummit":True
-            }))
+            self.client.publish(topic=self.topicOptOut,payload=json.dumps(
+                {"goSummit":True,"instruct":{"start":""}}
+            ))
         else:
             self.client.publish(topic=self.topicOptOut,payload=json.dumps({
                 "goSummit":False

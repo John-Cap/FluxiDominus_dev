@@ -105,18 +105,18 @@ class SummitOptimizer:
         data = ast.literal_eval(data)
         
         print(f"Summit received message: {data}")
-        
-        if data["goSummit"]:
-            if "instruct" in data:
-                if "start" in data["instruct"]:
-                    self.update({"goSummit":True})
-                if "eval" in data["instruct"]: #Only route for now, will automatically recommend
-                    self.update(
-                        {
-                            "goSummit":data["goSummit"],
-                            "yield":data["instruct"]["eval"]["yield"]
-                        }
-                    )
+    
+        if "instruct" in data:
+            if "start" in data["instruct"]:
+                self.update({"goSummit":True})
+                return
+            if "eval" in data["instruct"]: #Only route for now, will automatically recommend
+                self.update(
+                    {
+                        "goSummit":data["goSummit"],
+                        "yield":data["instruct"]["eval"]["yield"]
+                    }
+                )
 
     def onConnect(self, client, userdata, flags, rc):
         #if self.connected:

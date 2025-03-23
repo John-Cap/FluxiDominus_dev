@@ -101,8 +101,8 @@ updater.databaseOperations.mongoDb.currZeroTime=None
 SHARED_FOLDER=r'OPTIMIZATION_TEMP\SharedData'
 irCntr=0
 
-# rig.setGoSummit(True)
-# rig.setGoEvaluator(True)
+rig.setGoSummit(True)
+rig.setGoEvaluator(False)
 
 # Main loop!
 while True:
