@@ -273,8 +273,14 @@ class IRMLPTrainer:
         _msgContents = ast.literal_eval(_msgContents)
         
         if "goEvaluator" in _msgContents:
+            
+            if "reset" in _msgContents:
+                self.evaluatingYields=False
+                self.yields=[]
+                
             if not "scan" in _msgContents:
                 return
+            
             ir=_msgContents["scan"]
             length=len(_msgContents["scan"])
             if length == 0:
@@ -297,6 +303,7 @@ class IRMLPTrainer:
                 if len(self.yields) != 0:
                     self.highestYield=max(self.yields)
                     self.evaluatingYields=False
+                    self.yields=[]
                     self.client.publish(self.topicOut,json.dumps({"maxYield":float(self.highestYield)})) #Done, winning yield
                 else:
                     self.client.publish(self.topicOut,json.dumps({"yield":float(yield_score)}))

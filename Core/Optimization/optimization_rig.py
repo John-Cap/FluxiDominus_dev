@@ -215,7 +215,7 @@ class OptimizationRig:
                         break                
 
         #Calculate and add delay
-        volToDispense=2
+        volToDispense=1
         
         vol=5 #wat was dit nou weer??
         timeToPump=(volToDispense/(self.lastRecommendedVal["flowrate"]))*60
@@ -239,6 +239,7 @@ class OptimizationRig:
                         
         # Convert to script and send to MQTT
         self.automation.parseToScript()
+        self.optimizing = True
         self.mqttService.script = self.automation.output
         
         #zero
@@ -248,7 +249,6 @@ class OptimizationRig:
         self.endScanAt=timeToScan + self.startScanAt
 
         self.awaitYield=True
-        self.optimizing = True
         
         print(f"Automization output: {self.automation.output}")
         
@@ -273,6 +273,12 @@ class OptimizationRig:
             self.client.publish(topic=self.topicEvalOut,payload=json.dumps({
                 "goEvaluator":False
             }))        
+
+    def resetEvaluator(self):
+        self.client.publish(topic=self.topicEvalOut,payload=json.dumps({
+            "goEvaluator":False,
+            "reset":True
+        }))
 
     def start(self):
         """ Starts a background thread to continuously optimize until the target score is reached. """

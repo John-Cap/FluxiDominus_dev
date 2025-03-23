@@ -77,8 +77,6 @@ rig.registerTweakableParam(device1, tempParam)
 rig.registerTweakableParam(device2, flowrateParam1)
 rig.registerTweakableParam(device2, flowrateParam2)
 
-rig.recommYielded=True
-
 rig.start()
 ########################################################################
 
@@ -96,18 +94,14 @@ updater.registeredTeleDevices={}
 updater.script=""
 # updater.databaseOperations.mongoDb.currZeroTime=None
 
-##############################
-#OPtimization specific var
-SHARED_FOLDER=r'OPTIMIZATION_TEMP\SharedData'
-irCntr=0
-
 rig.setGoSummit(True)
-rig.setGoEvaluator(False)
 
 # Main loop!
 while True:
 
     scanDone=False #TODO - temp
+    rig.resetEvaluator()
+    time.sleep(2)
     
     while updater.script=="":
         #dbConnection ping
@@ -150,6 +144,8 @@ while True:
         updater.script=""
         continue
     
+    #TODO - wait for coil to heat up/cool down
+    
     while runOptimization and rig.optimizing:
         ##################################  
         #Recommendation phase
@@ -164,21 +160,22 @@ while True:
             #     print('mySQL db ping not answered!');
             #     updater.databaseOperations.mySqlDb.connect();
             #     time.sleep(0.5);
-        if len(procedure.currConfig.commands) == 0:
-            procedure.next()
-            if procedure.currConfig is None:
-                print("Procedure complete")
-                updater.abort = True
+        if not procedure.currConfig is None:
+            if len(procedure.currConfig.commands) == 0:
+                procedure.next()
+                if procedure.currConfig is None:
+                    print("Procedure complete")
+                    #updater.abort = True
+                else:
+                    print("Next procedure!")
             else:
-                print("Next procedure!")
-        else:
-            procedure.currConfig.sendMQTT(waitForDelivery=True)
-        
+                procedure.currConfig.sendMQTT(waitForDelivery=True)
+            
         if not scanDone:
-            if rig.startScanAt < time.time() and not rig.scanning:
+            if not rig.scanning and rig.startScanAt < time.time():
                 rig.scanning=True
                 print("Yield evaluation starting!")
-            elif rig.endScanAt < time.time() and rig.scanning:
+            elif rig.scanning and rig.endScanAt < time.time():
                 rig.scanning=False
                 scanDone=True
                 print("Yield evaluation ended!")
@@ -207,11 +204,11 @@ while True:
                 )
                     
             
-        if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
-            if len(updater.dataQueue.dataPoints) != 0:
-                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-                updater.dataQueue.dataPoints=[]
-            _reportDelay=Delay(_reportSleep)
+        # if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
+        #     if len(updater.dataQueue.dataPoints) != 0:
+        #         updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+        #         updater.dataQueue.dataPoints=[]
+        #     _reportDelay=Delay(_reportSleep)
 
         time.sleep(0.15)
 
