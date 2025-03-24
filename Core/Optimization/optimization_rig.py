@@ -60,6 +60,8 @@ class OptimizationRig:
         self.client.on_connect=self.onConnect
         self.host=host
         
+        self.connected=False
+        
         self.objTarget=0
         
         # self.lastIR = self.lastMsgFromTopic[topic]
@@ -90,7 +92,7 @@ class OptimizationRig:
         msg = ast.literal_eval(msg)
         if topic == self.topicEvalIn:
             self.evaluateRecommendation_TEMP(msg)
-            # print(f"Received message from evaluator! -> {msg}")
+            #print(f"Received message from evaluator! -> {msg}")
         elif topic == self.topicOptIn:
             self.generateRecommendation_TEMP(msg)
             print(f"Received message from optimizer! -> {msg}")
@@ -102,6 +104,8 @@ class OptimizationRig:
         if rc == 0:
             self.client.subscribe(topic=self.topicEvalIn)
             self.client.subscribe(topic=self.topicOptIn)
+            time.sleep(1)
+            self.connected=True
                 
     def generateRecommendation_TEMP(self, msg):
         """ Check for evaluated yield and update optimizer. """
@@ -165,12 +169,12 @@ class OptimizationRig:
         if "maxYield" in msg:
             self.objectiveScore=msg["maxYield"]
             
-            if self.objectiveScore >= self.objTarget:
-                self.terminate=True
-                self.setGoSummit(False)
-                self.setGoEvaluator(False)
-                print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
-                return
+            # if self.objectiveScore >= self.objTarget:
+            #     self.terminate=True
+            #     self.setGoSummit(False)
+            #     self.setGoEvaluator(False)
+            #     print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
+            #     return
             
             print(f"Recommendation {self.lastRecommendedVal} delivered conversion of {self.objectiveScore}")
             
@@ -266,8 +270,14 @@ class OptimizationRig:
                 
     def setGoSummit(self,run):
         if run:
+            brackets={}
             self.client.publish(topic=self.topicOptOut,payload=json.dumps(
-                {"goSummit":True,"instruct":{"start":""}}
+                {"goSummit":True,"instruct":{"start":"","init":{
+                    "initVal":{ #TODO - Temp
+                        "temperature":[30,60],
+                        "flowrate":[0.5,4]
+                    }
+                }}}
             ))
         else:
             self.client.publish(topic=self.topicOptOut,payload=json.dumps({
@@ -293,8 +303,12 @@ class OptimizationRig:
     def optimise(self,objTarget=0.9):
         """ Starts a background thread to continuously optimize until the target score is reached. """
         self.objTarget=objTarget
-        self.client.connect(host=self.mqttService.broker_address)
+        self.client.connect(host=self.host)
         self.client.loop_start()
+        
+        while not self.connected:
+            time.sleep(0.25)
+            
         if not self.optimizing:
             self.optimizing = True
         self.setGoSummit(True)

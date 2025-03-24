@@ -1,4 +1,5 @@
-        updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'PumpAFlowRate', 'value': 2}})
-        updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'PumpBFlowRate', 'value': 2}})
-        updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'valveASR', 'value': False}})
-        updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'valveBSR', 'value': False}})
+{"goSummit":true,"instruct":{
+                "eval":{
+                    "yield":0.2
+                }
+            }}

@@ -43,7 +43,7 @@ class SummitOptimizer:
         """ Generate the next recommendation. """
         if self.experiments.empty and not self.randomInitialAssigned:
             # Generate initial random experiments (needed for SOBO)
-            temp = np.random.uniform(40, 100)
+            temp = np.random.uniform(40, 50)
             flowrate = np.random.uniform(1, 3)
             recommendation = {"recomm":{"temperature": temp, "flowrate": flowrate}}
             self.prevExp=recommendation["recomm"]
@@ -107,6 +107,12 @@ class SummitOptimizer:
         print(f"Summit received message: {data}")
     
         if "instruct" in data:
+            if "init" in data["instruct"]:
+                if "initVal" in data["instruct"]["init"]:
+                    self.domain += ContinuousVariable(name="temperature", bounds=data["instruct"]["init"]["initVal"]["temperature"], is_objective=False, description='temperature')
+                    self.domain += ContinuousVariable(name="flowrate", bounds=data["instruct"]["init"]["initVal"]["flowrate"], is_objective=False, description='flowrate')
+                    self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
+
             if "start" in data["instruct"]:
                 self.update({"goSummit":True})
                 return

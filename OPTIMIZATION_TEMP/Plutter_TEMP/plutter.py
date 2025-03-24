@@ -2,6 +2,7 @@ import ast
 from datetime import datetime
 import threading
 import time
+import uuid
 from pytz import utc
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
@@ -34,10 +35,11 @@ class MqttService:
         
         self.formPanelData={}
 
-        self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
+        self.client = client if client else (mqtt.Client(client_id=f"PlutterPy_{uuid.uuid4()}", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
         self.client.on_connect = self.onConnect
         self.client.on_message = self.onMessage
         self.client.on_subscribe = self.onSubscribe
+        self.client.on_disconnect=self.onDisconnect
         #self.client.on_publish=self.onPublish
         
         self.topicIDs={}
@@ -85,6 +87,9 @@ class MqttService:
         if mid in self.topicIDs:
             print("WJ - Subscribed to topic " + self.topicIDs[mid] + " with Qos " + str(granted_qos[0]) + "!")
     
+    def onDisconnect(self, client, userdata, rc):
+        print(f"Disconnected! {[client,userdata,rc]}")
+        
     def onConnect(self, client, userdata, flags, rc):
         #if self.connected:
             #return
@@ -267,8 +272,8 @@ class MqttService:
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
-        # self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
-        # self.databaseOperations.connect()
+        self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
+        self.databaseOperations.connect()
         thread = threading.Thread(target=self._run)
         thread.start()
         return thread

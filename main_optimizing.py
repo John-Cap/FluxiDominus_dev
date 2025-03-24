@@ -15,12 +15,12 @@ from Core.parametres.reaction_parametres import Flowrate, Temp
 from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
-updater = MqttService(broker_address="localhost")
-# updater = MqttService(broker_address="146.64.91.174")
+# updater = MqttService(broker_address="localhost")
+updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
 
-updater.disarm()
+# updater.disarm()
 
 ###########################################################
 #Package for MongoDB
@@ -58,16 +58,16 @@ noTestDetails=True
 
 ########################################################################
 #Optimizer rig
-rig=OptimizationRig(updater)
+rig=OptimizationRig(updater,host="146.64.91.174")
 
 # Define devices
 device1 = "hotcoil1"
 device2 = "vapourtecR4P1700"
 
 # Define tweakable parameters
-tempParam = Temp("temperature", associatedCommand="temp", ranges=[[25, 100]])
-flowrateParam1 = Flowrate("flowrateA", associatedCommand="pafr", ranges=[[0.1, 2]])
-flowrateParam2 = Flowrate("flowrateB", associatedCommand="pbfr", ranges=[[0.1, 2]])
+tempParam = Temp("temperature", associatedCommand="temp", ranges=[[35, 55]])
+flowrateParam1 = Flowrate("flowrateA", associatedCommand="pafr", ranges=[[1, 2]])
+flowrateParam2 = Flowrate("flowrateB", associatedCommand="pbfr", ranges=[[1, 2]])
 
 # Register devices
 rig.registerDevice(device1)
@@ -77,6 +77,9 @@ rig.registerDevice(device2)
 rig.registerTweakableParam(device1, tempParam)
 rig.registerTweakableParam(device2, flowrateParam1)
 rig.registerTweakableParam(device2, flowrateParam2)
+
+for _x in rig.reactionParametres.getAllTweakables():
+    print([_x.name,_x.getRanges()[0]])
 
 rig.optimise(objTarget=0.8)
 ########################################################################
@@ -89,10 +92,6 @@ print("WJ - Waiting for script")
 updater.dataQueue.dataPoints=[] #Pasop!
 updater.abort=False
 
-#And notify backend
-updater.runTest=False
-updater.registeredTeleDevices={}
-updater.script=""
 # updater.databaseOperations.mongoDb.currZeroTime=None
 
 # Main loop!
@@ -104,16 +103,16 @@ while True:
     time.sleep(1.5)
     
     while updater.script=="" and not rig.terminate:
-        #dbConnection ping
-        # if time.time() - lstPngTime > mySqlPngDelay:
-        #     if updater.databaseOperations.mySqlDb.connection.is_connected():
-        #         lstPngTime=time.time();
-        #         print('mySQL db pinged!');
-        #     else:
-        #         print('mySQL db ping not answered!');
-        #         updater.databaseOperations.mySqlDb.connect();
-        #         time.sleep(0.5);
-        # #
+        # dbConnection ping
+        if time.time() - lstPngTime > mySqlPngDelay:
+            if updater.databaseOperations.mySqlDb.connection.is_connected():
+                lstPngTime=time.time();
+                #print('mySQL db pinged!');
+            else:
+                print('mySQL db ping not answered!');
+                updater.databaseOperations.mySqlDb.connect();
+                time.sleep(0.5);
+        #
         time.sleep(0.1)
     
     if rig.terminate:
@@ -152,7 +151,10 @@ while True:
     #TODO - wait for coil to heat up/cool down
     start=time.time()
     temp=rig.lastRecommendedVal["temperature"]
+    while not "subflow/hotcoil1/tele" in updater.lastMsgFromTopic:
+        time.sleep(0.25)
     currTemp=HardcodedTeleKeys.getTeleVal(updater.lastMsgFromTopic["subflow/hotcoil1/tele"],"temp")
+    updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True, "connDetails":{"ipCom" : {"addr": "192.168.1.213", "port": 81}}, "settings": {"command":"SET","temp":temp}}))
     #Push through cooling solvent?
     if currTemp > temp:
         print(f"Cooling hotcoil from {currTemp} deg to {temp} deg! Pushing through cooling solvent.")
@@ -163,7 +165,11 @@ while True:
     else:
         print(f"Hotcoil heating up from {currTemp} deg to {temp} deg.")
     wait=True
+    tempReportDelay=time.time()
     while wait:
+        if time.time() - tempReportDelay > 15:
+            tempReportDelay=time.time()
+            print(f"Curr hotcoil temp: {currTemp}")
         if abs(temp - currTemp) < 3.5:
             print("Target temperature reached!")
             wait=False
@@ -183,13 +189,13 @@ while True:
         #dbConnection ping
         if time.time() - lstPngTime > mySqlPngDelay:
             pass
-            # if updater.databaseOperations.mySqlDb.connection.is_connected():
-            #     lstPngTime=time.time();
-            #     print('mySQL db pinged!');
-            # else:
-            #     print('mySQL db ping not answered!');
-            #     updater.databaseOperations.mySqlDb.connect();
-            #     time.sleep(0.5);
+            if updater.databaseOperations.mySqlDb.connection.is_connected():
+                lstPngTime=time.time();
+                #print('mySQL db pinged!');
+            else:
+                print('mySQL db ping not answered!');
+                updater.databaseOperations.mySqlDb.connect();
+                time.sleep(0.5);
         if not procedure.currConfig is None:
             if len(procedure.currConfig.commands) == 0:
                 procedure.next()
@@ -234,11 +240,11 @@ while True:
                 )
                     
             
-        # if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
-        #     if len(updater.dataQueue.dataPoints) != 0:
-        #         updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-        #         updater.dataQueue.dataPoints=[]
-        #     _reportDelay=Delay(_reportSleep)
+        if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
+            if len(updater.dataQueue.dataPoints) != 0:
+                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+                updater.dataQueue.dataPoints=[]
+            _reportDelay=Delay(_reportSleep)
 
         time.sleep(0.15)
 
@@ -246,8 +252,8 @@ while True:
         #Evaluation phase
                 
     # #TODO - in own thread
-    # if updater.logData and not noTestDetails:
-    #     if len(updater.dataQueue.dataPoints) != 0:
-    #         updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-    #         updater.dataQueue.dataPoints=[]
-    #     updater.databaseOperations.setStopTime(updater.currTestrunId)
+    if updater.logData and not noTestDetails:
+        if len(updater.dataQueue.dataPoints) != 0:
+            updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+            updater.dataQueue.dataPoints=[]
+        updater.databaseOperations.setStopTime(updater.currTestrunId)

@@ -277,6 +277,7 @@ class IRMLPTrainer:
             if "reset" in _msgContents:
                 self.evaluatingYields=False
                 self.yields=[]
+                print("Evaluator has been reset!")
                 
             if not "scan" in _msgContents:
                 return

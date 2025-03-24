@@ -8,6 +8,7 @@ from irmlp_trainer import IRMLPTrainer
 
 # Load trained TensorFlow model
 trainer = IRMLPTrainer(
+    host="146.64.91.174",
     csv_path="ir_yield_no_resample_averages.csv",
     csv_path_unaveraged="ir_yield_no_resample_unaveraged.csv",
     csv_path_unmasked="ir_yield_no_resample_unmasked.csv"
