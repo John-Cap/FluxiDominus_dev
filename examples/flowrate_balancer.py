@@ -15,6 +15,17 @@ class PumpFlowrates:
         self.minCumulativesSet={}
         
         self._groupCounter=1
+
+    def flowrateFromResidence(self,res,vol):
+        return (vol/res)
+
+    def residenceTimeFromFlowrate(self,flowrate,vol):
+        if isinstance(list,flowrate):
+            arr=flowrate
+            flowrate=0
+            for fr in arr:
+                flowrate += fr
+        return (vol/flowrate)
         
     def shiftKeepCumulative(self,grp,pumpFlowrates={},snapToMinMax=True):
         #TODO - check if sum is below globalCumulative

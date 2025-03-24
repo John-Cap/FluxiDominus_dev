@@ -1,6 +1,10 @@
+import ast
+import json
+import os
 import threading
 import random
 import time
+import paho.mqtt.client as mqtt
 
 import numpy as np
 
@@ -8,7 +12,7 @@ from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.parametres.reaction_parametres import Flowrate, ReactionParametres, Temp
 
 class OptimizationRig:
-    def __init__(self, mqttService):
+    def __init__(self, mqttService, host="localhost"):
         self.automation = FlowChemAutomation()  # Handles command parsing
         self.reactionParametres = ReactionParametres()  # Holds different parameters that can be optimized
         self.availableParams = {}  # Reaction parameters that can be tweaked, per device
@@ -18,12 +22,49 @@ class OptimizationRig:
         self.recommendationHistory = []
         self._rigThread = None
         self.optimizer = None
+        self.terminate = False
         self.optimizing = False
         self.objectiveEvaluator = None  # Function handle for evaluation
         self.objectiveEvaluationKwargs = {}  # Additional args for evaluation
-        self.objectiveScore = None  # Score between 0 and 1
+        self.objectiveScore = 0  # Score between 0 and 1
         self.targetScore = None
         self.mqttService = mqttService
+        
+        self.evalYielded=False
+        self.recommYielded=False
+        
+        self.awaitYield=False
+        
+        self.lastRecommendedVal={}
+        
+        self.startScanAt=0
+        self.endScanAt=0
+        
+        self.zeroTime=0
+        
+        self.scanning=False
+        
+        self.generateRecommendation_TEMPsaidItOnce=False
+        self.evaluateRecommendation_TEMPsaidItOnce=False
+        
+        self.summitCmndPath=r'OPTIMIZATION_TEMP\SharedData\summitCmnd.json'
+        self.evaluatorCmndPath=r'OPTIMIZATION_TEMP\SharedData\evaluatorCmnd.json'
+        
+        self.topicOptOut="opt/out"
+        self.topicOptIn="opt/in"
+        self.topicEvalOut="eval/out"
+        self.topicEvalIn="eval/in"
+        
+        self.client = mqtt.Client(client_id="OptimizerRig", clean_session=True, userdata=None, protocol=mqtt.MQTTv311)
+        self.client.on_message=self.onMessage
+        self.client.on_connect=self.onConnect
+        self.host=host
+        
+        self.connected=False
+        
+        self.objTarget=0
+        
+        # self.lastIR = self.lastMsgFromTopic[topic]
         
     def registerDevice(self, device):
         """ Registers a device and its available commands. """
@@ -41,100 +82,114 @@ class OptimizationRig:
             self.availableParams[device] = [parameter]
             
     def generateRecommendation(self):
-        """ Generates recommendations using the optimizer. """
-        if self.optimizer is None:
-            print("Warning: No optimizer set. Cannot generate recommendations.")
-            return
+        pass
+    
+    def onMessage(self, client, userdata, msg):
+        topic=msg.topic
+        msg = msg.payload.decode()
+        msg = msg.replace("true", "True").replace("false", "False")
+        msg = msg.replace("null","None")
+        msg = ast.literal_eval(msg)
+        if topic == self.topicEvalIn:
+            self.evaluateRecommendation_TEMP(msg)
+            #print(f"Received message from evaluator! -> {msg}")
+        elif topic == self.topicOptIn:
+            self.generateRecommendation_TEMP(msg)
+            print(f"Received message from optimizer! -> {msg}")
 
-        recommendedValues = self.optimizer.recommend(self.reactionParametres.getAllTweakables())
-
-        if not recommendedValues:
-            print("Warning: Optimizer returned empty recommendations.")
-            return
+    def onConnect(self, client, userdata, flags, rc):
+        #if self.connected:
+            #return
+        print(f"WJ - Connected with rc {rc}!")
+        if rc == 0:
+            self.client.subscribe(topic=self.topicEvalIn)
+            self.client.subscribe(topic=self.topicOptIn)
+            time.sleep(1)
+            self.connected=True
+                
+    def generateRecommendation_TEMP(self, msg):
+        """ Check for evaluated yield and update optimizer. """
+        
+        recommendedValues=msg["recomm"]
+        
+        self.lastRecommendedVal=recommendedValues
 
         self.currentRecommendation = {}
 
-        for param, value in recommendedValues.items():
-            for device, params in self.availableParams.items():
-                if param in params:
-                    if device not in self.currentRecommendation:
-                        self.currentRecommendation[device] = {}
-                    self.currentRecommendation[device][param.id] = value
+        # Iterate over all tweakable parameters to match with recommendation
+        print(f"Current tweakables: {self.reactionParametres.getAllTweakables()}")
+        for param in self.reactionParametres.getAllTweakables():
+            if param.name == "temperature" and "temperature" in recommendedValues:
+                if "hotcoil1" not in self.currentRecommendation:
+                    self.currentRecommendation["hotcoil1"] = {}
+                self.currentRecommendation["hotcoil1"][param.id] = recommendedValues["temperature"]
+
+            elif param.name == "flowrateA" and "flowrate" in recommendedValues:
+                adjusted_flowrate = recommendedValues["flowrate"] / 2  # ✅ Divide flowrate for two pumps
+                
+                # Assign flowrates to the correct device
+                if "vapourtecR4P1700" not in self.currentRecommendation:
+                    self.currentRecommendation["vapourtecR4P1700"] = {}
+
+                if param.associatedCommand == "pafr":
+                    self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
+                elif param.associatedCommand == "pbfr":
+                    self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
+
+            elif param.name == "flowrateB" and "flowrate" in recommendedValues:
+                adjusted_flowrate = recommendedValues["flowrate"] / 2  # ✅ Divide flowrate for two pumps
+                
+                # Assign flowrates to the correct device
+                if "vapourtecR4P1700" not in self.currentRecommendation:
+                    self.currentRecommendation["vapourtecR4P1700"] = {}
+
+                if param.associatedCommand == "pafr":
+                    self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
+                elif param.associatedCommand == "pbfr":
+                    self.currentRecommendation["vapourtecR4P1700"][param.id] = adjusted_flowrate
 
         self.recommendationHistory.append(self.currentRecommendation)
-
-        print("\nGenerated Recommendation:")
+        
+        self.recommYielded=True
+        self.generateRecommendation_TEMPsaidItOnce=False
+        
+        print("\n✅ Generated Recommendation:")
         for device, params in self.currentRecommendation.items():
             print(f"  Device: {device}")
             for paramId, val in params.items():
                 print(f"    {paramId}: {val:.3f}")
                 
-    def evaluateRecommendationIRMLP(self):
-        """ Uses the IRMLPTrainer model to estimate the yield of the recommended parameters. """
-        if self.objectiveEvaluator is None:
-            print("Warning: No objective evaluator function set.")
-            self.objectiveScore = None
-            return
+        self.executeRecommendation_TEMP()
 
-        # Extract temperature and flowrate from recommendation
-        temp = self.currentRecommendation["hotcoil1"]["ReactionTemp"]
-        flowrate = self.currentRecommendation["flowsynmaxi2"]["FlowRatePumpA"]
-
-        # Generate a mock IR spectrum for evaluation (replace with real data if available)
-        ir_spectrum = np.random.rand(839)  # Mock IR spectrum
-
-        # Estimate yield using IRMLPTrainer
-        self.objectiveScore = self.objectiveEvaluator.estimateYield(ir_spectrum)
-
-        print(f"Evaluated Yield: {self.objectiveScore:.3f}")
-
-        # Update optimizer with new result
-        self.optimizer.update(temp, flowrate, self.objectiveScore)
-                
     def evaluateRecommendation(self):
-        """ Evaluates the latest recommendation using the provided objective function. """
-        if self.objectiveEvaluator is None:
-            print("Warning: No objective evaluator function set.")
-            self.objectiveScore = None
-            return
-
-        print("\nEvaluating recommendation with objective function:")
-        print(self.currentRecommendation)  # Debugging print
-
-        try:
-            self.objectiveScore = self.objectiveEvaluator(self.currentRecommendation, **self.objectiveEvaluationKwargs)
-
-            if not (0 <= self.objectiveScore <= 1):
-                raise ValueError(f"Invalid objective score: {self.objectiveScore}. Must be between 0 and 1.")
-
-        except Exception as e:
-            print(f"Error in objective evaluation: {e}")
-            self.objectiveScore = None
+        pass
+    
+    def evaluateRecommendation_TEMP(self, msg):
+        """ Sends recommendation to Evaluator, waits for yield, and updates Summit. """
+        if "maxYield" in msg:
+            self.objectiveScore=msg["maxYield"]
             
-    def generateRecommendationSMT(self):
-        """ Uses the Summit optimizer to generate a new recommendation. """
-        if self.optimizer is None:
-            print("Warning: No optimizer set. Cannot generate recommendations.")
-            return
+            # if self.objectiveScore >= self.objTarget:
+            #     self.terminate=True
+            #     self.setGoSummit(False)
+            #     self.setGoEvaluator(False)
+            #     print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
+            #     return
+            
+            print(f"Recommendation {self.lastRecommendedVal} delivered conversion of {self.objectiveScore}")
+            
+            # if self.objectiveScore is None or not (0 <= self.objectiveScore <= 1):
+            #     raise ValueError(f"Invalid objective score: {self.objectiveScore}")
+            msgOut={"goSummit":True,"instruct":{
+                "eval":{
+                    "yield":self.objectiveScore
+                }
+            }}
+            print(f"✅ Received Estimated Yield: {self.objectiveScore:.3f}")
+            self.client.publish(self.topicOptOut,json.dumps(msgOut))
 
-        recommendedValues = self.optimizer.recommend(self.reactionParametres.getAllTweakables())
-
-        if not recommendedValues:
-            print("Warning: Optimizer returned empty recommendations.")
-            return
-
-        self.currentRecommendation = {
-            "hotcoil1": {"ReactionTemp": recommendedValues["temperature"]},
-            "flowsynmaxi2": {"FlowRatePumpA": recommendedValues["flowrate"]}
-        }
-
-        self.recommendationHistory.append(self.currentRecommendation)
-
-        print("\nGenerated Recommendation:")
-        for device, params in self.currentRecommendation.items():
-            print(f"  Device: {device}")
-            for paramId, val in params.items():
-                print(f"    {paramId}: {val:.3f}")
+            self.optimizing = False
+            self.evalYielded=True
 
     def executeRecommendation(self):
         """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
@@ -147,35 +202,117 @@ class OptimizationRig:
                 for param in self.reactionParametres.getAllTweakables():
                     if param.id == paramId:
                         command = param.associatedCommand
-                        self.automation.addBlockElement(param.name, device, command, value)
+                        self.automation.addBlockElement("recommendation", device, command, value)
                         break
 
         # Convert to script and send to MQTT
         self.automation.parseToScript()
         self.mqttService.script = self.automation.output
+        print(f"Automization output: {self.automation.output}")
+                        
+    def executeRecommendation_TEMP(self):
+        """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
+        # First, clear current automation
+        self.automation.reset()
+        
+        #Switch to reagents
+        self.automation.addBlockElement("resetAndStart","vapourtecR4P1700","svasr",True)
+        self.automation.addBlockElement("resetAndStart","vapourtecR4P1700","svbsr",True)
 
-    def start(self):
+        for device, params in self.currentRecommendation.items():
+            for paramId, value in params.items():
+                # Find the parameter by ID
+                for param in self.reactionParametres.getAllTweakables():
+                    if param.id == paramId:
+                        command = param.associatedCommand
+                        self.automation.addBlockElement("recommendation", device, command, value)
+                        break                
+
+        #Calculate and add delay
+        volToDispense=1
+        
+        vol=5 #wat was dit nou weer??
+        timeToPump=(volToDispense/(self.lastRecommendedVal["flowrate"]))*60
+
+        self.automation.addBlockElement("waitAndSwitch","Delay","sleepTime",timeToPump)
+
+        #Switch to back to solvent
+        self.automation.addBlockElement("waitAndSwitch","vapourtecR4P1700","svasr",False)
+        self.automation.addBlockElement("waitAndSwitch","vapourtecR4P1700","svbsr",False)
+        
+        timeToReachExit=((vol/(self.lastRecommendedVal["flowrate"]))*60)
+        delayRemaining=timeToReachExit - timeToPump #TODO - maak seker
+        delayRemaining=delayRemaining - delayRemaining*0.05 #Start scanning a bit earlier to compensate for forwards dispersion
+        
+        #Wait until reaction stream theoretically reaches IR
+        self.automation.addBlockElement("waitAndSwitch","Delay","sleepTime",delayRemaining)
+        
+        #Scan for a while
+        timeToScan=timeToPump + timeToPump*0.15 #Scan a little longer to compensate for rearwards dispersion
+        self.automation.addBlockElement("scanning","Delay","sleepTime",timeToScan)
+                        
+        # Convert to script and send to MQTT
+        self.automation.parseToScript()
+        self.optimizing = True
+        self.mqttService.script = self.automation.output
+        
+        #zero
+        self.zeroTime=time.time()
+        #Delays
+        self.startScanAt=timeToReachExit + self.zeroTime
+        self.endScanAt=timeToScan + self.startScanAt
+
+        self.awaitYield=True
+        
+        print(f"Automization output: {self.automation.output}")
+        
+        print(f"IR scanning will commence in {timeToReachExit/60} minutes. Scanning will take {timeToScan} seconds.")
+                
+    def setGoSummit(self,run):
+        if run:
+            brackets={}
+            self.client.publish(topic=self.topicOptOut,payload=json.dumps(
+                {"goSummit":True,"instruct":{"start":"","init":{
+                    "initVal":{ #TODO - Temp
+                        "temperature":[30,60],
+                        "flowrate":[0.5,4]
+                    }
+                }}}
+            ))
+        else:
+            self.client.publish(topic=self.topicOptOut,payload=json.dumps({
+                "goSummit":False
+            }))
+            
+    def setGoEvaluator(self,run):
+        if run:
+            self.client.publish(topic=self.topicEvalOut,payload=json.dumps({
+                "goEvaluator":True
+            }))
+        else:
+            self.client.publish(topic=self.topicEvalOut,payload=json.dumps({
+                "goEvaluator":False
+            }))        
+
+    def resetEvaluator(self):
+        self.client.publish(topic=self.topicEvalOut,payload=json.dumps({
+            "goEvaluator":False,
+            "reset":True
+        }))
+
+    def optimise(self,objTarget=0.9):
         """ Starts a background thread to continuously optimize until the target score is reached. """
+        self.objTarget=objTarget
+        self.client.connect(host=self.host)
+        self.client.loop_start()
+        
+        while not self.connected:
+            time.sleep(0.25)
+            
         if not self.optimizing:
             self.optimizing = True
-            self._rigThread = threading.Thread(target=self._optimizationLoop)
-            self._rigThread.start()
-            
-    def _optimizationLoop(self):
-        """ Runs the optimization loop in the background until the target score is reached. """
-        print("\n--- Starting Optimization Loop ---")
-        while self.optimizing:
-            self.generateRecommendation()
-            self.evaluateRecommendation()
-            print(f"Current Objective Score: {self.objectiveScore:.3f}")
+        self.setGoSummit(True)
 
-            if self.objectiveScore and self.objectiveScore >= self.targetScore:
-                print("\n🎯 Target Score Reached! Stopping optimization. 🎯")
-                self.optimizing = False
-                break  # Stop loop
-
-            time.sleep(1)  # Prevents excessive CPU usage
-            
 if __name__ == "__main__":
 
     class MockMQTTService:
@@ -188,51 +325,20 @@ if __name__ == "__main__":
             print(self.script)
             print("------------------------\n")
 
-    class MockOptimizer:
-        """ Mock optimizer that generates random values within the tweakable range. """
-        def recommend(self, tweakables):
-            recommendations = {}
-            for param in tweakables:
-                if param.getRanges():
-                    lower, upper = param.getRanges()[0]  # Use the first range
-                    recommendations[param] = random.uniform(lower, upper)
-            return recommendations
-        
-    def mockObjectiveEvaluator(recommendation, targetTemp=50, targetFlowrate=2.5):
-        """ Objective function that evaluates recommendation accuracy based on target values. """
-        totalScore = 0
-        numParams = 0
-
-        print("\nObjective Evaluator Received:")
-        print(recommendation)  # Debugging print
-
-        for device, params in recommendation.items():
-            for paramId, value in params.items():
-                if "hotcoil1" in device:
-                    score = max(0, 1 - abs(value - targetTemp) / 50)
-                    print(f"  Temp {paramId}: {value:.2f} → Score: {score:.3f}")
-                    totalScore += score
-                elif "flowsynmaxi2" in device:
-                    score = max(0, 1 - abs(value - targetFlowrate) / 5)
-                    print(f"  Flowrate {paramId}: {value:.2f} → Score: {score:.3f}")
-                    totalScore += score
-                numParams += 1
-
-        return totalScore / numParams if numParams else 0
-
-    print("Initializing Optimization Rig...")
+    print("\n🔹 Initializing Optimization Rig...")
 
     # Create mock MQTT service and optimization rig
     mqttService = MockMQTTService()
     rig = OptimizationRig(mqttService)
 
-    # Create mock devices and parameters
+    # Define devices
     device1 = "hotcoil1"
-    device2 = "flowsynmaxi2"
+    device2 = "vapourtecR4P1700"
 
-    tempParam = Temp("ReactionTemp", associatedCommand="temp", ranges=[[25, 100]])
-    flowrateParam1 = Flowrate("FlowRatePumpA", associatedCommand="pafr", ranges=[[0.1, 5]])
-    flowrateParam2 = Flowrate("FlowRatePumpB", associatedCommand="pbfr", ranges=[[0.5, 7]])
+    # Define tweakable parameters
+    tempParam = Temp("temperature", associatedCommand="temp", ranges=[[25, 100]])
+    flowrateParam1 = Flowrate("flowrate", associatedCommand="pafr", ranges=[[0.1, 2]])
+    flowrateParam2 = Flowrate("flowrate", associatedCommand="pbfr", ranges=[[0.1, 2]])
 
     # Register devices
     rig.registerDevice(device1)
@@ -243,14 +349,37 @@ if __name__ == "__main__":
     rig.registerTweakableParam(device2, flowrateParam1)
     rig.registerTweakableParam(device2, flowrateParam2)
 
-    # Set a mock optimizer and evaluator
-    rig.optimizer = MockOptimizer()
-    rig.objectiveEvaluator = mockObjectiveEvaluator
-    rig.objectiveEvaluationKwargs = {"targetTemp": 50, "targetFlowrate": 2.5}
+    print("\n✅ Rig Initialized!\n")
 
-    # Set a target score for stopping the loop
-    rig.targetScore = 0.80
+    # --- MANUAL INPUT SECTION ---
+    print("\n🔹 Copy-Paste this into 'SharedData/recommendation.json':")
+    print(json.dumps({
+        "temperature": 75.0,
+        "flowrate": 3.0  # Summit recommends total flowrate (before division)
+    }, indent=4))
+    
+    input("\nPress Enter after pasting into 'SharedData/recommendation.json'...")
 
-    # Start background optimization loop
-    print("\n🚀 Starting Optimization Process 🚀")
-    rig.start()
+    # --- TEST 1: Read and Process Recommendation ---
+    print("\n🚀 Running generateRecommendation_TEMP()...")
+    rig.generateRecommendation()
+
+    # --- MANUAL INPUT SECTION ---
+    print("\n🔹 Copy-Paste this into 'SharedData/yield.json':")
+    print(json.dumps({
+        "temperature": 75.0,
+        "flowrate": 3.0,
+        "yield": 0.87  # Simulated yield from Evaluator
+    }, indent=4))
+
+    input("\nPress Enter after pasting into 'SharedData/yield.json'...")
+
+    # --- TEST 2: Read Evaluated Yield ---
+    print("\n🚀 Running evaluateRecommendation_TEMP()...")
+    rig.evaluateRecommendation()
+
+    # --- TEST 3: Execute Recommendation ---
+    print("\n🚀 Running executeRecommendation()...")
+    rig.executeRecommendation()
+
+    print("\n✅ Test Cycle Complete!")

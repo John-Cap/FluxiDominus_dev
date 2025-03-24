@@ -2,6 +2,7 @@ import ast
 from datetime import datetime
 import threading
 import time
+import uuid
 from pytz import utc
 import paho.mqtt.client as mqtt
 from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
@@ -13,12 +14,13 @@ from Core.UI.brokers_and_topics import MqttTopics
 from Core.authentication.authenticator import Authenticator
 
 class MqttService:
-    def __init__(self, broker_address="localhost", port=1883, client = None, orgId="NONE",allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),automation=None):
+    def __init__(self, broker_address="localhost", port=1883, client = None, orgId="NONE",allTopics=MqttTopics.getAllTopicSets(),allTopicsTele=MqttTopics.getTeleTopics(),allTopicsUI=MqttTopics.getUiTopics(),allTopicsOptimization=MqttTopics.getOptimizationTopics(),automation=None):
         self.broker_address = broker_address
         self.port = port
         self.allTopics = allTopics
         self.allTopicsTele=allTopicsTele
         self.allTopicsUI=allTopicsUI
+        self.allTopicsOptimization=allTopicsOptimization
         self.temp = 0
         self.IR = []
         
@@ -33,10 +35,11 @@ class MqttService:
         
         self.formPanelData={}
 
-        self.client = client if client else (mqtt.Client(client_id="PlutterPy", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
+        self.client = client if client else (mqtt.Client(client_id=f"PlutterPy_{uuid.uuid4()}", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
         self.client.on_connect = self.onConnect
         self.client.on_message = self.onMessage
         self.client.on_subscribe = self.onSubscribe
+        self.client.on_disconnect=self.onDisconnect
         #self.client.on_publish=self.onPublish
         
         self.topicIDs={}
@@ -59,8 +62,6 @@ class MqttService:
         
         self.zeroTime=None
         
-        self.armed=False
-        
         self.databaseOperations=None
         
         #TODO - random test related var
@@ -69,11 +70,16 @@ class MqttService:
         self.currTestrunId=None
         self.abort=False
         
-        #TODO - Temp fix for repeated connecting
+        self.armed=False
+        
+        #TODO - Temp fix for repeated subscription
         #self.connected=False
+        self.subscribed={}
         
         #Telemetry
         self.registeredTeleDevices={}
+        
+        self.irAvailable=False
         
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
 
@@ -81,23 +87,30 @@ class MqttService:
         if mid in self.topicIDs:
             print("WJ - Subscribed to topic " + self.topicIDs[mid] + " with Qos " + str(granted_qos[0]) + "!")
     
+    def onDisconnect(self, client, userdata, rc):
+        print(f"Disconnected! {[client,userdata,rc]}")
+        
     def onConnect(self, client, userdata, flags, rc):
-        print("WJ - Connected!")
         #if self.connected:
             #return
+        # print("WJ - Connected!")
         if rc == 0:
             for _x in self.allTopics:
                 for tpc in _x.values():
+                    if tpc in self.subscribed:
+                        if self.subscribed[tpc]:
+                            continue
                     qos=MqttTopics.getTopicQos(tpc)
                     ret=self.client.subscribe(tpc,qos=qos)
                     if ret[0].real==0:
                         self.topicIDs[ret[1]]=tpc
+                        self.subscribed[tpc]=True
                     else:
                         print("WJ - could not subscribe to topic "+tpc+"!")
             self.connected=True
         else:
             print("Connection failed with error code " + str(rc))
-        print(self.topicIDs)
+        # print(self.topicIDs)
     
     def onConnectTele(self, client, userdata, flags, rc):
         print("WJ - Connected!")
@@ -132,6 +145,9 @@ class MqttService:
         self.lastMsgFromTopic[topic]=_msgContents
         ##
         if "deviceName" in _msgContents:
+            if _msgContents["deviceName"] == "reactIR702L1":
+                self.IR = _msgContents["tele"]["state"]["data"]
+                self.irAvailable=True
             #Add to db streaming queue? Minimum wait passed?
             if self.runTest:
                 if (self.currTestlistId != None  and self.currTestrunId != None and self.logData):
@@ -249,7 +265,10 @@ class MqttService:
                 self.runTest=True
                 print("WJ - Let's go!")
         elif topic=="ui/parseFlowpath/in":
-            pass   
+            pass
+        elif topic=="":
+            pass
+        
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
@@ -271,8 +290,11 @@ class MqttService:
         self.client.loop_start()
         
     def publish(self,topic,payload):
-        _ret=self.client.publish(topic,payload)
-        print(f'MQTT message info: {_ret}')
+        if not self.armed:
+            pass
+        else:
+            _ret=self.client.publish(topic,payload)
+            print(f'MQTT message info: {_ret}')
 
     def getTemp(self):
         return self.temp
