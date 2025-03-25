@@ -1,6 +1,7 @@
 import ast
 import copy
 import json
+import uuid
 import keras
 import os
 import numpy as np
@@ -43,7 +44,7 @@ class IRMLPTrainer:
         
         self.evaluatorCmndPath=(os.path.join(SHARED_FOLDER, "evaluatorCmnd.json"))
          
-        self.client = client if client else (mqtt.Client(client_id="Evaluator", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
+        self.client = client if client else (mqtt.Client(client_id=f"Evaluator_{uuid.uuid4()}", clean_session=True, userdata=None, protocol=mqtt.MQTTv311))
         self.host=host
         self.topicIn="eval/out"
         self.topicOut="eval/in"
@@ -266,11 +267,18 @@ class IRMLPTrainer:
         print(f"✅ Trimmed data: New shape {trimmed_data.shape}")
         return trimmed_data
 
+    def pingOptRig(self):
+        self.client.publish(self.topicOut,json.dumps({"statReq":{"init":True}}))
+
     def onMessage(self, client, userdata, msg):
         _msgContents = msg.payload.decode()
         _msgContents = _msgContents.replace("true", "True").replace("false", "False")
         _msgContents=_msgContents.replace("null","None")
         _msgContents = ast.literal_eval(_msgContents)
+        
+        if "statReq" in _msgContents:
+            if "ping" in _msgContents:
+                self.pingOptRig()
         
         if "goEvaluator" in _msgContents:
             

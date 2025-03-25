@@ -15,8 +15,8 @@ from Core.parametres.reaction_parametres import Flowrate, Temp
 from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
-# updater = MqttService(broker_address="localhost")
-updater = MqttService(broker_address="146.64.91.174")
+updater = MqttService(broker_address="localhost")
+# updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
 
@@ -58,7 +58,17 @@ noTestDetails=True
 
 ########################################################################
 #Optimizer rig
-rig=OptimizationRig(updater,host="146.64.91.174")
+#rig=OptimizationRig(updater,host="146.64.91.174")
+rig=OptimizationRig(updater,host="localhost")
+rig.initRig()
+#Wait until both evaluator and optimizer initialized:
+print('Waiting for optimizers to initialize')
+while not (rig.evaluatorInit and rig.optimizerInit):
+    if not rig.evaluatorInit:
+        rig.pingEvaluator()
+    if not rig.optimizerInit:
+        rig.pingOptimizer()
+    time.sleep(5)
 
 # Define devices
 device1 = "hotcoil1"
@@ -81,7 +91,6 @@ rig.registerTweakableParam(device2, flowrateParam2)
 for _x in rig.reactionParametres.getAllTweakables():
     print([_x.name,_x.getRanges()[0]])
 
-rig.optimise(objTarget=0.8)
 ########################################################################
 
 #TODO - Smarter way to manage this:
@@ -95,6 +104,7 @@ updater.abort=False
 # updater.databaseOperations.mongoDb.currZeroTime=None
 
 # Main loop!
+rig.optimise(objTarget=0.8)
 goTime=time.time()
 while True:
 

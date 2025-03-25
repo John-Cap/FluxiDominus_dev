@@ -12,6 +12,7 @@ import 'package:flutter_flow_chart/ui/script_builder.dart/script_generator.dart'
 import 'package:flutter_flow_chart/utils/timing.dart';
 import 'package:mqtt_client/mqtt_browser_client.dart';
 import 'package:mqtt_client/mqtt_client.dart';
+import 'package:uuid/uuid.dart';
 
 class MqttService extends ChangeNotifier {
   late MqttBrowserClient client;
@@ -119,7 +120,8 @@ class MqttService extends ChangeNotifier {
   //
 
   Future<void> initializeMQTTClient() async {
-    client = MqttBrowserClient(server, 'flutter-web-client');
+    String identifier = 'flutter_client_${Uuid().v4()}';
+    client = MqttBrowserClient(server, identifier);
     client.port = 9001;
     client.logging(on: false);
     client.keepAlivePeriod = 20;
@@ -131,7 +133,7 @@ class MqttService extends ChangeNotifier {
     //client.onAutoReconnected = onConnected;
 
     final connMess = MqttConnectMessage()
-        .withClientIdentifier('flutter-web-client')
+        .withClientIdentifier(identifier)
         .startClean()
         .withWillQos(MqttQos.atMostOnce);
 

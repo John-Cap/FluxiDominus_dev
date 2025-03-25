@@ -44,8 +44,8 @@ class OptimizationRig:
         
         self.scanning=False
         
-        self.generateRecommendation_TEMPsaidItOnce=False
-        self.evaluateRecommendation_TEMPsaidItOnce=False
+        self.optimizerInit=False
+        self.evaluatorInit=False
         
         self.summitCmndPath=r'OPTIMIZATION_TEMP\SharedData\summitCmnd.json'
         self.evaluatorCmndPath=r'OPTIMIZATION_TEMP\SharedData\evaluatorCmnd.json'
@@ -54,6 +54,9 @@ class OptimizationRig:
         self.topicOptIn="opt/in"
         self.topicEvalOut="eval/out"
         self.topicEvalIn="eval/in"
+        
+        self.lastPingEvaluator=0
+        self.lastPingOptimizer=0
         
         self.client = mqtt.Client(client_id="OptimizerRig", clean_session=True, userdata=None, protocol=mqtt.MQTTv311)
         self.client.on_message=self.onMessage
@@ -84,27 +87,52 @@ class OptimizationRig:
     def generateRecommendation(self):
         pass
     
+    def pingOptimizer(self):
+        self.client.publish(self.topicOptOut,json.dumps({"statReq":{"ping":{}}})) #additional params can be sent to request specific information and not just ping
+    def pingEvaluator(self):
+        self.client.publish(self.topicEvalOut,json.dumps({"statReq":{"ping":{}}}))
+        
     def onMessage(self, client, userdata, msg):
         topic=msg.topic
         msg = msg.payload.decode()
         msg = msg.replace("true", "True").replace("false", "False")
         msg = msg.replace("null","None")
         msg = ast.literal_eval(msg)
+        
         if topic == self.topicEvalIn:
+            if "statReq" in msg:
+                #Init?
+                if "init" in msg:
+                    if msg["init"] != self.evaluatorInit:
+                        self.evaluatorInit=msg["init"]
+                        if self.evaluatorInit:
+                            print("Evaluator initialized!")
+                        self.lastPingEvaluator=time.time()
+                return
+                            
             self.evaluateRecommendation_TEMP(msg)
-            #print(f"Received message from evaluator! -> {msg}")
         elif topic == self.topicOptIn:
+            if "statReq" in msg:
+                #Init?
+                if "init" in msg:
+                    if msg["init"] != self.optimizerInitInit:
+                        self.optimizerInit=msg["init"]
+                        if self.optimizerInit:
+                            print("Optimizer initialized!")
+                        self.lastPingOptimizer=time.time()
+                return
+                            
             self.generateRecommendation_TEMP(msg)
             print(f"Received message from optimizer! -> {msg}")
 
     def onConnect(self, client, userdata, flags, rc):
         #if self.connected:
             #return
-        print(f"WJ - Connected with rc {rc}!")
         if rc == 0:
             self.client.subscribe(topic=self.topicEvalIn)
             self.client.subscribe(topic=self.topicOptIn)
             time.sleep(1)
+            print(f"WJ - Connected with rc {rc}!")
             self.connected=True
                 
     def generateRecommendation_TEMP(self, msg):
@@ -300,18 +328,26 @@ class OptimizationRig:
             "reset":True
         }))
 
+    def initRig(self):
+        self.client.connect(host=self.host)
+        self.client.loop_start()
+
     def optimise(self,objTarget=0.9):
         """ Starts a background thread to continuously optimize until the target score is reached. """
         self.objTarget=objTarget
-        self.client.connect(host=self.host)
-        self.client.loop_start()
         
-        while not self.connected:
-            time.sleep(0.25)
+        if not self.connected:
+            print("Not connected to MQTT!")
+            return
+            
+        if not (self.evaluatorInit and self.optimizerInit):
+            print("Not all optimizers and/or evaluators initialized")
+            return
             
         if not self.optimizing:
             self.optimizing = True
         self.setGoSummit(True)
+        self.resetEvaluator()
 
 if __name__ == "__main__":
 

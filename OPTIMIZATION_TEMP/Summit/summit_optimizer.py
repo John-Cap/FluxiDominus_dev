@@ -97,6 +97,9 @@ class SummitOptimizer:
         print(f"✅ Updated Summit with yield: {yieldScore:.3f}")
         
         self.recommend()
+
+    def pingOptRig(self):
+        self.client.publish(self.topicOut,json.dumps({"statReq":{"init":True}}))
         
     def onMessage(self, client, userdata, msg):
         data = msg.payload.decode()
@@ -104,8 +107,10 @@ class SummitOptimizer:
         data=data.replace("null","None")
         data = ast.literal_eval(data)
         
-        print(f"Summit received message: {data}")
-    
+        if "statReq" in data:
+            if "ping" in data:
+                self.pingOptRig()
+            
         if "instruct" in data:
             if "init" in data["instruct"]:
                 if "initVal" in data["instruct"]["init"]:
