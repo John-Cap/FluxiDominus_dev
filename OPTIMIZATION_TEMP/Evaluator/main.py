@@ -16,11 +16,15 @@ trainer = IRMLPTrainer(
 )
 trainer.loadModel("ir_yield_mlp.keras")
 
+print(f'Keras model {"ir_yield_mlp.keras"} loaded')
+
 trainer.client.connect(host=trainer.host)
 trainer.client.loop_start()
 
 while not trainer.client.is_connected():
     time.sleep(1)
+    
+print(f'MQTT client "{trainer.client.username}" initialized')
 
 trainer.client.publish(trainer.topicOut,json.dumps({"statReq":{"init":True}}))
 

@@ -16,6 +16,7 @@ from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
 updater = MqttService(broker_address="localhost")
+updater.connectDb=False
 # updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
@@ -61,6 +62,8 @@ noTestDetails=True
 #rig=OptimizationRig(updater,host="146.64.91.174")
 rig=OptimizationRig(updater,host="localhost")
 rig.initRig()
+while not rig.client.is_connected():
+    time.sleep(2)
 #Wait until both evaluator and optimizer initialized:
 print('Waiting for optimizers to initialize')
 while not (rig.evaluatorInit and rig.optimizerInit):
@@ -114,14 +117,15 @@ while True:
     
     while updater.script=="" and not rig.terminate:
         # dbConnection ping
-        if time.time() - lstPngTime > mySqlPngDelay:
-            if updater.databaseOperations.mySqlDb.connection.is_connected():
-                lstPngTime=time.time();
-                #print('mySQL db pinged!');
-            else:
-                print('mySQL db ping not answered!');
-                updater.databaseOperations.mySqlDb.connect();
-                time.sleep(0.5);
+        if updater.connectDb:
+            if time.time() - lstPngTime > mySqlPngDelay:
+                if updater.databaseOperations.mySqlDb.connection.is_connected():
+                    lstPngTime=time.time();
+                    #print('mySQL db pinged!');
+                else:
+                    print('mySQL db ping not answered!');
+                    updater.databaseOperations.mySqlDb.connect();
+                    time.sleep(0.5);
         #
         time.sleep(0.1)
     
@@ -197,15 +201,16 @@ while True:
         #Recommendation phase
         
         #dbConnection ping
-        if time.time() - lstPngTime > mySqlPngDelay:
-            pass
-            if updater.databaseOperations.mySqlDb.connection.is_connected():
-                lstPngTime=time.time();
-                #print('mySQL db pinged!');
-            else:
-                print('mySQL db ping not answered!');
-                updater.databaseOperations.mySqlDb.connect();
-                time.sleep(0.5);
+        if updater.connectDb:
+            if time.time() - lstPngTime > mySqlPngDelay:
+                if updater.databaseOperations.mySqlDb.connection.is_connected():
+                    lstPngTime=time.time();
+                    #print('mySQL db pinged!');
+                else:
+                    print('mySQL db ping not answered!');
+                    updater.databaseOperations.mySqlDb.connect();
+                    time.sleep(0.5);
+                    
         if not procedure.currConfig is None:
             if len(procedure.currConfig.commands) == 0:
                 procedure.next()
@@ -249,12 +254,13 @@ while True:
                     )
                 )
                     
-            
-        if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
-            if len(updater.dataQueue.dataPoints) != 0:
-                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-                updater.dataQueue.dataPoints=[]
-            _reportDelay=Delay(_reportSleep)
+        
+        if updater.connectDb:
+            if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
+                if len(updater.dataQueue.dataPoints) != 0:
+                    updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+                    updater.dataQueue.dataPoints=[]
+                _reportDelay=Delay(_reportSleep)
 
         time.sleep(0.15)
 
@@ -262,8 +268,10 @@ while True:
         #Evaluation phase
                 
     # #TODO - in own thread
-    if updater.logData and not noTestDetails:
-        if len(updater.dataQueue.dataPoints) != 0:
-            updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-            updater.dataQueue.dataPoints=[]
-        updater.databaseOperations.setStopTime(updater.currTestrunId)
+    
+    if updater.connectDb:
+        if updater.logData and not noTestDetails:
+            if len(updater.dataQueue.dataPoints) != 0:
+                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+                updater.dataQueue.dataPoints=[]
+            updater.databaseOperations.setStopTime(updater.currTestrunId)

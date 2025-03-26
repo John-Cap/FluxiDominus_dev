@@ -1,1 +1,6 @@
-{"deviceName": "reactIR702L1", "deviceType": "IR", "inUse": True, "remoteEnabled": True, "ipAddr": "192.168.1.50", "port": 62552, "tele": {"cmnd": "POLL", "settings": {}, "state": {"data": list(_rand)}, "timestamp": ""}}
+
+... some other code
+
+_scriptProcess_1=[] spawn {...};
+
+... continue with rest of code while _scriptProcess_1 continues

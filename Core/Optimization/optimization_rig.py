@@ -102,9 +102,9 @@ class OptimizationRig:
         if topic == self.topicEvalIn:
             if "statReq" in msg:
                 #Init?
-                if "init" in msg:
-                    if msg["init"] != self.evaluatorInit:
-                        self.evaluatorInit=msg["init"]
+                if "init" in msg["statReq"]:
+                    if msg["statReq"]["init"] != self.evaluatorInit:
+                        self.evaluatorInit=msg["statReq"]["init"]
                         if self.evaluatorInit:
                             print("Evaluator initialized!")
                         self.lastPingEvaluator=time.time()
@@ -114,9 +114,9 @@ class OptimizationRig:
         elif topic == self.topicOptIn:
             if "statReq" in msg:
                 #Init?
-                if "init" in msg:
-                    if msg["init"] != self.optimizerInitInit:
-                        self.optimizerInit=msg["init"]
+                if "init" in msg["statReq"]:
+                    if msg["statReq"]["init"] != self.optimizerInit:
+                        self.optimizerInit=msg["statReq"]["init"]
                         if self.optimizerInit:
                             print("Optimizer initialized!")
                         self.lastPingOptimizer=time.time()

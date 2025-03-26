@@ -47,14 +47,14 @@ class SummitOptimizer:
             flowrate = np.random.uniform(1, 3)
             recommendation = {"recomm":{"temperature": temp, "flowrate": flowrate}}
             self.prevExp=recommendation["recomm"]
-            print("🔹 First random experiment:", recommendation)
+            print("First random experiment:", recommendation)
             self.randomInitialAssigned=True
         else:
             # Generate recommendation from SOBO
             next_experiment = self.strategy.suggest_experiments(1,summit.DataSet.from_df(self.experiments))
 
             if next_experiment.empty:
-                print("⚠️ Summit returned an empty dataset! Ensure optimizer is correctly updated with past experiments.")
+                print("Summit returned an empty dataset! Ensure optimizer is correctly updated with past experiments.")
                 return
 
             recommendation = {
@@ -68,7 +68,7 @@ class SummitOptimizer:
         # Write recommendation
         self.client.publish(self.topicOut,json.dumps(recommendation))
         
-        print(f"✅ Summit Optimizer recommended: {recommendation}")
+        print(f"Summit Optimizer recommended: {recommendation}")
 
     def update(self, data):
         """ Check for evaluated yield and update optimizer. """
@@ -94,7 +94,7 @@ class SummitOptimizer:
         newData = pd.DataFrame({"temperature": [temp], "flowrate": [flowrate], "yieldVal": [yieldScore]})
         self.experiments = pd.concat([self.experiments, newData], ignore_index=True)
 
-        print(f"✅ Updated Summit with yield: {yieldScore:.3f}")
+        print(f"Updated Summit with yield: {yieldScore:.3f}")
         
         self.recommend()
 
@@ -108,7 +108,7 @@ class SummitOptimizer:
         data = ast.literal_eval(data)
         
         if "statReq" in data:
-            if "ping" in data:
+            if "ping" in data["statReq"]:
                 self.pingOptRig()
             
         if "instruct" in data:

@@ -1,7 +1,6 @@
 import subprocess
 import os
 import sys
-import time
 
 class FdSubprocess:
     def __init__(self):
@@ -65,12 +64,7 @@ if __name__ == "__main__":
     fdSubprocess = FdSubprocess()
     baseDir = os.path.dirname(os.path.abspath(__file__))
     evaluatorDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Evaluator')
-    optimizerDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Summit')
 
     pid = fdSubprocess.spawnExternalMain(evaluatorDir)
-    pid = fdSubprocess.spawnExternalMain(optimizerDir)
 
     print("Main optimizing continues...")
-
-    while True:
-        time.sleep(1)

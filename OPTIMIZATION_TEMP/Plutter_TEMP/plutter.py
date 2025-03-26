@@ -63,6 +63,7 @@ class MqttService:
         self.zeroTime=None
         
         self.databaseOperations=None
+        self.connectDb=True
         
         #TODO - random test related var
         self.runTest=False
@@ -272,8 +273,9 @@ class MqttService:
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
-        self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
-        self.databaseOperations.connect()
+        if self.connectDb:
+            self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
+            self.databaseOperations.connect()
         thread = threading.Thread(target=self._run)
         thread.start()
         return thread

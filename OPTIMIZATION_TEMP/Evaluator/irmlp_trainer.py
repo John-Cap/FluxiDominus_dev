@@ -105,7 +105,7 @@ class IRMLPTrainer:
         processed_df["Yield"] = y_final
         processed_df.to_csv("ir_yield_training_data.csv", index=False)
 
-        print(f"✅ Processed training data saved to ir_yield_training_data.csv")
+        print(f"Processed training data saved to ir_yield_training_data.csv")
         
         # Store the training data
         self.X, self.y = X_final, y_final
@@ -176,7 +176,7 @@ class IRMLPTrainer:
         # Save the scaler
         np.save("scaler.npy", self.scaler)
 
-        print("✅ Model training complete and saved as ir_yield_mlp.keras")
+        print("Model training complete and saved as ir_yield_mlp.keras")
 
     def loadModel(self, path="ir_yield_mlp.keras"):
         """
@@ -190,7 +190,7 @@ class IRMLPTrainer:
         except FileNotFoundError:
             raise ValueError("Scaler file not found. Make sure to train the model first.")
 
-        print(f"✅ Model loaded from {path}")
+        print(f"Model loaded from {path}",flush=True)
 
     def estimateYield(self, input_scan, normalize=True, applySmallValueThreshold=True):
         """
@@ -247,7 +247,7 @@ class IRMLPTrainer:
             scan_length = len(data_array)
 
             if self.trimLeft + self.trimRight >= scan_length:
-                print("🚨 Warning: Trimming exceeds data length. Skipping trim operation.")
+                print("Warning: Trimming exceeds data length. Skipping trim operation.")
                 return data_array  # Return unmodified
 
             trimmed_data = data_array[self.trimLeft:-self.trimRight]
@@ -256,15 +256,15 @@ class IRMLPTrainer:
             scan_length = data_array.shape[1]
 
             if self.trimLeft + self.trimRight >= scan_length:
-                print("🚨 Warning: Trimming exceeds data length. Skipping trim operation.")
+                print("Warning: Trimming exceeds data length. Skipping trim operation.")
                 return data_array  # Return unmodified
 
             trimmed_data = data_array[:, self.trimLeft:-self.trimRight]
 
         else:
-            raise ValueError("🚨 Unexpected data shape. Expected 1D or 2D array.")
+            raise ValueError("Unexpected data shape. Expected 1D or 2D array.")
 
-        print(f"✅ Trimmed data: New shape {trimmed_data.shape}")
+        print(f"Trimmed data: New shape {trimmed_data.shape}")
         return trimmed_data
 
     def pingOptRig(self):
@@ -277,7 +277,7 @@ class IRMLPTrainer:
         _msgContents = ast.literal_eval(_msgContents)
         
         if "statReq" in _msgContents:
-            if "ping" in _msgContents:
+            if "ping" in _msgContents["statReq"]:
                 self.pingOptRig()
         
         if "goEvaluator" in _msgContents:
@@ -344,20 +344,6 @@ if __name__ == "__main__":
     trainer.trimLeft=200
     trainer.trimRight=40
 
-    # Test loop
-    # _i=0
-    # _wrong=0
-    # for _x in trainer.X:
-    #     _est=trainer.estimateYield(_x,False,False)
-    #     _true=trainer.y[_i]
-    #     _err=error = abs(_true - _est) * 100
-    #     if _err > 5:
-    #         _wrong+=1
-    #     print(f"Estimated yield: {_est}, true: {_true}, error: {_err}")
-    #     _i+=1
-    # print(f"Percentage of incorrect predictions: {100*(_wrong/(trainer.X.shape[0]))}")
-
-    # Interactive prediction loop
     while True:
         _input = input("Input vector: ")
         _input = eval(_input)  # Convert input string to a list
