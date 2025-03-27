@@ -1,17 +1,26 @@
+import atexit
 import subprocess
 import os
 import sys
+
+'''
+TODO:
+1. Are subprocess children also killed?
+2. Only terminates subprocesses on normal exit?
+'''
 
 class FdSubprocess:
     def __init__(self):
         self.pythonPaths = {}
         self.subprocesses = {}
-        self.pathCnt = 0
+        self._pathCnt = 0
+        
+        atexit.register(self.terminateAllProcesses)
 
     def addPythonPath(self, path):
-        cntr = self.pathCnt
+        cntr = self._pathCnt
         self.pythonPaths[cntr] = path
-        self.pathCnt += 1
+        self._pathCnt += 1
         return cntr
 
     def spawnExternalMain(self, scriptDir):
@@ -42,7 +51,7 @@ class FdSubprocess:
     def checkProcessOutput(self, processId):
         proc = self.subprocesses.get(processId)
         if proc is None:
-            print(f"⚠️ No subprocess with ID {processId}")
+            print(f"No subprocess with ID {processId}")
             return
 
         stdout, stderr = proc.communicate(timeout=0.1) if proc.poll() is not None else ("", "")
@@ -51,14 +60,20 @@ class FdSubprocess:
             print(f"[{processId} STDOUT]: {stdout}")
         if stderr:
             print(f"[{processId} STDERR]: {stderr}")
-
+            
+    def terminateAllProcesses(self):
+        for pid, proc in self.subprocesses.items():
+            if proc.poll() is None:  # Still running
+                print(f"Auto-terminating subprocess {pid}")
+                proc.terminate()
+                
     def terminateProcess(self, processId):
         proc = self.subprocesses.get(processId)
         if proc and proc.poll() is None:
             proc.terminate()
-            print(f"🛑 Terminated subprocess {processId}")
+            print(f"Terminated subprocess {processId}")
         else:
-            print(f"⚠️ Subprocess {processId} already exited or doesn't exist.")
+            print(f"Subprocess {processId} already exited or doesn't exist.")
             
 if __name__ == "__main__":
     fdSubprocess = FdSubprocess()
@@ -67,4 +82,4 @@ if __name__ == "__main__":
 
     pid = fdSubprocess.spawnExternalMain(evaluatorDir)
 
-    print("Main optimizing continues...")
+    print("Main script continues...")

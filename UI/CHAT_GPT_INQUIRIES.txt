@@ -1,5 +1,77 @@
-{"goSummit":true,"instruct":{
-                "eval":{
-                    "yield":0.2
-                }
-            }}
+
+
+import subprocess
+import os
+import sys
+
+class FdSubprocess:
+    def __init__(self):
+        self.pythonPaths={}
+        self._pathCnt=0
+        
+    def addPythonPath(self,path):
+        cntr=self._pathCnt
+        self.pythonPaths[cntr]=path
+        self._pathCnt += 1
+        return cntr
+    
+    def runExternalMain(self,script_dir):
+        # Determine platform-specific path to the venv Python
+        id=0
+        if os.name == 'nt':  # Windows
+            pythonPath = os.path.join(script_dir, '.venv', 'Scripts', 'python.exe')
+            id = self.addPythonPath(pythonPath)
+        else:  # Unix/Linux/macOS
+            pythonPath = os.path.join(script_dir, '.venv', 'bin', 'python')
+            id = self.addPythonPath(pythonPath)
+
+        script_path = os.path.join(script_dir, 'main.py')
+
+        # Run the external script using its own Python environment
+        result = subprocess.run(
+            [pythonPath, script_path],
+            cwd=script_dir,  # 👈 Fixes relative path issues
+            capture_output=True,
+            text=True
+        )
+        print(f"--- Output from {script_path} ---")
+        print(result.stdout)
+        if result.stderr:
+            print(f"--- Errors from {script_path} ---")
+            print(result.stderr)
+
+
+if __name__ == "__main__":
+    
+    fdSubprocess=FdSubprocess()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    evaluator_dir = os.path.join(base_dir, 'OPTIMIZATION_TEMP', 'Evaluator')
+    summit_dir = os.path.join(base_dir, 'OPTIMIZATION_TEMP', 'Summit')
+
+    fdSubprocess.runExternalMain(evaluator_dir)
+    fdSubprocess.runExternalMain(summit_dir)
+
+
+gives :O
+
+PS C:\Projects\python\FluxiDominus_dev> & C:/Projects/python/FluxiDominus_dev/.venv/Scripts/python.exe c:/Projects/python/FluxiDominus_dev/scratch.py
+--- Output from c:\Projects\python\FluxiDominus_dev\OPTIMIZATION_TEMP\Evaluator\main.py ---
+
+--- Errors from c:\Projects\python\FluxiDominus_dev\OPTIMIZATION_TEMP\Evaluator\main.py ---
+2025-03-26 20:12:17.449701: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly 
+different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-03-26 20:12:18.505093: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly 
+different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-03-26 20:12:21.871678: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler 
+flags.
+Traceback (most recent call last):
+  File "c:\Projects\python\FluxiDominus_dev\OPTIMIZATION_TEMP\Evaluator\main.py", line 17, in <module>
+    trainer.loadModel("ir_yield_mlp.keras")
+  File "c:\Projects\python\FluxiDominus_dev\OPTIMIZATION_TEMP\Evaluator\irmlp_trainer.py", line 193, in loadModel     
+    print(f"\u2705 Model loaded from {path}")
+  File "C:\Python\311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>

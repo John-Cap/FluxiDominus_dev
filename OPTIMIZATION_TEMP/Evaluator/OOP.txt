@@ -1,6 +1,67 @@
 
+My subprocess class as it stands:
+
+import subprocess
+import os
+import sys
+
+class FdSubprocess:
+    def __init__(self):
+        self.pythonPaths={}
+        self._pathCnt=0
+        
+    def addPythonPath(self,path):
+        cntr=self._pathCnt
+        self.pythonPaths[cntr]=path
+        self._pathCnt += 1
+        return cntr
+    
+    def runExternalMain(self,script_dir):
+        # Determine platform-specific path to the venv Python
+        id=0
+        if os.name == 'nt':  # Windows
+            pythonPath = os.path.join(script_dir, '.venv', 'Scripts', 'python.exe')
+            id = self.addPythonPath(pythonPath)
+        else:  # Unix/Linux/macOS
+            pythonPath = os.path.join(script_dir, '.venv', 'bin', 'python')
+            id = self.addPythonPath(pythonPath)
+
+        script_path = os.path.join(script_dir, 'main.py')
+
+        # Run the external script using its own Python environment
+        result = subprocess.run(
+            [pythonPath, script_path],
+            cwd=script_dir,  # 👈 Fixes relative path issues
+            capture_output=True,
+            text=True
+        )
+        print(f"--- Output from {script_path} ---")
+        print(result.stdout)
+        if result.stderr:
+            print(f"--- Errors from {script_path} ---")
+            print(result.stderr)
+
+
+if __name__ == "__main__":
+    
+    fdSubprocess=FdSubprocess()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    evaluator_dir = os.path.join(base_dir, 'OPTIMIZATION_TEMP', 'Evaluator')
+    # summit_dir = os.path.join(base_dir, 'OPTIMIZATION_TEMP', 'Summit')
+
+    fdSubprocess.runExternalMain(evaluator_dir)
+    # fdSubprocess.runExternalMain(summit_dir)
+
+
+Both of the submains have blocking loops to keep them running forever. Obviously, this means runExternalMain does not return until the subprocess terminates, which is never.
+
+Arma 3 allows stuff of this type:
+
 ... some other code
 
 _scriptProcess_1=[] spawn {...};
 
 ... continue with rest of code while _scriptProcess_1 continues
+
+How can I modify class FdSubprocess' "runExternalMain" to 'spawn' the subprocess and store it in self.subprocesses={} with key id, then return id?

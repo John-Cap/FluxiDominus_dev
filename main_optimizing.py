@@ -11,6 +11,7 @@ from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptPars
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.Optimization.optimization_rig import OptimizationRig
+from Core.Utils.subprocessing import FdSubprocess
 from Core.parametres.reaction_parametres import Flowrate, Temp
 from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
@@ -63,7 +64,16 @@ noTestDetails=True
 rig=OptimizationRig(updater,host="localhost")
 rig.initRig()
 while not rig.client.is_connected():
-    time.sleep(2)
+    time.sleep(1)
+
+fdSubprocess = FdSubprocess()
+baseDir = os.path.dirname(os.path.abspath(__file__))
+evaluatorDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Evaluator')
+optimizerDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Summit')
+
+pid = fdSubprocess.spawnExternalMain(evaluatorDir)
+pid = fdSubprocess.spawnExternalMain(optimizerDir)
+
 #Wait until both evaluator and optimizer initialized:
 print('Waiting for optimizers to initialize')
 while not (rig.evaluatorInit and rig.optimizerInit):

@@ -1,3 +1,4 @@
+import atexit
 import subprocess
 import os
 import sys
@@ -7,15 +8,18 @@ class FdSubprocess:
     def __init__(self):
         self.pythonPaths = {}
         self.subprocesses = {}
-        self.pathCnt = 0
+        self._pathCnt = 0
+        
+        atexit.register(self.terminateAllProcesses)
 
     def addPythonPath(self, path):
-        cntr = self.pathCnt
+        cntr = self._pathCnt
         self.pythonPaths[cntr] = path
-        self.pathCnt += 1
+        self._pathCnt += 1
         return cntr
 
     def spawnExternalMain(self, scriptDir):
+        print(os.name)
         if os.name == 'nt':
             pythonPath = os.path.join(scriptDir, '.venv', 'Scripts', 'python.exe')
         else:
@@ -37,13 +41,13 @@ class FdSubprocess:
         processId = self.addPythonPath(pythonPath)
         self.subprocesses[processId] = process
 
-        print(f"✅ Spawned subprocess {processId} for {scriptPath}")
+        print(f"Spawned subprocess {processId} for {scriptPath}")
         return processId
 
     def checkProcessOutput(self, processId):
         proc = self.subprocesses.get(processId)
         if proc is None:
-            print(f"⚠️ No subprocess with ID {processId}")
+            print(f"No subprocess with ID {processId}")
             return
 
         stdout, stderr = proc.communicate(timeout=0.1) if proc.poll() is not None else ("", "")
@@ -52,25 +56,27 @@ class FdSubprocess:
             print(f"[{processId} STDOUT]: {stdout}")
         if stderr:
             print(f"[{processId} STDERR]: {stderr}")
-
+            
+    def terminateAllProcesses(self):
+        for pid, proc in self.subprocesses.items():
+            if proc.poll() is None:  # Still running
+                print(f"Auto-terminating subprocess {pid}")
+                proc.terminate()
+                
     def terminateProcess(self, processId):
         proc = self.subprocesses.get(processId)
         if proc and proc.poll() is None:
             proc.terminate()
-            print(f"🛑 Terminated subprocess {processId}")
+            print(f"Terminated subprocess {processId}")
         else:
-            print(f"⚠️ Subprocess {processId} already exited or doesn't exist.")
+            print(f"Subprocess {processId} already exited or doesn't exist.")
             
 if __name__ == "__main__":
     fdSubprocess = FdSubprocess()
     baseDir = os.path.dirname(os.path.abspath(__file__))
     evaluatorDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Evaluator')
-    optimizerDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Summit')
 
     pid = fdSubprocess.spawnExternalMain(evaluatorDir)
-    pid = fdSubprocess.spawnExternalMain(optimizerDir)
 
     print("Main optimizing continues...")
-
-    while True:
-        time.sleep(1)
+    time.sleep(10)
