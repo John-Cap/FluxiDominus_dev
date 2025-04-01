@@ -129,7 +129,7 @@ class MqttService extends ChangeNotifier {
     client.onSubscribed = onSubscribed;
     client.autoReconnect = true;
     //client.onDisconnected = onDisconnected;
-    client.resubscribeOnAutoReconnect = false;
+    client.resubscribeOnAutoReconnect = true;
     //client.onAutoReconnected = onConnected;
 
     final connMess = MqttConnectMessage()

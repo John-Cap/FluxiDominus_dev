@@ -35,7 +35,7 @@ for file in csv_files:
     data_dict[file] = [row.values for _, row in df.iterrows()]
 
 mqttClient=mqtt.Client()
-mqttClient.connect(host="localhost")
+mqttClient.connect(host="172.30.243.138")
 mqttClient.loop_start()
 
 # Example access to data

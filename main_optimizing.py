@@ -71,8 +71,8 @@ baseDir = os.path.dirname(os.path.abspath(__file__))
 evaluatorDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Evaluator')
 optimizerDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Summit')
 
-pid = fdSubprocess.spawnExternalMain(evaluatorDir)
-pid = fdSubprocess.spawnExternalMain(optimizerDir)
+# pid = fdSubprocess.spawnExternalMain(evaluatorDir)
+# pid = fdSubprocess.spawnExternalMain(optimizerDir)
 
 #Wait until both evaluator and optimizer initialized:
 print('Waiting for optimizers to initialize')

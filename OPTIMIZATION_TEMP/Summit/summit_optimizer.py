@@ -15,10 +15,6 @@ class SummitOptimizer:
     def __init__(self,client=None,host="localhost"):
         # Define the optimization domain
         self.domain = Domain()
-        self.domain += ContinuousVariable(name="temperature", bounds=[25, 100], is_objective=False, description='temperature')
-        self.domain += ContinuousVariable(name="flowrate", bounds=[0.1, 5], is_objective=False, description='temperature')
-        self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
-
         self.randomInitialAssigned=False
 
         self.started=False
@@ -44,7 +40,7 @@ class SummitOptimizer:
         if self.experiments.empty and not self.randomInitialAssigned:
             # Generate initial random experiments (needed for SOBO)
             temp = np.random.uniform(40, 50)
-            flowrate = np.random.uniform(1, 3)
+            flowrate = np.random.uniform(1, 2)
             recommendation = {"recomm":{"temperature": temp, "flowrate": flowrate}}
             self.prevExp=recommendation["recomm"]
             print("First random experiment:", recommendation)
@@ -114,8 +110,9 @@ class SummitOptimizer:
         if "instruct" in data:
             if "init" in data["instruct"]:
                 if "initVal" in data["instruct"]["init"]:
-                    self.domain += ContinuousVariable(name="temperature", bounds=data["instruct"]["init"]["initVal"]["temperature"], is_objective=False, description='temperature')
-                    self.domain += ContinuousVariable(name="flowrate", bounds=data["instruct"]["init"]["initVal"]["flowrate"], is_objective=False, description='flowrate')
+                    print(f'initVal: {data["instruct"]["init"]}')
+                    self.domain += ContinuousVariable(name="temperature",bounds=[0,100], is_objective=False, description='temperature')
+                    self.domain += ContinuousVariable(name="flowrate", bounds=[0.1,2], is_objective=False, description='flowrate')
                     self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
 
             if "start" in data["instruct"]:
