@@ -15,7 +15,7 @@ import 'package:mqtt_client/mqtt_client.dart';
 import 'package:uuid/uuid.dart';
 
 class MqttService extends ChangeNotifier {
-  late MqttBrowserClient client;
+  late MqttClient client;
   Map<String, String> topicsCmnd = MqttTopics.getCmndTopics();
   Map<String, String> topicsTele = MqttTopics.getTeleTopics();
   Map<String, String> topicsUI = MqttTopics.getUITopics();

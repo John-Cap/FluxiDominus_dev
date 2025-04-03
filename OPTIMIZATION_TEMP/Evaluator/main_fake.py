@@ -36,6 +36,7 @@ for file in csv_files:
 
 mqttClient=mqtt.Client()
 mqttClient.connect(host="172.30.243.138")
+#mqttClient.connect(host="localhost")
 mqttClient.loop_start()
 
 # Example access to data
@@ -54,18 +55,48 @@ tempPerSec=2
 evaluate=False
 tempMin=0
 tempMax=100
-tempPerSec=1
 temp=0
 up=False
 
+pressures=[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0]
+coeff=[0.85,0.9,1,1.1,1.2]
+pressure_1=1.0
+pressure_2=1.0
+fr_1=1.0
+fr_2=1.0
+pressureSwitchInt=30
+
 publishInt={}
 publishInt["hotcoil1"] = 1
+publishInt["vapourtecR4P1700"] = 1
 publishInt["reactIR702L1"] = 6
 
 publishStamps={}
 publishStamps["hotcoil1"] = time.time()
 publishStamps["reactIR702L1"] = time.time()
-
+publishStamps["vapourtecR4P1700"]=time.time()
+tele={
+    "cmnd": "",
+    "cmndResp" : "",
+    "settings": {
+        "valveASR" : False, "valveBSR" : False,
+        "valveAIL" : False, "valveBIL" : False,
+        "valveWC": False,
+        "flowRatePumpA" : 0.0, "flowRatePumpB" : 0.0,
+        "pressSystem" : 0.0, "pressPumpA" : 0.0, "pressPumpB" : 0.0, "pressSystem2" : 0.0,
+        "tempReactor1" : 0.0, "tempReactor2" : 0.0, "tempReactor3" : 0.0, "tempReactor4" : 0.0
+        },
+    "state": {
+        "valveASR" : False, "valveBSR" : False,
+        "valveAIL" : False, "valveBIL" : False,
+        "valveWC": False,
+        "flowRatePumpA" : 0.0, "flowRatePumpB" : 0.0,
+        "pressSystem" : 0.0, "pressPumpA" : 0.0, "pressPumpB" : 0.0, "pressSystem2" : 0.0,
+        "tempReactor1" : 0.0, "tempReactor2" : 0.0, "tempReactor3" : 0.0, "tempReactor4" : 0.0
+        },
+    "timestamp": ""
+}
+_msg={"deviceName": 'vapourtecR4P1700', "deviceType": "Hotchip", "inUse": True, "remoteEnabled": True, "ipAddr": "192.168.1.53", "port": 81, "tele": tele}
 while True:
     #Hotcoil
     if time.time() - publishStamps["hotcoil1"] > publishInt["hotcoil1"]:
@@ -83,8 +114,37 @@ while True:
         payload={"deviceName": "hotcoil1", "deviceType": "Hotchip", "inUse": True, "remoteEnabled": True, "ipAddr": "192.168.1.213", "port": 81, "tele": {"cmnd": "POLL", "settings": {"temp": temp}, "state": {"temp": temp, "state": "ON"}, "timestamp": ""}}
         mqttClient.publish(topic="subflow/hotcoil1/tele",payload=json.dumps(payload))
         
-        publishStamps["hotcoil1"] = time.time()        
+        publishStamps["hotcoil1"] = time.time()  
         
+        tele["settings"]["flowRatePumpA"]=(tele["settings"]["flowRatePumpA"])*(random.choice(coeff))
+        tele["settings"]["flowRatePumpB"]=(tele["settings"]["flowRatePumpA"])*(random.choice(coeff))
+        tele["settings"]["pressSystem"]=(tele["settings"]["pressSystem"])*(random.choice(coeff))
+        tele["settings"]["pressPumpA"]=(tele["settings"]["pressPumpA"])*(random.choice(coeff))
+        tele["settings"]["pressPumpB"]=(tele["settings"]["pressPumpB"])*(random.choice(coeff))
+        
+        tele["state"]["flowRatePumpA"]=(tele["state"]["flowRatePumpA"])*(random.choice(coeff))
+        tele["state"]["flowRatePumpB"]=(tele["state"]["flowRatePumpB"])*(random.choice(coeff))
+        tele["state"]["pressSystem"]=(tele["state"]["pressSystem"])*(random.choice(coeff))
+        tele["state"]["pressPumpA"]=(tele["state"]["pressPumpA"])*(random.choice(coeff))
+        tele["state"]["pressPumpB"]=(tele["state"]["pressPumpB"])*(random.choice(coeff))
+        _msg={"deviceName": "vapourtecR4P1700", "deviceType": "Hotchip", "inUse": True, "remoteEnabled": True, "ipAddr": "192.168.1.53", "port": 81, "tele": tele}        
+        mqttClient.publish(topic="subflow/vapourtecR4P1700/tele",payload=json.dumps(_msg))
+        
+    if time.time() - publishStamps["vapourtecR4P1700"] > pressureSwitchInt:
+        
+        tele["settings"]["flowRatePumpA"]=random.choice(pressures)
+        tele["settings"]["flowRatePumpB"]=random.choice(pressures)
+        tele["settings"]["pressSystem"]=random.choice(pressures)
+        tele["settings"]["pressPumpA"]=random.choice(pressures)
+        tele["settings"]["pressPumpB"]=random.choice(pressures)
+        
+        tele["state"]["flowRatePumpA"]=random.choice(pressures)
+        tele["state"]["flowRatePumpB"]=random.choice(pressures)
+        tele["state"]["pressSystem"]=random.choice(pressures)
+        tele["state"]["pressPumpA"]=random.choice(pressures)
+        tele["state"]["pressPumpB"]=random.choice(pressures)
+        publishStamps["vapourtecR4P1700"]=time.time()
+                
     #ReactIR
     if time.time() - publishStamps["reactIR702L1"] > publishInt["reactIR702L1"]:
         _rand=random.choice(allData)
