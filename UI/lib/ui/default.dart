@@ -41,6 +41,9 @@ class FluxiDominusDefTabs {
     /////////////////////////////////////////////////////////////////
     // Create a GraphWidgets instance
     GraphWidgets graphWidgets = GraphWidgets(mqttService);
+    mqttService.graphWidgets = graphWidgets;
+
+    /*
     // Add a time series widget
     graphWidgets.addUnifiedTimeSeriesWidget(
       title: 'Hotcoil 1 - Temperature',
@@ -120,6 +123,7 @@ class FluxiDominusDefTabs {
       maxDataPoints: 900,
       data: mqttService.reactIR702L1PlotDataNotifier.value,
     );
+    */
 
     /////////////////////////////////////////////////////////////////
 

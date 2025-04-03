@@ -39,10 +39,44 @@ class MqttService extends ChangeNotifier {
   //Map<String, dynamic> currDashboard = {};
   Map<String, List<Map<String, dynamic>>> currTestScriptBlocks = {};
 
+  ///////////////////////////////////////////////////
   //Graphs
   // Variables to hold x-axis time limits
   double timeBracketMin = 0;
   double timeBracketMax = 120;
+  //Track which already created
+  Set<String> alreadyGraphed = {};
+
+  //Eligible for graphing and what to graph
+  Map<String, Map<String, dynamic>> eligibleForGraphing = {
+    "subflow/hotcoil1/tele": {
+      "temp": {
+        "title": "Hotcoil 1 - Temperature",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Deg",
+        "maxDataPoints": 1000,
+        "idStreaming": "hotcoil1_temp",
+      },
+    },
+    "subflow/vapourtecR4P1700/tele": {
+      "pressPumpA": {
+        "title": "R4 - Pump A Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressA",
+      },
+      "pressPumpB": {
+        "title": "R4 - Pump B Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressB",
+      },
+    },
+  };
+
+  //
 
   //Optimization
   Map<String, dynamic> optimizationDetails = {};
@@ -107,6 +141,8 @@ class MqttService extends ChangeNotifier {
 
   bool runTest = false;
   ValueNotifier<bool> testRunning = ValueNotifier(false);
+
+  late GraphWidgets graphWidgets;
 
   //Construct.
   MqttService({required this.server}) {
@@ -173,6 +209,10 @@ class MqttService extends ChangeNotifier {
     Map<String, dynamic> messageMap = jsonDecode(message);
 
     lastMsgFromTopic[topic] = messageMap;
+
+    //Graph it?
+    maybeCreateGraphsForTopic(topic, messageMap);
+
     if (!lastReceivedTime.containsKey(topic)) {
       lastReceivedTime[topic] = EpochDelta();
     }
@@ -340,5 +380,34 @@ class MqttService extends ChangeNotifier {
     print('WJ - Attempting to publish $message!');
     var ret = client.publishMessage(topic, qos, builder.payload!);
     print('WJ - Publish attempt for $message resulted in: $ret!');
+  }
+
+  //Util methods
+  void maybeCreateGraphsForTopic(
+      String topic, Map<String, dynamic> messageMap) {
+    if (!eligibleForGraphing.containsKey(topic)) return;
+
+    var teleMap = messageMap["tele"]?["state"];
+    if (teleMap == null) return;
+
+    eligibleForGraphing[topic]!.forEach((teleKey, config) {
+      if (teleMap.containsKey(teleKey)) {
+        String uniqueGraphID = "${topic}_$teleKey";
+        if (!alreadyGraphed.contains(uniqueGraphID)) {
+          graphWidgets.addUnifiedTimeSeriesWidget(
+            title: config['title'],
+            xAxisTitle: config['xAxisTitle'],
+            yAxisTitle: config['yAxisTitle'],
+            mqttService: this,
+            maxDataPoints: config['maxDataPoints'],
+            teleKey: teleKey,
+            idTele: topic,
+            idStreaming: config['idStreaming'],
+          );
+          alreadyGraphed.add(uniqueGraphID);
+          print("Graph added for $uniqueGraphID");
+        }
+      }
+    });
   }
 }

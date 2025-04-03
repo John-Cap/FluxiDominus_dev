@@ -1,377 +1,1581 @@
+default.dart is run once to set up which dials/graphs are added:
 
-{"9d84f9a9-8665-4883-a506-4aa07cee48ab":{"name":"Flowsyn Maxi 2","flowsInto":["7b51af7b-ccec-4a47-a13c-ba16eb65b973"],"deviceName":"flowsynmaxi1","deviceType":"FlowsynMaxi","volume":5},"6892d932-90df-447b-b1f8-77020f8ef4f5":{"name":"R4 (Peristaltic)","flowsInto":["7b51af7b-ccec-4a47-a13c-ba16eb65b973"],"deviceName":"vapourtecR4P1700","deviceType":"vapourtecR4","volume":5},"07e4e67d-88a5-486b-9919-83f41aadb926":{"name":"Valve","flowsInto":["6892d932-90df-447b-b1f8-77020f8ef4f5"],"deviceName":"null","deviceType":"Valve","volume":0.25},"86f76937-a5a4-4821-947c-f3686d0593f8":{"name":"Push","flowsInto":["07e4e67d-88a5-486b-9919-83f41aadb926"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"2a3dbe75-f252-4d84-a5bd-46abdac44883":{"name":"Stock","flowsInto":["07e4e67d-88a5-486b-9919-83f41aadb926"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"701867bb-daa6-48e6-94b4-c52a11eb6626":{"name":"Stock","flowsInto":["9d84f9a9-8665-4883-a506-4aa07cee48ab"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"7b51af7b-ccec-4a47-a13c-ba16eb65b973":{"name":"Hotcoil (10 mL)","flowsInto":["1b28500a-8bf6-4c89-8e09-2416f3e1cc5a"],"deviceName":"hotcoil1","deviceType":"Coil","volume":10},"1b28500a-8bf6-4c89-8e09-2416f3e1cc5a":{"name":"ReactIR 702L1","flowsInto":["96f1d6fd-1304-4e72-a124-8c31dd082e57"],"deviceName":"reactIR702L1","deviceType":"IR","volume":0.25},"96f1d6fd-1304-4e72-a124-8c31dd082e57":{"name":"BPR (8 Bar)","flowsInto":["d2222e10-c5e6-4cd7-add6-21da90dd72ae"],"deviceName":"null","deviceType":"BPR","volume":0.1},"d2222e10-c5e6-4cd7-add6-21da90dd72ae":{"name":"Valve","flowsInto":["51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f","242b2435-c911-42d0-bfaf-a2e34d554edf"],"deviceName":"null","deviceType":"Valve","volume":0.25},"242b2435-c911-42d0-bfaf-a2e34d554edf":{"name":"Collection point","flowsInto":null,"deviceName":"null","deviceType":"FlowTerminus","volume":0},"51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f":{"name":"Collection point","flowsInto":null,"deviceName":"null","deviceType":"FlowTerminus","volume":0}}
+import 'package:flutter/material.dart';
+import 'package:flutter_flow_chart/config/UI/brokers_and_topics.dart';
+import 'package:flutter_flow_chart/includes/plutter.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/sketcher.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
+import 'package:flutter_flow_chart/ui/gauges/gauge_page_widget.dart';
+import 'package:flutter_flow_chart/ui/gauges/gauge_widgets.dart';
+import 'package:flutter_flow_chart/ui/graphing/graph_panel.dart';
+import 'package:flutter_flow_chart/ui/list_generators/project_browser.dart';
+import 'package:flutter_flow_chart/ui/optimization_tab/optimization_tab.dart';
+import 'package:flutter_flow_chart/ui/script_builder.dart/script_generator.dart';
+import 'package:flutter_flow_chart/ui/tabs/includes/dynamic_tabbar.dart';
 
+class FluxiDominusDefTabs {
+  FluxiDominusDefTabs({required this.mqttService}) {
+    //MqttService mqttService = MqttService();
+    // Initialize tabList here in the constructor
+    //Pre-initialize scriptgenerator
+    GlobalKey<ScriptGeneratorWidgetState> scriptGeneratorKey = GlobalKey();
+    ScriptGeneratorWidget scriptGeneratorWidget = ScriptGeneratorWidget(
+      mqttService: mqttService,
+      key: scriptGeneratorKey,
+    );
+    OptimizationTab optimizationTab = OptimizationTab(mqttService: mqttService);
+    mqttService.scriptGeneratorWidget = scriptGeneratorWidget;
+    mqttService.scriptGeneratorWidgetKey = scriptGeneratorKey;
+    //Pre-initialize flowsketcher
+    GlobalKey<FlowSketcherState> flowSketcherKey = GlobalKey();
+    FlowSketcher flowSketcher = FlowSketcher(
+      key: flowSketcherKey,
+      mqttService: mqttService,
+      topic: MqttTopics.getUITopic("FlowSketcher"),
+      dashboard: Dashboard(),
+    );
+    mqttService.flowSketcher = flowSketcher;
+    mqttService.flowSketcherKey = flowSketcherKey;
+    ProjectBrowser projectBrowser = ProjectBrowser(
+      mqttService: mqttService,
+    );
 
-A json describing connections between components is received via MQTT:
+    /////////////////////////////////////////////////////////////////
+    // Create a GraphWidgets instance
+    GraphWidgets graphWidgets = GraphWidgets(mqttService);
+    *Graphs manually added here:*
+    // Add a time series widget
+    graphWidgets.addUnifiedTimeSeriesWidget(
+      title: 'Hotcoil 1 - Temperature',
+      xAxisTitle: 'time',
+      yAxisTitle: 'Deg',
+      mqttService: mqttService,
+      maxDataPoints: 1000,
+      teleKey: 'temp',
+      idTele: "subflow/hotcoil1/tele",
+      idStreaming: "hotcoil1_temp",
+    );
+    graphWidgets.addUnifiedTimeSeriesWidget(
+      title: 'Maxi 2 - Pump A Pressure',
+      xAxisTitle: 'Time',
+      yAxisTitle: 'Bar',
+      mqttService: mqttService,
+      maxDataPoints: 1000,
+      teleKey: 'pressFlowSynA',
+      idTele: "subflow/flowsynmaxi2/tele",
+      idStreaming: "flowsynmaxi2_pressA",
+    );
+    graphWidgets.addUnifiedTimeSeriesWidget(
+      title: 'Maxi 2 - Pump B Pressure',
+      xAxisTitle: 'Time',
+      yAxisTitle: 'Bar',
+      mqttService: mqttService,
+      maxDataPoints: 1000,
+      teleKey: 'pressFlowSynB',
+      idTele: "subflow/flowsynmaxi2/tele",
+      idStreaming: "flowsynmaxi2_pressB",
+    );
+    graphWidgets.addUnifiedTimeSeriesWidget(
+      title: 'Maxi 2 - System Pressure',
+      xAxisTitle: 'Time',
+      yAxisTitle: 'Bar',
+      mqttService: mqttService,
+      maxDataPoints: 1000,
+      teleKey: 'pressSystem',
+      idTele: "subflow/flowsynmaxi2/tele",
+      idStreaming: "flowsynmaxi2_pressSystem",
+    );
+    graphWidgets.addUnifiedTimeSeriesWidget(
+      title: 'R4 - Pressure Pump A',
+      xAxisTitle: 'Time',
+      yAxisTitle: 'Bar',
+      mqttService: mqttService,
+      maxDataPoints: 1000,
+      teleKey: 'pressPumpA',
+      idTele: "subflow/vapourtecR4P1700/tele",
+      idStreaming: "vapourtecR4P1700_pressA",
+    );
+    graphWidgets.addUnifiedTimeSeriesWidget(
+      title: 'R4 - Pressure Pump B',
+      xAxisTitle: 'Time',
+      yAxisTitle: 'Bar',
+      mqttService: mqttService,
+      maxDataPoints: 1000,
+      teleKey: 'pressPumpB',
+      idTele: "subflow/vapourtecR4P1700/tele",
+      idStreaming: "vapourtecR4P1700_pressB",
+    );
+    graphWidgets.addUnifiedTimeSeriesWidget(
+      title: 'R4 - System Pressure',
+      xAxisTitle: 'Time',
+      yAxisTitle: 'Bar',
+      mqttService: mqttService,
+      maxDataPoints: 1000,
+      teleKey: 'pressSystem',
+      idTele: "subflow/vapourtecR4P1700/tele",
+      idStreaming: "vapourtecR4P1700_pressSystem",
+    );
+    graphWidgets.addIRWidget(
+      title: 'Current IR Graph',
+      xAxisTitle: 'Wavelength',
+      yAxisTitle: 'Absorbance',
+      mqttService: mqttService,
+      maxDataPoints: 900,
+      data: mqttService.reactIR702L1PlotDataNotifier.value,
+    );
 
-jsonStringFromFlutter="""
-{
-  "9d84f9a9-8665-4883-a506-4aa07cee48ab": {
-    "name": "Flowsyn Maxi 2",
-    "flowsInto": [
-      "7b51af7b-ccec-4a47-a13c-ba16eb65b973"
-    ],
-    "deviceName": "flowsynmaxi1",
-    "deviceType": "FlowsynMaxi",
-    "volume": 5
-  },
-  "6892d932-90df-447b-b1f8-77020f8ef4f5": {
-    "name": "R4 (Peristaltic)",
-    "flowsInto": [
-      "7b51af7b-ccec-4a47-a13c-ba16eb65b973"
-    ],
-    "deviceName": "vapourtecR4P1700",
-    "deviceType": "vapourtecR4",
-    "volume": 5
-  },
-  "07e4e67d-88a5-486b-9919-83f41aadb926": {
-    "name": "Valve",
-    "flowsInto": [
-      "6892d932-90df-447b-b1f8-77020f8ef4f5"
-    ],
-    "deviceName": "null",
-    "deviceType": "Valve",
-    "volume": 0.25
-  },
-  "86f76937-a5a4-4821-947c-f3686d0593f8": {
-    "name": "Push",
-    "flowsInto": [
-      "07e4e67d-88a5-486b-9919-83f41aadb926"
-    ],
-    "deviceName": "null",
-    "deviceType": "FlowOrigin",
-    "volume": 0
-  },
-  "2a3dbe75-f252-4d84-a5bd-46abdac44883": {
-    "name": "Stock",
-    "flowsInto": [
-      "07e4e67d-88a5-486b-9919-83f41aadb926"
-    ],
-    "deviceName": "null",
-    "deviceType": "FlowOrigin",
-    "volume": 0
-  },
-  "701867bb-daa6-48e6-94b4-c52a11eb6626": {
-    "name": "Stock",
-    "flowsInto": [
-      "9d84f9a9-8665-4883-a506-4aa07cee48ab"
-    ],
-    "deviceName": "null",
-    "deviceType": "FlowOrigin",
-    "volume": 0
-  },
-  "7b51af7b-ccec-4a47-a13c-ba16eb65b973": {
-    "name": "Hotcoil (10 mL)",
-    "flowsInto": [
-      "1b28500a-8bf6-4c89-8e09-2416f3e1cc5a"
-    ],
-    "deviceName": "hotcoil1",
-    "deviceType": "Coil",
-    "volume": 10
-  },
-  "1b28500a-8bf6-4c89-8e09-2416f3e1cc5a": {
-    "name": "ReactIR 702L1",
-    "flowsInto": [
-      "96f1d6fd-1304-4e72-a124-8c31dd082e57"
-    ],
-    "deviceName": "reactIR702L1",
-    "deviceType": "IR",
-    "volume": 0.25
-  },
-  "96f1d6fd-1304-4e72-a124-8c31dd082e57": {
-    "name": "BPR (8 Bar)",
-    "flowsInto": [
-      "d2222e10-c5e6-4cd7-add6-21da90dd72ae"
-    ],
-    "deviceName": "null",
-    "deviceType": "BPR",
-    "volume": 0.1
-  },
-  "d2222e10-c5e6-4cd7-add6-21da90dd72ae": {
-    "name": "Valve",
-    "flowsInto": [
-      "51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f",
-      "242b2435-c911-42d0-bfaf-a2e34d554edf"
-    ],
-    "deviceName": "null",
-    "deviceType": "Valve",
-    "volume": 0.25
-  },
-  "242b2435-c911-42d0-bfaf-a2e34d554edf": {
-    "name": "Collection point",
-    "flowsInto": null,
-    "deviceName": "null",
-    "deviceType": "FlowTerminus",
-    "volume": 0
-  },
-  "51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f": {
-    "name": "Collection point",
-    "flowsInto": null,
-    "deviceName": "null",
-    "deviceType": "FlowTerminus",
-    "volume": 0
+    /////////////////////////////////////////////////////////////////
+
+    tabList = [
+      //Script builder
+      TabData(
+        index: 1,
+        title: const Tab(
+          child: Text('Script Builder and Flowsketcher'),
+        ),
+        content: Row(
+          children: [
+            Expanded(child: scriptGeneratorWidget),
+            Expanded(child: flowSketcher),
+          ],
+        ),
+      ),
+      //FlowSketcher
+      TabData(
+          index: 2,
+          title: const Tab(
+            child: Text('Project Browser'),
+          ),
+          content: projectBrowser //flowSketcher,
+          ),
+      //Gauges
+      TabData(
+        index: 3,
+        title: const Tab(
+          child: Text('Telemetry'),
+        ),
+        content: Center(
+          child: GaugeBlock(
+            mqttService: mqttService,
+            gauges: [
+              //Pump A flowrate
+              SemiCircularGauge(
+                name: 'Maxi - Flowrate A',
+                unit: 'mL/min',
+                deviceName: 'flowsynmaxi2',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('flowsynmaxi2'),
+                address: const ["tele", "state", "flowRatePumpA"],
+                maxValue: 15,
+                cmndTopic: '',
+                cmndName: '',
+                unitMultiplier: 1,
+              ),
+              //Pump A pressure + flowrate slider
+              GaugeWithSlider(
+                cmndName: 'pafr',
+                unit: 'bar',
+                deviceName: 'flowsynmaxi2',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('flowsynmaxi2'),
+                address: const ["tele", "state", "pressFlowSynA"],
+                min: 0,
+                max: 6,
+                initialValue: 0,
+                maxValue: 20,
+                cmndTopic: MqttTopics.getCmndTopic('flowsynmaxi2'),
+                name: 'Maxi - Pump A Pressure',
+                unitMultiplier: 1,
+              ),
+              //Pump B flowrate
+              SemiCircularGauge(
+                name: 'Maxi - Flowrate B',
+                unit: 'mL/min',
+                deviceName: 'flowsynmaxi2',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('flowsynmaxi2'),
+                address: const ["tele", "state", "flowRatePumpB"],
+                maxValue: 15,
+                cmndTopic: '',
+                cmndName: '',
+                unitMultiplier: 1,
+              ),
+              //Pump B pressure + flowrate slider
+              GaugeWithSlider(
+                cmndName: 'pbfr',
+                unit: 'bar',
+                deviceName: 'flowsynmaxi2',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('flowsynmaxi2'),
+                address: const ["tele", "state", "pressFlowSynB"],
+                min: 0,
+                max: 6,
+                initialValue: 0,
+                maxValue: 20,
+                cmndTopic: MqttTopics.getCmndTopic('flowsynmaxi2'),
+                name: 'Maxi - Pump B Pressure',
+                unitMultiplier: 1,
+              ),
+              GaugeWithSlider(
+                cmndName: 'temp',
+                unit: 'deg',
+                deviceName: 'hotcoil1',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('hotcoil1'),
+                address: const ["tele", "state", "temp"],
+                min: 0,
+                max: 100,
+                initialValue: 0,
+                maxValue: 100,
+                cmndTopic: MqttTopics.getCmndTopic('hotcoil1'),
+                name: 'Hotcoil 1 Temp',
+                unitMultiplier: 1,
+              ),
+              //System pressure
+              SemiCircularGauge(
+                name: 'Maxi - System Pressure',
+                unit: 'bar',
+                deviceName: 'flowsynmaxi2',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('flowsynmaxi2'),
+                address: const ["tele", "state", "pressSystem"],
+                maxValue: 30,
+                cmndTopic: '',
+                cmndName: '',
+                unitMultiplier: 1,
+              ),
+              SemiCircularGauge(
+                name: 'R4 - Flowrate A',
+                unit: 'mL/min',
+                deviceName: 'vapourtecR4P1700',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('vapourtecR4P1700'),
+                address: const ["tele", "state", "flowRatePumpA"],
+                maxValue: 15,
+                cmndTopic: '',
+                cmndName: '',
+                unitMultiplier: 0.001,
+              ),
+              //Pump A pressure + flowrate slider
+              GaugeWithSlider(
+                cmndName: 'pafr',
+                unit: 'bar',
+                deviceName: 'vapourtecR4P1700',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('vapourtecR4P1700'),
+                address: const ["tele", "state", "pressPumpA"],
+                min: 0,
+                max: 6,
+                initialValue: 0,
+                maxValue: 20,
+                cmndTopic: MqttTopics.getCmndTopic('vapourtecR4P1700'),
+                name: 'R4 - Pump A Pressure',
+                unitMultiplier: 1,
+              ),
+              //Pump B flowrate
+              SemiCircularGauge(
+                name: 'R4 - Flowrate B',
+                unit: 'mL/min',
+                deviceName: 'vapourtecR4P1700',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('vapourtecR4P1700'),
+                address: const ["tele", "state", "flowRatePumpB"],
+                maxValue: 15,
+                cmndTopic: '',
+                cmndName: '',
+                unitMultiplier: 0.001,
+              ),
+              //Pump B pressure + flowrate slider
+              GaugeWithSlider(
+                cmndName: 'pbfr',
+                unit: 'bar',
+                deviceName: 'vapourtecR4P1700',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('vapourtecR4P1700'),
+                address: const ["tele", "state", "pressPumpB"],
+                min: 0,
+                max: 6,
+                initialValue: 0,
+                maxValue: 20,
+                cmndTopic: MqttTopics.getCmndTopic('vapourtecR4P1700'),
+                name: 'R4 - Pump B Pressure',
+                unitMultiplier: 1,
+              ),
+              //System pressure
+              SemiCircularGauge(
+                name: 'R4 - System Pressure',
+                unit: 'bar',
+                deviceName: 'vapourtecR4P1700',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('vapourtecR4P1700'),
+                address: const ["tele", "state", "pressSystem"],
+                maxValue: 30,
+                cmndTopic: '',
+                cmndName: '',
+                unitMultiplier: 1,
+              ),
+              /*
+              GaugeWithToggle(
+                name: 'Collecting',
+                unit: '',
+                deviceName: 'flowsynmaxi2',
+                mqttService: mqttService,
+                deviceValueName: '',
+                topic: MqttTopics.getTeleTopic('flowsynmaxi2'),
+                address: const ["tele", "state", "valveOpenCW"],
+                initialValue: false,
+                maxValue: 150,
+                cmndTopic: 'subflow/flowsynmaxi2/cmnd',
+                cmndName: 'svcw',
+              ),
+              */
+            ],
+          ),
+        ),
+      ),
+      //Graphs
+      TabData(
+        index: 4,
+        title: const Tab(
+          child: Text('Graphing'),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            children: graphWidgets.widgets.cast<Widget>(),
+          ),
+        ),
+      ),
+      TabData(
+          index: 5, title: Tab(text: 'Optimization'), content: optimizationTab)
+    ];
+  }
+
+  final MqttService mqttService;
+  late List<TabData> tabList; // Declare tabList as a late variable
+
+  List<TabData> get tabs => tabList;
+}
+
+With a config entry in var MqttService, I want to only initialize graphs should a 'tele' Map received not been added as graph yet. class MqttService:
+
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_flow_chart/config/UI/brokers_and_topics.dart';
+import 'package:flutter_flow_chart/ui/authentication/login_page.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/flutter_flow_chart.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/sketcher.dart';
+import 'package:flutter_flow_chart/ui/graphing/graph_panel.dart';
+import 'package:flutter_flow_chart/ui/script_builder.dart/hardcoded_tele_templates.dart';
+import 'package:flutter_flow_chart/ui/script_builder.dart/script_generator.dart';
+//import 'package:flutter_flow_chart/config/UI/data_queue_instructions.dart' as dq;
+import 'package:flutter_flow_chart/utils/timing.dart';
+import 'package:mqtt_client/mqtt_browser_client.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:uuid/uuid.dart';
+
+class MqttService extends ChangeNotifier {
+  late MqttClient client;
+  Map<String, String> topicsCmnd = MqttTopics.getCmndTopics();
+  Map<String, String> topicsTele = MqttTopics.getTeleTopics();
+  Map<String, String> topicsUI = MqttTopics.getUITopics();
+  Map<String, dynamic> lastMsgFromTopic = {};
+  final String server;
+  final builder = MqttClientPayloadBuilder();
+  List<String> availableDevices = [];
+
+  double minTeleGap = 0.25; //Min time to wait between logging tele
+
+  Map<String, Map<String, dynamic>> currFlowScript = {};
+  String currDashboardJson = '{"elements":[]}';
+  late Dashboard currDashboard;
+
+  late FlowSketcher flowSketcher;
+  late GlobalKey<FlowSketcherState> flowSketcherKey;
+
+  late ScriptGeneratorWidget scriptGeneratorWidget;
+  late GlobalKey<ScriptGeneratorWidgetState> scriptGeneratorWidgetKey;
+
+  //Map<String, dynamic> currDashboard = {};
+  Map<String, List<Map<String, dynamic>>> currTestScriptBlocks = {};
+
+  //Graphs
+  // Variables to hold x-axis time limits
+  double timeBracketMin = 0;
+  double timeBracketMax = 120;
+
+  //Optimization
+  Map<String, dynamic> optimizationDetails = {};
+  // List<String> optimizationOptions = [];
+  // List<String> objectiveFunctions = [];
+
+  // Mock options for optimizer and objective function
+  final List<String> optimizationOptions = [
+    "VIDAL_C13_3415",
+    "VIDAL_C13_3465",
+    "ERSILIA_BLANK_TS_54",
+    "WJ_LEAP_2024_01_30_3",
+    "STD_SUMMIT_1"
+  ];
+  final List<String> objectiveFunctions = [
+    "WJ_IR_800_2",
+    "WJ_IR_800_5",
+    "GEN_NMR_IR_13000"
+  ];
+  // Mocking a stream for optimization progress updates
+  Stream<Map<String, dynamic>> get optimizationProgressStream async* {
+    for (int i = 0; i <= 10; i++) {
+      await Future.delayed(Duration(seconds: 1));
+      yield {
+        'optimizer': optimizationDetails['optimizer'] ?? 'N/A',
+        'objectiveFunction': optimizationDetails['objectiveFunction'] ?? 'N/A',
+        'recommendedParams': {
+          'Temperature': '${20 + i}°C',
+          'Flowrate': '${5 + i * 0.5} mL/min'
+        },
+        'bestYield': '${80 + i}%',
+        'finalYield': i == 10 ? '${90 + i}%' : null,
+        'elapsedTime': '$i seconds',
+      };
+    }
+    runTest = false;
+  }
+
+  //
+  //////////////////////////////////////////////////////////////////////////
+  //Data streams *TODO - generalize
+  ValueNotifier<List<PlotData>> hotcoil1PlotDataNotifier = ValueNotifier([]);
+
+  Map<String, List<String>> teleToCollect = {};
+
+  Map<String, ValueNotifier<List<PlotData>>> teleDataNotifiers = {};
+  Map<String, ValueNotifier<List<List<double>>>> dbStreamDataNotifiers = {};
+  ValueNotifier<List<PlotData>> reactIR702L1PlotDataNotifier =
+      ValueNotifier([]);
+  EpochDelta epochDelta = EpochDelta();
+
+  Map<String, EpochDelta> lastReceivedTime = {};
+
+  Map<String, ValueNotifier<Map<String, dynamic>>> backendReturn = {
+    "getAllExpWidgetInfo": ValueNotifier({}),
+    "loadTestrun": ValueNotifier({})
+  };
+  //////////////////////////////////////////////////////////////////////////
+
+  //Authentication
+  Authenticator authenticator = Authenticator();
+
+  bool runTest = false;
+  ValueNotifier<bool> testRunning = ValueNotifier(false);
+
+  //Construct.
+  MqttService({required this.server}) {
+    try {
+      //print("WJ - Now here");
+      // Other initialization code if any
+    } catch (e) {
+      //print("WJ - Error in constructor: $e");
+    }
+  }
+  //
+
+  Future<void> initializeMQTTClient() async {
+    String identifier = 'flutter_client_${Uuid().v4()}';
+    client = MqttBrowserClient(server, identifier);
+    client.port = 9001;
+    client.logging(on: false);
+    client.keepAlivePeriod = 20;
+    client.onConnected = onConnected;
+    client.onSubscribed = onSubscribed;
+    client.autoReconnect = true;
+    //client.onDisconnected = onDisconnected;
+    client.resubscribeOnAutoReconnect = true;
+    //client.onAutoReconnected = onConnected;
+
+    final connMess = MqttConnectMessage()
+        .withClientIdentifier(identifier)
+        .startClean()
+        .withWillQos(MqttQos.atMostOnce);
+
+    client.connectionMessage = connMess;
+  }
+
+  Future<void> connect() async {
+    try {
+      print('WJ - Initializing Mqtt Browser Client');
+      await initializeMQTTClient();
+      print('WJ - Attempting to connect');
+      MqttClientConnectionStatus? status = await client.connect();
+      print('WJ - Connection state $status');
+      if (status != null &&
+          status.state.toString() != 'MqttConnectionState.disconnected') {
+        print(
+            'WJ - MqttClientConnectionStatus returned ${status.state.toString()}!');
+        client.updates!.listen(onMessage);
+      }
+    } catch (e) {
+      print('WJ - Connection failed: $e');
+    }
+  }
+
+  void onSubscribed(String topic) {
+    print('Subscribed to $topic');
+  }
+
+  ////////////////////////////////////////////
+  //Main message processor
+  void onMessage(List<MqttReceivedMessage<MqttMessage>> event) {
+    final MqttPublishMessage recMess = event[0].payload as MqttPublishMessage;
+    final String message =
+        MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+
+    String topic = event[0].topic;
+    Map<String, dynamic> messageMap = jsonDecode(message);
+
+    lastMsgFromTopic[topic] = messageMap;
+    if (!lastReceivedTime.containsKey(topic)) {
+      lastReceivedTime[topic] = EpochDelta();
+    }
+
+    //Fix hierdie gemors, dis stupid
+    if (messageMap.containsKey("LoginPageWidget")) {
+      if ((messageMap["LoginPageWidget"]).containsKey("authenticated") &&
+          (messageMap["LoginPageWidget"])["authenticated"]) {
+        authenticator.signedIn = true;
+        print('WJ - Sign in successful!');
+        if (authenticator.signInFailed) {
+          authenticator.signInFailed = false;
+        }
+      } else {
+        print('WJ - Sign in failed!');
+        authenticator.signInFailed = true;
+        if (authenticator.signedIn) {
+          authenticator.signedIn = false;
+        }
+      }
+      //
+    } else if (messageMap.containsKey("GraphWidgets")) {
+      //TODO - FIX THIS HARDCODED DISASTER
+    } else if (topic == "subflow/flowsynmaxi2/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      if (teleToCollect.containsKey(topic)) {
+        if (teleToCollect[topic]!.isNotEmpty) {
+          for (var x in teleToCollect[topic]!) {
+            String id = "${topic}_$x";
+            teleDataNotifiers[id]!.value = [
+              ...teleDataNotifiers[id]!.value,
+              PlotData(
+                epochDelta.secSinceEpoch().toDouble(),
+                HardcodedTeleKeys.getTeleVal(messageMap, x),
+              ),
+            ];
+          }
+        }
+      }
+      //
+    } else if (topic == "subflow/vapourtecR4P1700/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      if (teleToCollect.containsKey(topic)) {
+        if (teleToCollect[topic]!.isNotEmpty) {
+          for (var x in teleToCollect[topic]!) {
+            String id = "${topic}_$x";
+            teleDataNotifiers[id]!.value = [
+              ...teleDataNotifiers[id]!.value,
+              PlotData(
+                epochDelta.secSinceEpoch().toDouble(),
+                HardcodedTeleKeys.getTeleVal(messageMap, x),
+              ),
+            ];
+          }
+        }
+      }
+      //
+    } else if (topic == "subflow/hotcoil1/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      for (var x in teleToCollect[topic]!) {
+        String id = "${topic}_$x";
+        teleDataNotifiers[id]?.value = [
+          ...teleDataNotifiers[id]!.value,
+          PlotData(
+            epochDelta.secSinceEpoch().toDouble(),
+            HardcodedTeleKeys.getTeleVal(messageMap, x),
+          ),
+        ];
+      }
+      //
+    } else if (topic == "subflow/reactIR702L1/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      IRPlotData thisData = IRPlotData();
+      List<double> raw = (messageMap["tele"]["state"]["data"]).cast<double>();
+      List<PlotData> gd = thisData.parse(raw);
+      reactIR702L1PlotDataNotifier.value = gd;
+      //
+    } else if (topic == "ui/dbStreaming/out") {
+      messageMap = messageMap['dbStreaming'];
+      String id = messageMap.keys.first;
+      print(
+        'WJ - ${dbStreamDataNotifiers[id]?.value}, keys: ${messageMap.keys}',
+      );
+      if (!dbStreamDataNotifiers.containsKey(id)) {
+        dbStreamDataNotifiers[id] = ValueNotifier([]);
+      }
+      print('WJ - received: ${messageMap[id]}');
+      dbStreamDataNotifiers[id]?.value.addAll(messageMap[id]);
+      //notifyListeners();
+      //Doesn't seem neccessary to notify listeners?!
+    } else if (topic == "ui/dbCmnd/ret") {
+      if (messageMap.containsKey("searchForTest")) {
+        backendReturn["searchForTest"]!.value = messageMap["searchForTest"];
+        //
+      } else if (messageMap.containsKey("getAllExpWidgetInfo")) {
+        backendReturn["getAllExpWidgetInfo"]!.value =
+            messageMap["getAllExpWidgetInfo"];
+        //
+      } else if (messageMap.containsKey("createReplicate")) {
+        backendReturn["getAllExpWidgetInfo"]!.value =
+            messageMap["createReplicate"];
+        //
+      } else if (messageMap.containsKey("loadTestrun")) {
+        //
+      } else if (messageMap.containsKey("handleStreamRequest")) {
+        messageMap = messageMap["handleStreamRequest"];
+        if (messageMap.keys.length == 1) {
+          String id = messageMap.keys.first;
+          if (!dbStreamDataNotifiers.containsKey(id)) {
+            dbStreamDataNotifiers[id] = ValueNotifier([]);
+          }
+          List<List<double>> rawData = (messageMap[id] as List)
+              .map((e) => List<double>.from(e))
+              .toList();
+          /*
+          List<PlotData> plotData =
+              rawData.map((xy) => PlotData(xy[0], xy[1])).toList();
+          */
+          dbStreamDataNotifiers[id]!.value =
+              dbStreamDataNotifiers[id]!.value + rawData;
+          print(
+              'WJ - Received streamed db tele number of: ${dbStreamDataNotifiers[id]!.value.length}');
+          //
+        }
+      } else if (messageMap.containsKey("runTest")) {
+        print("WJ WE HERE");
+        if (messageMap["runTest"]) {
+          epochDelta.reset();
+        }
+        runTest = messageMap["runTest"];
+        testRunning.value = messageMap["runTest"];
+        print('WJ - Setting testRunning to ${messageMap["runTest"]}');
+      }
+    }
+  }
+
+  void onConnected() {
+    topicsTele.forEach((key, value) {
+      if (client.getSubscriptionsStatus(value).name == 'doesNotExist') {
+        print('WJ - topic $value is being subscribed to!');
+        client.subscribe(value, MqttQos.atMostOnce);
+      }
+    });
+    topicsUI.forEach((key, value) {
+      //print('WJ - ${client.getSubscriptionsStatus(value).name}');
+      if (client.getSubscriptionsStatus(value).name == 'doesNotExist') {
+        print('WJ - topic $value is being subscribed to!');
+        client.subscribe(value, MqttQos.atMostOnce);
+      }
+    });
+  }
+
+  void publish(String topic, String message,
+      {MqttQos qos = MqttQos.exactlyOnce}) {
+    if (client.connectionStatus.toString() == 'disconnected') {
+      //TODO - What then?
+      //connect();
+    }
+    builder.clear();
+    builder.addString(message);
+    print('WJ - Attempting to publish $message!');
+    var ret = client.publishMessage(topic, qos, builder.payload!);
+    print('WJ - Publish attempt for $message resulted in: $ret!');
   }
 }
-"""
-'deviceType' refers to the component class to be instantiate from StandardConfigurationDevices:
 
-class StandardConfiguratedDevices:
-    deviceClasses={
-        "FlowsynMaxi":FlowsynMaxi,
-        "VapourtecR4":VapourtecR4,
-        "ReactIR702L1":ReactIR702L1,
-        "UniqsisHotcoil":UniqsisHotcoil,
-        "UniqsisHotchip":UniqsisHotchip,
-        
-        #Generalized
-        "Tubing":Tubing,
-        "TPiece":TPiece,
-        "Coil":Coil,
-        "Valve":Valve,
-        "FlowOrigin":FlowOrigin,
-        "FlowTerminus":FlowTerminus,
-        "IR":IR,
-        "Chip":Chip,
-        "Pump":Pump
+If, for example, a message from topic subflow/hotcoil1/tele is received for the first time, it must be flagged for graphing if any of its tele keys have been flagged as eligible in some or other config map in MqttService:
+
+A config map or appropriate approach in MqttService:
+
+eligibleForGraphing={
+  "subflow/hotcoil1/tele":{
+    'temp':{
+      'title': 'Hotcoil 1 - Temperature',
+      'xAxisTitle': 'time',
+      'yAxisTitle': 'Deg',
+      'maxDataPoints': 1000,
+      'idStreaming': "hotcoil1_temp",
+    },
+    'someOtherTele':{
+      'title': 'Hotcoil 1 - Some other val',
+      'xAxisTitle': 'time',
+      'yAxisTitle': 'Some other metric',
+      'maxDataPoints': 1000,
+      'idStreaming': "hotcoil1_someOtherTele",
+    }
+  }
+}
+
+*Checks if "subflow/hotcoil1/tele" has been graphed already
+*Checks if "subflow/hotcoil1/tele" is in eligibleForGraphing,
+*If so, checks which tele keys are eligible for graphing,
+*If any, instantiate graph panels for each key in eligibleForGraphing["subflow/hotcoil1/tele']:
+
+    graphWidgets(*now a property of MqttService).addUnifiedTimeSeriesWidget(
+      title: eligibleForGraphing["subflow/hotcoil1/tele"]['temp']['title'],
+      xAxisTitle: 'time', rest from provided info
+      yAxisTitle: 'Deg',
+      mqttService: mqttService, //'Self' is passed
+      maxDataPoints: 1000,
+      teleKey: 'temp', //The eligibleForGraphing["subflow/hotcoil1/tele"]['temp'] key
+      idTele: "subflow/hotcoil1/tele", //the eligibleForGraphing["subflow/hotcoil1/tele"] key
+      idStreaming: "hotcoil1_temp",
+    );
+
+This is class GraphPanel etc:
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_flow_chart/includes/data_streaming.dart';
+import 'package:flutter_flow_chart/includes/plutter.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:uuid/uuid.dart';
+
+class GraphWidgets {
+  // List to store references to different graph widgets
+  final List<dynamic> _widgets = [];
+  Map<String, List<PlotData>> dataSources = {};
+  final MqttService mqttService;
+
+  // Store the parameters used for widget creation (optional for rebuilding widgets)
+  List<Map<String, dynamic>> widgetCreationParams = [];
+
+  GraphWidgets(this.mqttService);
+
+  // Method to add a TimeSeriesWidget
+  _TimeSeriesWidget addTimeSeriesWidget({
+    required String title,
+    required String xAxisTitle,
+    required String yAxisTitle,
+    required MqttService mqttService,
+    required int maxDataPoints,
+    required String teleKey,
+    String id = "",
+  }) {
+    if (id == "") {
+      id = const Uuid().v4();
+    }
+    String idConc = "${id}_$teleKey";
+
+    // Ensure the MQTT notifier and data collection are set up
+    if (!mqttService.teleDataNotifiers.containsKey(idConc)) {
+      mqttService.teleDataNotifiers[idConc] = ValueNotifier([]);
+    }
+    if (!mqttService.teleToCollect.containsKey(id)) {
+      mqttService.teleToCollect[id] = [];
+      mqttService.teleToCollect[id]!.add(teleKey);
+      print('Added tele source $idConc to new dataNotifier $id');
+    } else {
+      if (!(mqttService.teleToCollect[id]!.contains(teleKey))) {
+        mqttService.teleToCollect[id]!.add(teleKey);
+        print('Added tele source $idConc to existing dataNotifier $id');
+      }
     }
 
-    @staticmethod
-    def initializeComponent(component,params):
-        return (StandardConfiguratedDevices.deviceClasses[component](params))
+    dataSources[id] = [];
 
-This info must be taken and the flow path be set up similarily to unrelated example below:
+    _TimeSeriesWidget timeSeriesWidget = _TimeSeriesWidget(
+      title: title,
+      xAxisTitle: xAxisTitle,
+      yAxisTitle: yAxisTitle,
+      mqttService: mqttService,
+      maxDataPoints: maxDataPoints,
+      id: idConc,
+    );
 
-if __name__ == "__main__":
-    #instantiate flowpath
-    _path=FlowPath()
-    comp=[]
-    
-    #Instantiate individual components:
-    #Stocks
+    _widgets.add(timeSeriesWidget);
 
-    _redStock=FlowOrigin( #Class to be instantiated, 'deviceType' key, fetched from StandardConfiguratedDevices.initializeComponent(deviceType,params).
-        volume=0, #'volume' key
-        name="RED_STOCK" #'name' key
-    )
-    comp.append(_redStock)
+    // Save the creation parameters for rebuilding
+    saveWidgetCreationParams(
+      widgetType: 'TimeSeries',
+      title: title,
+      xAxisTitle: xAxisTitle,
+      yAxisTitle: yAxisTitle,
+      teleKey: teleKey,
+      maxDataPoints: maxDataPoints,
+    );
 
-    _blueStock=FlowOrigin(volume=0,name="BLUE_STOCK")
-    comp.append(_blueStock)
-    _pinkStock=FlowOrigin(volume=0,name="PINK_STOCK")
-    comp.append(_pinkStock)
-    _purpleStock=FlowOrigin(volume=0,name="PURPLE_STOCK")
-    #comp.append(_purpleStock)
-    
-    #Pump lines
-    _pump_1=Pump(volume=1.5,name="PUMP_1")
-    comp.append(_pump_1)
-    _pump_2=Pump(volume=1.5,name="PUMP_2")
-    comp.append(_pump_2)
-    _pump_3=Pump(volume=1.5,name="PUMP_3")
-    comp.append(_pump_3)
-    _pump_4=Pump(volume=1.5,name="PUMP_4")
-    #comp.append(_pump_4)
-    #Valves
-    _3wayValve=Valve(volume=0.05)
-    _cwValve=Valve(volume=0.05,name="CW_VALVE")
-    comp.append(_cwValve)
-    _valve_1=Valve(volume=0.05,name="DIVERT_VALVE")
-    comp.append(_valve_1)
-    _flushCoilValve=Valve(volume=0.05,name="FLUSH_VALVE")
-    comp.append(_flushCoilValve)
-    #IR
-    _IR=(IR(volume=0.5,name="IR"))
-    comp.append(_IR)
-    #Coil
-    _coil=(Coil(volume=5,name="COIL"))
-    comp.append(_coil)
-    #Termini
-    _waste=FlowTerminus(volume=0,name="WASTE")
-    comp.append(_waste)
-    _collect=FlowTerminus(volume=0,name="COLLECT")
-    comp.append(_collect)
-    _terminus_3=FlowTerminus(volume=0,name="TERMINUS_3")
-    comp.append(_terminus_3)
-    _terminus_4=FlowTerminus(volume=0,name="TERMINUS_4")
-    comp.append(_terminus_4)
-    
-    _tPiece_1=TPiece(volume=0.05,name="TPIECE_1")
-    comp.append(_tPiece_1)
-    _tPiece_2=TPiece(volume=0.05,name="TPIECE_2")
-    comp.append(_tPiece_2)
-    
-    _tubing_1=Tubing(volume=0.5,name="TUBE_1")
-    comp.append(_tubing_1)
-    _tubing_2=Tubing(volume=1,name="TUBE_2")
-    comp.append(_tubing_2)
-    _tubing_3=Tubing(volume=0.5,name="TUBE_3")
-    comp.append(_tubing_3)
-    _tubing_4=Tubing(volume=1,name="TUBE_4")
-    comp.append(_tubing_4)
-    ###################
-    #Connect components
+    return timeSeriesWidget;
+  }
 
-    #The connections are described in the JSON. Each main key (UUID) denotes a component, and its "flowsInto" key describes which of the other
-    #components it flows into:
+  // Method to add a virtual TimeSeriesWidget
+  _TimeSeriesWidgetVirtual addTimeSeriesWidgetVirtual({
+    required String title,
+    required String xAxisTitle,
+    required String yAxisTitle,
+    required MqttService mqttService,
+    required int maxDataPoints,
+    String id = "",
+  }) {
+    if (id == "") {
+      id = const Uuid().v4();
+    }
+    _TimeSeriesWidgetVirtual timeSeriesWidget = _TimeSeriesWidgetVirtual(
+      title: title,
+      xAxisTitle: xAxisTitle,
+      yAxisTitle: yAxisTitle,
+      mqttService: mqttService,
+      maxDataPoints: maxDataPoints,
+      id: id,
+    );
 
-    #Stock solutions
-    _redStock.flowInto(_pump_1)
-    _blueStock.flowInto(_pump_2)
-    _pinkStock.flowInto(_pump_3)
-    #Pumplines 1/2
-    _pump_1.flowInto(_tPiece_1)
-    _pump_2.flowInto(_tPiece_1)
-    #Divert valve
-    _tPiece_1.flowInto(_tubing_1)
-    _tubing_1.flowInto(_valve_1)
-    _valve_1.flowInto(_coil)
-    _valve_1.flowInto(_tubing_2)
-    #Flush coil valve
-    _tubing_2.flowInto(_flushCoilValve)
-    _flushCoilValve.flowInto(_terminus_3)
-    _flushCoilValve.flowInto(_terminus_4)
-    #Coil
-    _coil.flowInto(_tPiece_2)
-    _pump_3.flowInto(_tPiece_2)
-    _tPiece_2.flowInto(_tubing_3)
-    _tubing_3.flowInto(_IR)
-    _IR.flowInto(_tubing_4)
-    _tubing_4.flowInto(_cwValve)
-    _cwValve.flowInto(_waste)
-    _cwValve.flowInto(_collect)
-    #select one of the termini
-    '''
-    #Create path
-    '''
-    _path.addPath(comp)
-
-    #Now the paths are mapped
-    _path.mapPathTermini()
-    adrses=[str(key) for key in _path.addressesAll.keys()]
-    
-    print("*********************Segment details*********************")
-    for _x in _path.segments:
-        print(f"Comp name: {_x.name}")
-        print(f" Inlet sets: {_x.inletSets}")
-        print(f" Outlet sets: {_x.outletSets}")
-        print(f" Curr inlets: {_x.inlets}")   
-        print(f" Curr outlets: {_x.outlets}")
-        print("--")
-        
-    print("************************Addresses*************************")
-    for _x, _y in _path.addressesAll.items():
-        print(f"Address for {_x}:")
-        for x in _y:
-            print(f" Comp: {x[0].name}")
-            print(f"  Inlet set: UNDEFINED")
-            print(f"  Outlet set: {x[1]}")
-        print("--")
-
-    #Some example things:
-    flowRates=[0,1.3,2.6,3.75,4.13]
-    dispVol=[1,2,3,4,5]
-    
-    # Flag variable to indicate whether the thread should continue running?
-    running=True
-    allSlugs=Slugs()
-    def run_code():
-        global running
-        global allSlugs
-        global _path
-        _i=0
-        while running:
-            '''
-            _flow_1=eval(input("Pump 1 flowrate: "))
-            _flow_2=eval(input("Pump 2 flowrate: "))
-            _flow_3=eval(input("Pump 3 flowrate: "))
-            _slugVol=eval(input("Vol to dispense: "))
-            '''
-            _flow_1=random.choice(flowRates)
-            _flow_2=random.choice(flowRates)
-            _flow_3=random.choice(flowRates)
-            _slugVol=random.choice(dispVol)
-            
-            _redStock.setFlowrate(_flow_1/60)
-            _blueStock.setFlowrate(_flow_2/60)
-            _pinkStock.setFlowrate(_flow_3/60)
-
-            _path.updateFlowrates()
-
-            _path.setCurrDestination(random.choice(adrses))
-            _slug=_path.currRelOrigin.dispense(_slugVol)
-            allSlugs.slugs.append(_slug)
-
-            _now=time.perf_counter()
-            _nowRefresh=_now
-            _jiggleFlowrate=time.perf_counter() + 5
-            #_path.timePrev=time.perf_counter()
-            while not (isinstance(_slug.tailHost,FlowTerminus)):
-                if time.time() - _jiggleFlowrate > 30:
-                    _flow_1=random.choice(flowRates)
-                    if _flow_1 == 0:
-                        _flow_1=1
-                    _flow_2=random.choice(flowRates)
-                    _flow_3=random.choice(flowRates)
-                    print("--")
-                    print(f"New flowrates: {_flow_1}, {_flow_2}, {_flow_3}")
-                    print("--")
-                                        
-                    _redStock.setFlowrate(_flow_1/60)
-                    _blueStock.setFlowrate(_flow_2/60)
-                    _pinkStock.setFlowrate(_flow_3/60)
-                    
-                    _jiggleFlowrate=time.time()
-
-                _path.advanceSlugs()
-                if time.time() - _nowRefresh > 1:
-                    _vol=_slug.slugVolume()
-                    _nowRefresh=time.time()
-                    rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[_flow_1,_flow_2,_flow_3]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
-                    print(rep)
-                time.sleep(0.1)
-            print("***************************************")
-            print("Collected slug volumes")
-            for _x in _path.collectedSlugs:
-                print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
-                print(f'Slug was collected at terminus "{_x.frontHost.name}"')
-            print("***************************************")
-            _i+=1
-            if _i > 10:
-                exit()
-            time.sleep(10)
-
-    # Create a thread for running the code
-    thread=threading.Thread(target=run_code)
-    thread.start()
-
-    # Wait for the thread to finish
-    thread.join()
-    print("We're done here")
-
-    #######################################################################################
-
-class StandardConfiguratedDevices:
-    deviceClasses={
-        "FlowsynMaxi":FlowsynMaxi,
-        "VapourtecR4":VapourtecR4,
-        "ReactIR702L1":ReactIR702L1,
-        "UniqsisHotcoil":UniqsisHotcoil,
-        "UniqsisHotchip":UniqsisHotchip,
-        
-        #Generalized
-        "Tubing":Tubing,
-        "TPiece":TPiece,
-        "Coil":Coil,
-        "Valve":Valve,
-        "FlowOrigin":FlowOrigin,
-        "FlowTerminus":FlowTerminus,
-        "IR":IR,
-        "Chip":Chip,
-        "Pump":Pump
+    if (!mqttService.dbStreamDataNotifiers.containsKey(id)) {
+      mqttService.dbStreamDataNotifiers[id] = ValueNotifier([]);
     }
 
-    @staticmethod
-    def initializeComponent(component,params):
-        return (StandardConfiguratedDevices.deviceClasses[component](params))
+    dataSources[id] = [];
 
-Write class ParseFlowpath with method 'parse' that takes in that JSON and creates this flowpath.
+    _widgets.add(timeSeriesWidget);
+
+    // Save the creation parameters for rebuilding (if needed)
+    saveWidgetCreationParams(
+      widgetType: 'TimeSeriesVirtual',
+      title: title,
+      xAxisTitle: xAxisTitle,
+      yAxisTitle: yAxisTitle,
+      teleKey: '',
+      maxDataPoints: maxDataPoints,
+    );
+
+    return timeSeriesWidget;
+  }
+
+  // Method to add a combined streamed and realtime graph
+  _UnifiedTimeSeriesWidget addUnifiedTimeSeriesWidget({
+    required String title,
+    required String xAxisTitle,
+    required String yAxisTitle,
+    required MqttService mqttService,
+    required int maxDataPoints,
+    required String idStreaming,
+    String idTele = "",
+    required String teleKey,
+  }) {
+    if (idTele == "") {
+      idTele = const Uuid().v4();
+    }
+    String idConc = "${idTele}_$teleKey";
+
+    // Ensure the MQTT notifier and data collection are set up
+    if (!mqttService.teleDataNotifiers.containsKey(idConc)) {
+      mqttService.teleDataNotifiers[idConc] = ValueNotifier([]);
+    }
+    if (!mqttService.teleToCollect.containsKey(idTele)) {
+      mqttService.teleToCollect[idTele] = [];
+      mqttService.teleToCollect[idTele]!.add(teleKey);
+      print('Added tele source $idConc to new dataNotifier $idTele');
+    } else {
+      if (!(mqttService.teleToCollect[idTele]!.contains(teleKey))) {
+        mqttService.teleToCollect[idTele]!.add(teleKey);
+        print('Added tele source $idConc to existing dataNotifier $idTele');
+      }
+    }
+
+    if (!mqttService.dbStreamDataNotifiers.containsKey(idStreaming)) {
+      mqttService.dbStreamDataNotifiers[idStreaming] = ValueNotifier([]);
+    }
+
+    _UnifiedTimeSeriesWidget timeSeriesWidget = _UnifiedTimeSeriesWidget(
+      title: title,
+      xAxisTitle: xAxisTitle,
+      yAxisTitle: yAxisTitle,
+      mqttService: mqttService,
+      maxDataPoints: maxDataPoints,
+      idTele: idConc,
+      idStreaming: idStreaming,
+    );
+
+    dataSources[idTele] = [];
+
+    _widgets.add(timeSeriesWidget);
+
+    return timeSeriesWidget;
+  }
+
+  // Method to add an IRWidget
+  _IRWidget addIRWidget({
+    required String title,
+    required String xAxisTitle,
+    required String yAxisTitle,
+    required MqttService mqttService,
+    required int maxDataPoints,
+    required List<PlotData> data,
+  }) {
+    String id = const Uuid().v4();
+
+    _IRWidget iRWidget = _IRWidget(
+      title: title,
+      xAxisTitle: xAxisTitle,
+      yAxisTitle: yAxisTitle,
+      mqttService: mqttService,
+      maxDataPoints: maxDataPoints,
+      id: id,
+      data: data,
+    );
+
+    dataSources[id] = [];
+
+    _widgets.add(iRWidget);
+
+    // Save the creation parameters for rebuilding (if needed)
+    saveWidgetCreationParams(
+      widgetType: 'IRWidget',
+      title: title,
+      xAxisTitle: xAxisTitle,
+      yAxisTitle: yAxisTitle,
+      teleKey: '',
+      maxDataPoints: maxDataPoints,
+    );
+
+    return iRWidget;
+  }
+
+  // Method to retrieve all widgets
+  List<dynamic> get widgets => _widgets;
+
+  // Method to clear all stored widgets
+  void clearWidgets() {
+    _widgets.clear();
+  }
+
+  // Method to save widget creation parameters for later rebuild
+  void saveWidgetCreationParams({
+    required String widgetType,
+    required String title,
+    required String xAxisTitle,
+    required String yAxisTitle,
+    required String teleKey,
+    required int maxDataPoints,
+  }) {
+    widgetCreationParams.add({
+      'widgetType': widgetType,
+      'title': title,
+      'xAxisTitle': xAxisTitle,
+      'yAxisTitle': yAxisTitle,
+      'teleKey': teleKey,
+      'maxDataPoints': maxDataPoints,
+    });
+  }
+
+  // Method to rebuild all widgets from stored parameters
+  void recreateWidgetsFromParams() {
+    clearWidgets(); // Clear existing widgets first
+    for (var params in widgetCreationParams) {
+      if (params['widgetType'] == 'TimeSeries') {
+        addTimeSeriesWidget(
+          title: params['title'],
+          xAxisTitle: params['xAxisTitle'],
+          yAxisTitle: params['yAxisTitle'],
+          mqttService: mqttService,
+          maxDataPoints: params['maxDataPoints'],
+          teleKey: params['teleKey'],
+        );
+      } else if (params['widgetType'] == 'TimeSeriesVirtual') {
+        addTimeSeriesWidgetVirtual(
+          title: params['title'],
+          xAxisTitle: params['xAxisTitle'],
+          yAxisTitle: params['yAxisTitle'],
+          mqttService: mqttService,
+          maxDataPoints: params['maxDataPoints'],
+        );
+      } else if (params['widgetType'] == 'IRWidget') {
+        addIRWidget(
+          title: params['title'],
+          xAxisTitle: params['xAxisTitle'],
+          yAxisTitle: params['yAxisTitle'],
+          mqttService: mqttService,
+          maxDataPoints: params['maxDataPoints'],
+          data: dataSources[params['title']]!, // Ensure data is available
+        );
+      }
+    }
+  }
+
+  // Method to trigger a rebuild of all widgets from scratch
+  void rebuildWidgets() {
+    // Clear the current widgets and data sources
+    _widgets.clear();
+    dataSources.clear();
+
+    // Clear the MQTT notifiers and data collections
+    mqttService.teleDataNotifiers.clear();
+    mqttService.teleToCollect.clear();
+    mqttService.dbStreamDataNotifiers.clear();
+
+    // Rebuild all widgets from the stored creation parameters
+    recreateWidgetsFromParams();
+  }
+}
+
+//Definition of graph widget types
+class _TimeSeriesWidget extends StatefulWidget {
+  final String title;
+  final String xAxisTitle;
+  final String yAxisTitle;
+  final MqttService mqttService;
+  final int maxDataPoints;
+  final String id;
+
+  const _TimeSeriesWidget({
+    required this.title,
+    required this.xAxisTitle,
+    required this.yAxisTitle,
+    required this.mqttService,
+    required this.maxDataPoints, // Maximum number of data points to display
+    required this.id,
+  });
+
+  @override
+  _TimeSeriesWidgetState createState() => _TimeSeriesWidgetState();
+}
+
+class _TimeSeriesWidgetState extends State<_TimeSeriesWidget> {
+  List<PlotData> data = [];
+
+  @override
+  void initState() {
+    super.initState();
+    widget.mqttService.teleDataNotifiers[widget.id]!.addListener(_updateData);
+    widget.mqttService.testRunning.addListener(_resetGraph);
+  }
+
+  @override
+  void dispose() {
+    widget.mqttService.teleDataNotifiers[widget.id]!
+        .removeListener(_updateData);
+    widget.mqttService.testRunning.removeListener(_resetGraph);
+    super.dispose();
+  }
+
+  void _updateData() {
+    if (widget.mqttService.teleDataNotifiers[widget.id]!.value.isNotEmpty) {
+      data.addAll(widget.mqttService.teleDataNotifiers[widget.id]!.value);
+      if (data.length > widget.maxDataPoints) {
+        data = data.sublist(data.length - widget.maxDataPoints);
+      }
+      widget.mqttService.teleDataNotifiers[widget.id]!.value = [];
+
+      // Check the maximum x value in the data
+      double maxXValue =
+          data.map((point) => point.x).reduce((a, b) => a > b ? a : b);
+
+      // Update the visible axis limits if needed
+      if (maxXValue > widget.mqttService.timeBracketMax) {
+        // Increase visibleMaximum to keep it fixed to the upper limit
+        widget.mqttService.timeBracketMin = maxXValue - 120; // Adjust as needed
+        widget.mqttService.timeBracketMax = maxXValue;
+      }
+      //print("WJ - Visible chart ranges: ${[timeBracketMin, timeBracketMax]}");
+    }
+    setState(() {});
+  }
+
+  void _resetGraph() {
+    setState(() {
+      if (widget.mqttService.testRunning.value) {
+        widget.mqttService.testRunning.removeListener(_resetGraph);
+        data = [];
+        //widget.mqttService.teleDataNotifiers[id]!.value = [];
+        widget.mqttService.timeBracketMax = 120;
+        widget.mqttService.timeBracketMin = 0;
+        print('WJ - Resetting graph ${widget.id}');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SfCartesianChart(
+      primaryXAxis: NumericAxis(
+        initialVisibleMinimum: widget.mqttService.timeBracketMin,
+        initialVisibleMaximum: widget.mqttService.timeBracketMax,
+        minimum: widget.mqttService.timeBracketMin,
+        maximum: widget.mqttService.timeBracketMax,
+        rangePadding: ChartRangePadding.additional,
+        anchorRangeToVisiblePoints: false,
+        interval: 10,
+        title: AxisTitle(text: widget.xAxisTitle),
+      ),
+      primaryYAxis: NumericAxis(
+        interval: 1,
+        title: AxisTitle(text: widget.yAxisTitle),
+      ),
+      title: ChartTitle(text: widget.title),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <CartesianSeries<PlotData, double>>[
+        LineSeries<PlotData, double>(
+          dataSource: data,
+          animationDuration: 0,
+          xValueMapper: (PlotData data, _) => data.x,
+          yValueMapper: (PlotData data, _) => data.y,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+        ),
+      ],
+    );
+  }
+}
+
+///////////////////////////////////////////////////////
+//Virtual, db-fed graphs
+class _TimeSeriesWidgetVirtual extends StatefulWidget {
+  final String title;
+  final String xAxisTitle;
+  final String yAxisTitle;
+  final MqttService mqttService;
+  final int maxDataPoints;
+  final String id;
+  final TimedDataStream timedDataStream = TimedDataStream();
+
+  _TimeSeriesWidgetVirtual({
+    required this.title,
+    required this.xAxisTitle,
+    required this.yAxisTitle,
+    required this.mqttService,
+    required this.maxDataPoints,
+    required this.id,
+  });
+
+  @override
+  _TimeSeriesWidgetVirtualState createState() =>
+      _TimeSeriesWidgetVirtualState();
+}
+
+class _TimeSeriesWidgetVirtualState extends State<_TimeSeriesWidgetVirtual>
+    with AutomaticKeepAliveClientMixin<_TimeSeriesWidgetVirtual> {
+  List<PlotData> data = [];
+  late StreamSubscription<List<double>> streamSubscription;
+  bool isListening =
+      false; //Listening flag to block attempts to add multiple listeners
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    print('WJ - Virtual ts graph initialized');
+    _startListening();
+    widget.mqttService.dbStreamDataNotifiers[widget.id]!.addListener(_addData);
+    widget.mqttService.testRunning.addListener(_resetGraph);
+  }
+
+  void _startListening() {
+    if (!isListening) {
+      isListening = true;
+      // Start the time series drip
+      streamSubscription = widget.timedDataStream.stream.listen((dataPoint) {
+        data.add(PlotData(dataPoint[0], dataPoint[1]));
+        _updateData();
+      });
+      widget.timedDataStream.start();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.mqttService.dbStreamDataNotifiers[widget.id]!
+        .removeListener(_addData);
+    widget.mqttService.testRunning.removeListener(_resetGraph);
+    streamSubscription.cancel();
+    widget.timedDataStream.stop(); //TODO - goeie idee?
+    widget.timedDataStream.started = false;
+    super.dispose();
+  }
+
+  void _addData() {
+    if (widget.mqttService.dbStreamDataNotifiers[widget.id]!.value.isNotEmpty) {
+      if (!widget.mqttService.runTest) {
+        widget.timedDataStream.started = false;
+      }
+      widget.timedDataStream.appendTimeSeriesData(
+          widget.mqttService.dbStreamDataNotifiers[widget.id]!.value);
+      widget.mqttService.dbStreamDataNotifiers[widget.id]!.value.clear();
+    }
+  }
+
+  void _updateData() {
+    if (data.length > widget.maxDataPoints) {
+      //TODO - chop liewers af volgengs min/max x values
+      data = data.sublist(data.length - widget.maxDataPoints);
+    }
+    double maxXValue =
+        data.map((point) => point.x).reduce((a, b) => a > b ? a : b);
+
+    // Update the visible axis limits if needed
+    if (maxXValue > widget.mqttService.timeBracketMax) {
+      // Increase visibleMaximum to keep it fixed to the upper limit
+      widget.mqttService.timeBracketMin = maxXValue - 120; // Adjust as needed
+      widget.mqttService.timeBracketMax = maxXValue;
+    }
+    setState(() {}); // Ensure UI is updated
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
+    return SfCartesianChart(
+      primaryXAxis: NumericAxis(
+        initialVisibleMinimum: widget.mqttService.timeBracketMin,
+        initialVisibleMaximum: widget.mqttService.timeBracketMax,
+        minimum: widget.mqttService.timeBracketMin,
+        maximum: widget.mqttService.timeBracketMax,
+        rangePadding: ChartRangePadding.additional,
+        anchorRangeToVisiblePoints: false,
+        interval: 10,
+        title: AxisTitle(text: widget.xAxisTitle),
+      ),
+      primaryYAxis: NumericAxis(
+        interval: 1,
+        title: AxisTitle(text: widget.yAxisTitle),
+      ),
+      title: ChartTitle(text: widget.title),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <CartesianSeries<PlotData, double>>[
+        LineSeries<PlotData, double>(
+          dataSource: data,
+          animationDuration: 0,
+          xValueMapper: (PlotData data, _) => data.x,
+          yValueMapper: (PlotData data, _) => data.y,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+        ),
+      ],
+    );
+  }
+
+  void _resetGraph() {
+    data.clear();
+  }
+}
+
+//Definition of graph widget types
+class _UnifiedTimeSeriesWidget extends StatefulWidget {
+  final String title;
+  final String xAxisTitle;
+  final String yAxisTitle;
+  final MqttService mqttService;
+  final int maxDataPoints;
+  final String idTele;
+  final String idStreaming;
+  final TimedDataStream timedDataStream = TimedDataStream();
+
+  _UnifiedTimeSeriesWidget({
+    required this.title,
+    required this.xAxisTitle,
+    required this.yAxisTitle,
+    required this.mqttService,
+    required this.maxDataPoints, // Maximum number of data points to display
+    required this.idTele,
+    required this.idStreaming,
+  });
+
+  @override
+  _UnifiedTimeSeriesWidgetState createState() =>
+      _UnifiedTimeSeriesWidgetState();
+}
+
+class _UnifiedTimeSeriesWidgetState extends State<_UnifiedTimeSeriesWidget>
+    with AutomaticKeepAliveClientMixin<_UnifiedTimeSeriesWidget> {
+  List<PlotData> dataTele = [];
+  List<PlotData> dataStreamed = [];
+  late StreamSubscription<List<double>> streamSubscription;
+  bool isListening =
+      false; //Listening flag to block attempts to add multiple listeners
+
+  //Keep widget alive
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    //Virtual
+    print('WJ - Virtual ts graph initialized');
+    _startListening();
+    widget.mqttService.dbStreamDataNotifiers[widget.idStreaming]!
+        .addListener(_addData);
+    widget.mqttService.teleDataNotifiers[widget.idTele]!
+        .addListener(_updateDataTele);
+    widget.mqttService.testRunning.addListener(_resetGraph);
+  }
+
+  @override
+  void dispose() {
+    widget.mqttService.teleDataNotifiers[widget.idTele]!
+        .removeListener(_updateDataTele);
+    widget.mqttService.testRunning.removeListener(_resetGraph);
+    widget.mqttService.dbStreamDataNotifiers[widget.idStreaming]!
+        .removeListener(_addData);
+    streamSubscription.cancel();
+    widget.timedDataStream.stop(); //TODO - goeie idee?
+    widget.timedDataStream.started = false;
+    super.dispose();
+  }
+
+  void _startListening() {
+    if (!isListening) {
+      isListening = true;
+      // Start the time series drip
+      streamSubscription = widget.timedDataStream.stream.listen((dataPoint) {
+        dataStreamed.add(PlotData(dataPoint[0], dataPoint[1]));
+        _updateDataStreamed();
+      });
+      widget.timedDataStream.start();
+    }
+  }
+
+  void _addData() {
+    if (widget.mqttService.dbStreamDataNotifiers[widget.idStreaming]!.value
+        .isNotEmpty) {
+      if (!widget.mqttService.runTest) {
+        widget.timedDataStream.started = false;
+      }
+      widget.timedDataStream.appendTimeSeriesData(
+          widget.mqttService.dbStreamDataNotifiers[widget.idStreaming]!.value);
+      widget.mqttService.dbStreamDataNotifiers[widget.idStreaming]!.value
+          .clear();
+    }
+  }
+
+  void _updateDataTele() {
+    //Real time data
+    if (widget.mqttService.teleDataNotifiers[widget.idTele]!.value.isNotEmpty) {
+      dataTele
+          .addAll(widget.mqttService.teleDataNotifiers[widget.idTele]!.value);
+      if (dataTele.length > widget.maxDataPoints) {
+        dataTele = dataTele.sublist(dataTele.length - widget.maxDataPoints);
+      }
+      widget.mqttService.teleDataNotifiers[widget.idTele]!.value = [];
+
+      // Check the maximum x value in the data
+      double maxXValue =
+          dataTele.map((point) => point.x).reduce((a, b) => a > b ? a : b);
+
+      // Update the visible axis limits if needed
+      if (maxXValue > widget.mqttService.timeBracketMax) {
+        // Increase visibleMaximum to keep it fixed to the upper limit
+        widget.mqttService.timeBracketMin = maxXValue - 120; // Adjust as needed
+        widget.mqttService.timeBracketMax = maxXValue;
+      }
+      //print("WJ - Visible chart ranges: ${[timeBracketMin, timeBracketMax]}");
+    }
+    setState(() {});
+  }
+
+  void _updateDataStreamed() {
+    if (dataTele.length > widget.maxDataPoints) {
+      //TODO - chop liewers af volgengs min/max x values
+      dataTele = dataTele.sublist(dataTele.length - widget.maxDataPoints);
+    }
+    double maxXValue =
+        dataTele.map((point) => point.x).reduce((a, b) => a > b ? a : b);
+
+    // Update the visible axis limits if needed
+    if (maxXValue > widget.mqttService.timeBracketMax) {
+      // Increase visibleMaximum to keep it fixed to the upper limit
+      widget.mqttService.timeBracketMin = maxXValue - 120; // Adjust as needed
+      widget.mqttService.timeBracketMax = maxXValue;
+    }
+    setState(() {}); // Ensure UI is updated
+  }
+
+  void _resetGraph() {
+    setState(() {
+      if (widget.mqttService.testRunning.value) {
+        widget.mqttService.testRunning.removeListener(_resetGraph);
+        dataTele = [];
+        dataStreamed = [];
+        //widget.mqttService.teleDataNotifiers[id]!.value = [];
+        widget.mqttService.timeBracketMax = 120;
+        widget.mqttService.timeBracketMin = 0;
+        print('WJ - Resetting graph ${widget.idTele}');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return SfCartesianChart(
+      primaryXAxis: NumericAxis(
+        initialVisibleMinimum: widget.mqttService.timeBracketMin,
+        initialVisibleMaximum: widget.mqttService.timeBracketMax,
+        minimum: widget.mqttService.timeBracketMin,
+        maximum: widget.mqttService.timeBracketMax,
+        rangePadding: ChartRangePadding.additional,
+        anchorRangeToVisiblePoints: false,
+        interval: 10,
+        title: AxisTitle(text: widget.xAxisTitle),
+      ),
+      primaryYAxis: NumericAxis(
+        interval: 1,
+        title: AxisTitle(text: widget.yAxisTitle),
+      ),
+      title: ChartTitle(text: widget.title),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <CartesianSeries<PlotData, double>>[
+        LineSeries<PlotData, double>(
+          dataSource: dataTele,
+          animationDuration: 0,
+          xValueMapper: (PlotData data, _) => data.x,
+          yValueMapper: (PlotData data, _) => data.y,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+        ),
+        LineSeries<PlotData, double>(
+          dataSource: dataStreamed,
+          animationDuration: 0,
+          color: const Color(0xFFFF9000),
+          xValueMapper: (PlotData data, _) => data.x,
+          yValueMapper: (PlotData data, _) => data.y,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+        ),
+      ],
+    );
+  }
+}
+
+//IR widget
+class _IRWidget extends StatefulWidget {
+  final String title;
+  final String xAxisTitle;
+  final String yAxisTitle;
+  final MqttService mqttService;
+  final int maxDataPoints;
+  final String id;
+  final List<PlotData> data;
+
+  const _IRWidget({
+    required this.title,
+    required this.xAxisTitle,
+    required this.yAxisTitle,
+    required this.mqttService,
+    required this.maxDataPoints,
+    required this.id,
+    required this.data, // Maximum number of data points to display
+  });
+
+  @override
+  _IRWidgetState createState() => _IRWidgetState();
+}
+
+class _IRWidgetState extends State<_IRWidget> {
+  List<PlotData> data = [];
+  late String id = widget.id;
+
+  @override
+  void initState() {
+    super.initState();
+    data = widget.data;
+    widget.mqttService.reactIR702L1PlotDataNotifier.addListener(_updateData);
+    //_updateData();
+  }
+
+  @override
+  void dispose() {
+    // Remove listener when the widget is disposed
+    widget.mqttService.reactIR702L1PlotDataNotifier.removeListener(_updateData);
+    super.dispose();
+  }
+
+  void _updateData() {
+    setState(() {
+      if (widget.mqttService.reactIR702L1PlotDataNotifier.value.isNotEmpty) {
+        data = [];
+        // Append new data and trim if necessary
+        data.addAll(widget.mqttService.reactIR702L1PlotDataNotifier.value);
+        widget.mqttService.reactIR702L1PlotDataNotifier.value = [];
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double len = data.length.toDouble();
+    if (len == 0) {
+      len = 1000;
+    }
+    return SfCartesianChart(
+      primaryXAxis: NumericAxis(
+        rangePadding: ChartRangePadding.none,
+        maximum: len,
+        minimum: 0,
+        interval: 25,
+        title: AxisTitle(text: widget.xAxisTitle),
+      ),
+      primaryYAxis: NumericAxis(
+        rangePadding: ChartRangePadding.none,
+        maximum: 2,
+        minimum: -2,
+        interval: 0.1,
+        title: AxisTitle(text: widget.yAxisTitle),
+      ),
+      title: ChartTitle(text: widget.title),
+      tooltipBehavior: TooltipBehavior(enable: true),
+      series: <CartesianSeries<PlotData, double>>[
+        LineSeries<PlotData, double>(
+          dataSource: data,
+          animationDuration: 0,
+          xValueMapper: (PlotData data, _) => data.x,
+          yValueMapper: (PlotData data, _) => data.y,
+          dataLabelSettings: const DataLabelSettings(isVisible: true),
+        ),
+      ],
+    );
+  }
+}
+
+// Auxiliary classes
+class PlotData {
+  PlotData(this.x, this.y);
+
+  final double x;
+  final double y;
+}
+
+class IRPlotData {
+  List<PlotData> allPlotData = [];
+  int i = 0;
+
+  List<PlotData> parse(List<double> irData) {
+    for (var x in irData) {
+      allPlotData.add(PlotData(i.toDouble(), x));
+      i += 1;
+    }
+    return allPlotData;
+  }
+
+  //irData.forEach((x) {allPlotData.add(PlotData(x,i))});
+}
+
+Any ideas? Discuss before starting
