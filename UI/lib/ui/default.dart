@@ -4,7 +4,6 @@ import 'package:flutter_flow_chart/includes/plutter.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/sketcher.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
 import 'package:flutter_flow_chart/ui/gauges/gauge_page_widget.dart';
-import 'package:flutter_flow_chart/ui/gauges/gauge_widgets.dart';
 import 'package:flutter_flow_chart/ui/graphing/graph_panel.dart';
 import 'package:flutter_flow_chart/ui/list_generators/project_browser.dart';
 import 'package:flutter_flow_chart/ui/optimization_tab/optimization_tab.dart';

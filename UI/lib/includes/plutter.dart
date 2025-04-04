@@ -487,6 +487,7 @@ class MqttService extends ChangeNotifier {
   //Util methods
   void maybeCreateGraphsForTopic(
       String topic, Map<String, dynamic> messageMap) {
+    //TODO - trigger rebuild without having to tab away
     if (!eligibleForGraphing.containsKey(topic)) return;
 
     var teleMap = messageMap["tele"]?["state"];
@@ -515,6 +516,7 @@ class MqttService extends ChangeNotifier {
 
   //Gauges
   void maybeCreateGaugesForTopic(String topic) {
+    //TODO - trigger rebuild without having to tab away
     if (!eligibleForGauge.containsKey(topic)) return;
 
     eligibleForGauge[topic]!.forEach((index, config) {
