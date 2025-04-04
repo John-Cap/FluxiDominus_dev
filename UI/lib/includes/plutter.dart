@@ -14,6 +14,8 @@ import 'package:mqtt_client/mqtt_browser_client.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:uuid/uuid.dart';
 
+import '../ui/gauges/gauge_widgets.dart';
+
 class MqttService extends ChangeNotifier {
   late MqttClient client;
   Map<String, String> topicsCmnd = MqttTopics.getCmndTopics();
@@ -46,7 +48,6 @@ class MqttService extends ChangeNotifier {
   double timeBracketMax = 120;
   //Track which already created
   Set<String> alreadyGraphed = {};
-
   //Eligible for graphing and what to graph
   Map<String, Map<String, dynamic>> eligibleForGraphing = {
     "subflow/hotcoil1/tele": {
@@ -72,6 +73,106 @@ class MqttService extends ChangeNotifier {
         "yAxisTitle": "Bar",
         "maxDataPoints": 1000,
         "idStreaming": "vapourtecR4P1700_pressB",
+      },
+      "pressSystem": {
+        "title": "R4 - System Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressSystem",
+      },
+    },
+  };
+
+  //////////////////////////////////////////////////////////////////
+  //Gauges
+  Set<String> alreadyGauged = {};
+  List<GaugeWidget> dynamicGaugeWidgets = [];
+  Map<String, Map<int, Map<String, dynamic>>> eligibleForGauge = {
+    //Topics might have multiple gauges, each topic's gauges have index 0 -> n
+    "subflow/hotcoil1/tele": {
+      0: {
+        "gaugeType": GaugeWithSlider, //Use as pointer?
+        "cmndName": 'temp',
+        "unit": 'deg',
+        "deviceName": 'hotcoil1',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "temp"],
+        "min": 0,
+        "max": 100,
+        "initialValue": 0,
+        "maxValue": 100,
+        "cmndTopic": MqttTopics.getCmndTopic('hotcoil1'),
+        "name": 'Hotcoil 1 Temp',
+        "unitMultiplier": 1
+      },
+    },
+    "subflow/vapourtecR4P1700/tele": {
+      0: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - Pressure A',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressPumpA"],
+        "maxValue": 15,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
+      },
+      1: {
+        "gaugeType": GaugeWithSlider,
+        "name": 'R4 - Pump A Flowrate',
+        "cmndName": 'pafr',
+        "unit": 'mL/min',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "flowRatePumpA"],
+        "min": 0,
+        "max": 6,
+        "initialValue": 0,
+        "maxValue": 6,
+        "cmndTopic": MqttTopics.getCmndTopic('vapourtecR4P1700'),
+        "unitMultiplier": 1,
+      },
+      2: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - Pressure B',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressPumpB"],
+        "maxValue": 15,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
+      },
+      3: {
+        "gaugeType": GaugeWithSlider,
+        "name": 'R4 - Pump B Flowrate',
+        "cmndName": 'pbfr',
+        "unit": 'mL/min',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "flowRatePumpB"],
+        "min": 0,
+        "max": 6,
+        "initialValue": 0,
+        "maxValue": 6,
+        "cmndTopic": MqttTopics.getCmndTopic('vapourtecR4P1700'),
+        "unitMultiplier": 1,
+      },
+      4: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - System Pressure',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressSystem"],
+        "maxValue": 15,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
       },
     },
   };
@@ -212,6 +313,7 @@ class MqttService extends ChangeNotifier {
 
     //Graph it?
     maybeCreateGraphsForTopic(topic, messageMap);
+    maybeCreateGaugesForTopic(topic);
 
     if (!lastReceivedTime.containsKey(topic)) {
       lastReceivedTime[topic] = EpochDelta();
@@ -408,6 +510,60 @@ class MqttService extends ChangeNotifier {
           print("Graph added for $uniqueGraphID");
         }
       }
+    });
+  }
+
+  //Gauges
+  void maybeCreateGaugesForTopic(String topic) {
+    if (!eligibleForGauge.containsKey(topic)) return;
+
+    eligibleForGauge[topic]!.forEach((index, config) {
+      String uniqueID = "$topic:${config['name']}";
+      if (alreadyGauged.contains(uniqueID)) return;
+
+      Type gaugeType = config["gaugeType"];
+      late GaugeWidget widget;
+
+      if (gaugeType == GaugeWithSlider) {
+        widget = GaugeWithSlider(
+          name: config["name"],
+          unit: config["unit"],
+          deviceName: config["deviceName"],
+          deviceValueName: config["deviceValueName"],
+          mqttService: this,
+          topic: topic,
+          address: List<String>.from(config["address"]),
+          min: config["min"],
+          max: config["max"],
+          initialValue: config["initialValue"],
+          maxValue: config["maxValue"],
+          cmndTopic: config["cmndTopic"],
+          cmndName: config["cmndName"],
+          unitMultiplier: config["unitMultiplier"],
+        );
+      } else if (gaugeType == SemiCircularGauge) {
+        widget = SemiCircularGauge(
+          name: config["name"],
+          unit: config["unit"],
+          deviceName: config["deviceName"],
+          deviceValueName: config["deviceValueName"],
+          mqttService: this,
+          topic: topic,
+          address: List<String>.from(config["address"]),
+          maxValue: config["maxValue"],
+          cmndTopic: config["cmndTopic"],
+          cmndName: config["cmndName"],
+          unitMultiplier: config["unitMultiplier"],
+        );
+      } else {
+        print("Unsupported gauge type for $uniqueID");
+        return;
+      }
+
+      dynamicGaugeWidgets.add(widget);
+      alreadyGauged.add(uniqueID);
+      print("Gauge added: $uniqueID");
+      notifyListeners(); // in case widgets rebuild live
     });
   }
 }
