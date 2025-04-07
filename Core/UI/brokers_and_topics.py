@@ -1,3 +1,5 @@
+#Note - topics in/out are relative to backend
+
 class MqttTopics:
     topicsCnmd = {
         #"sf10vapourtec1": "subflow/sf10vapourtec1/cmnd",
@@ -24,7 +26,7 @@ class MqttTopics:
     topicsUI = {
         "optOut":"ui/optOut",
         "optIn":"ui/optIn",
-        #"FlowSketcher": "chemistry/cmnd",
+        "Flowsketcher": "ui/Flowsketcher",
         "ScriptGeneratorWidget": "chemistry/cmnd",
         #"TestListWidget":"ui/TestListWidget",
         "FormPanelWidget":"ui/FormPanelWidget",

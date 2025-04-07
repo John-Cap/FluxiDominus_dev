@@ -1,609 +1,513 @@
-
-Config map for gauges in MqttService
-
-Map<String, Map<int, Map<String, dynamic>>> eligibleForGauge={ //Topics might have multiple gauges, each topic's gauges have index 0 -> n
-  "subflow/hotcoil1/tele":{
-    0:{
-      "gaugeType":GaugeWithSlider, //Use as pointer?
-      "cmndName: 'temp',
-      "unit": 'deg',
-      "deviceName": 'hotcoil1',
-      "deviceValueName": '',
-      "address": const ["tele", "state", "temp"],
-      "min": 0,
-      "max": 100,
-      "initialValue": 0,
-      "maxValue": 100,
-      "cmndTopic": MqttTopics.getCmndTopic('hotcoil1'),
-      "name": 'Hotcoil 1 Temp',
-      "unitMultiplier": 1
-    },
-  },
-  "subflow/vapourtecR4P1700/tele":{
-    0:{
-      "gaugeType":SemiCircularGauge,
-      "name":'R4 - Pressure A',
-      "unit":'Bar',
-      "deviceName": 'vapourtecR4P1700',
-      "deviceValueName": '',
-      "address": const ["tele", "state", "pressPumpA"],
-      "maxValue": 15,
-      "cmndTopic": '',
-      "cmndName": '',
-      "unitMultiplier": 1,
-    },
-    1:{
-      "gaugeType":GaugeWithSlider,
-      "name": 'R4 - Pump A Flowrate',
-      "cmndName": 'pafr',
-      "unit": 'mL/min',
-      "deviceName": 'vapourtecR4P1700',
-      "deviceValueName": '',
-      "address": const ["tele", "state", "flowRatePumpA"],
-      "min": 0,
-      "max": 6,
-      "initialValue": 0,
-      "maxValue": 6,
-      "cmndTopic": MqttTopics.getCmndTopic('vapourtecR4P1700'),
-      "unitMultiplier": 1,
-    },
-    2:{
-      "gaugeType":SemiCircularGauge,
-      "name":'R4 - Pressure B',
-      "unit":'Bar',
-      "deviceName": 'vapourtecR4P1700',
-      "deviceValueName": '',
-      "address": const ["tele", "state", "pressPumpB"],
-      "maxValue": 15,
-      "cmndTopic": '',
-      "cmndName": '',
-      "unitMultiplier": 1,
-    },
-    3:{
-      "gaugeType":GaugeWithSlider,
-      "name": 'R4 - Pump B Flowrate',
-      "cmndName": 'pbfr',
-      "unit": 'mL/min',
-      "deviceName": 'vapourtecR4P1700',
-      "deviceValueName": '',
-      "address": const ["tele", "state", "flowRatePumpB"],
-      "min": 0,
-      "max": 6,
-      "initialValue": 0,
-      "maxValue": 6,
-      "cmndTopic": MqttTopics.getCmndTopic('vapourtecR4P1700'),
-      "unitMultiplier": 1,
-    },
-    4:{
-      "gaugeType":SemiCircularGauge,
-      "name":'R4 - System Pressure',
-      "unit":'Bar',
-      "deviceName": 'vapourtecR4P1700',
-      "deviceValueName": '',
-      "address": const ["tele", "state", "pressSystem"],
-      "maxValue": 15,
-      "cmndTopic": '',
-      "cmndName": '',
-      "unitMultiplier": 1,
-    },
-  },
-}
-
-In default.dart:
-  GaugeBlock gauges = GaugeBlock(
-    gauges: [],
-    mqttService: mqttService,
-  );
-
-Is instantiated in MqttService as:
-
-GaugeWithSlider(
-  cmndName: 'temp',
-  unit: 'deg',
-  deviceName: 'hotcoil1',
-  mqttService: mqttService, //'this'? Not sure how 'self' works for Dart
-  deviceValueName: '',
-  topic: MqttTopics.getTeleTopic('hotcoil1'), //Or just get from eligibleForGauge
-  address: const ["tele", "state", "temp"],
-  min: 0,
-  max: 100,
-  initialValue: 0,
-  maxValue: 100,
-  cmndTopic: MqttTopics.getCmndTopic('hotcoil1'),
-  name: 'Hotcoil 1 Temp',
-  unitMultiplier: 1,
-),
-
-//Pump A pressure + flowarate (same as for pump A):
-
-              SemiCircularGauge(
-                name: 'R4 - Pressure A',
-                unit: 'Bar',
-                deviceName: 'vapourtecR4P1700',
-                mqttService: mqttService,
-                deviceValueName: '',
-                topic: MqttTopics.getTeleTopic('vapourtecR4P1700'),
-                address: const ["tele", "state", "pressPumpA"],
-                maxValue: 15,
-                cmndTopic: '',
-                cmndName: '',
-                unitMultiplier: 1,
-              ),
-              //Pump A flowrate + flowrate slider
-              GaugeWithSlider(
-                cmndName: 'pafr',
-                unit: 'mL/min',
-                deviceName: 'vapourtecR4P1700',
-                mqttService: mqttService,
-                deviceValueName: '',
-                topic: MqttTopics.getTeleTopic('vapourtecR4P1700'),
-                address: const ["tele", "state", "flowRatePumpA"],
-                min: 0,
-                max: 6,
-                initialValue: 0,
-                maxValue: 6,
-                cmndTopic: MqttTopics.getCmndTopic('vapourtecR4P1700'),
-                name: 'R4 - Pump A Flowrate',
-                unitMultiplier: 1,
-              ),
-              SemiCircularGauge(
-                name: 'R4 - Pressure B',
-                ...
-              ),
-              //Pump B pressure + flowrate slider
-              GaugeWithSlider(
-                cmndName: 'pbfr',
-                ...
-              ),
-              //System pressure
-              SemiCircularGauge(
-                name: 'R4 - System Pressure',
-                unit: 'bar',
-                deviceName: 'vapourtecR4P1700',
-                mqttService: mqttService,
-                deviceValueName: '',
-                topic: MqttTopics.getTeleTopic('vapourtecR4P1700'),
-                address: const ["tele", "state", "pressSystem"],
-                maxValue: 30,
-                cmndTopic: '',
-                cmndName: '',
-                unitMultiplier: 1,
-              ),
-
-For reference, classes handling gauges, gauge_page_widget.dart and gauge_widgets.dart:
-
-import 'package:flutter/material.dart';
-import 'package:flutter_flow_chart/includes/plutter.dart';
-import 'package:flutter_flow_chart/ui/gauges/control_panel_widgets.dart';
-import 'package:flutter_flow_chart/ui/script_builder.dart/hardcoded_command_templates.dart';
-import 'dart:async';
-import 'package:syncfusion_flutter_gauges/gauges.dart';
-
-abstract class GaugeWidget extends StatefulWidget {
-  final String name;
-  final String unit;
-  final String deviceName;
-  final String deviceValueName;
-  final MqttService mqttService;
-  final String topic;
-  final double maxValue;
-  final List<String> address;
-  final String cmndTopic;
-  final String cmndName;
-  final double unitMultiplier;
-
-  const GaugeWidget({
-    super.key,
-    required this.name,
-    required this.unit,
-    required this.deviceName,
-    required this.mqttService,
-    required this.deviceValueName,
-    required this.topic,
-    required this.address,
-    required this.maxValue,
-    required this.cmndTopic,
-    required this.cmndName,
-    required this.unitMultiplier,
-  });
-}
-
-abstract class GaugeWidgetState<T extends GaugeWidget> extends State<T> {
-  double value = 0.0;
-  late Timer timer;
-
-  @override
-  void initState() {
-    super.initState();
-    //widget.mqttService.initializeMQTTClient();
-    //widget.mqttService.connect();
-    updateTimer();
-  }
-
-  void updateTimer() {
-    timer = Timer.periodic(const Duration(milliseconds: 250), (timer) {
-      if (widget.mqttService.lastMsgFromTopic.containsKey(widget.topic)) {
-        final topicData = widget.mqttService.lastMsgFromTopic[widget.topic];
-        if (topicData != null) {
-          final newValue = getValueFromAddress(topicData, widget.address);
-          if (newValue != null) {
-            setVal(newValue);
-          }
-        }
-      }
-    });
-  }
-
-  dynamic getValueFromAddress(Map<String, dynamic> data, List<String> address) {
-    dynamic value = data;
-    for (var key in address) {
-      if (value is Map<String, dynamic> && value.containsKey(key)) {
-        value = value[key];
-      } else {
-        return null;
-      }
-    }
-    return value;
-  }
-
-  void setVal(double val) {
-    val = val * widget.unitMultiplier;
-    if (value != val) {
-      setState(() {
-        value = val;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    timer.cancel();
-    super.dispose();
-  }
-
-  Widget buildGauge();
-
-  @override
-  Widget build(BuildContext context) {
-    return buildGauge();
-  }
-}
-
-class SemiCircularGauge extends GaugeWidget {
-  const SemiCircularGauge({
-    super.key,
-    required super.name,
-    required super.unit,
-    required super.deviceName,
-    required super.mqttService,
-    required super.deviceValueName,
-    required super.topic,
-    required super.address,
-    required super.maxValue,
-    required super.cmndTopic,
-    required super.cmndName,
-    required super.unitMultiplier,
-  });
-
-  @override
-  _SemiCircularGaugeState createState() => _SemiCircularGaugeState();
-}
-
-class _SemiCircularGaugeState extends GaugeWidgetState<SemiCircularGauge> {
-  @override
-  Widget buildGauge() {
-    return SfRadialGauge(
-      title: GaugeTitle(
-        text: widget.name,
-        textStyle: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-      ),
-      axes: <RadialAxis>[
-        RadialAxis(
-          startAngle: 180,
-          endAngle: 0,
-          minimum: 0,
-          maximum: widget.maxValue,
-          ranges: <GaugeRange>[
-            GaugeRange(
-              startValue: 0,
-              endValue: widget.maxValue * 0.8,
-              color: Colors.green,
-              startWidth: 1,
-              endWidth: 1.5,
-            ),
-            GaugeRange(
-              startValue: widget.maxValue * 0.8,
-              endValue: widget.maxValue,
-              color: Colors.orange,
-              startWidth: 2,
-              endWidth: 2.5,
-            ),
-          ],
-          pointers: <GaugePointer>[NeedlePointer(value: value)],
-          annotations: <GaugeAnnotation>[
-            GaugeAnnotation(
-              widget: Text(
-                "${value.toStringAsFixed(1)} ${widget.unit}",
-                style:
-                    const TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-              ),
-              angle: 90,
-              positionFactor: 0.5,
-            ),
-          ],
-        ),
+{
+  "elements": [
+    {
+      "positionDx": 217.7000732421875,
+      "positionDy": 161.3000030517578,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "R4 (Peristaltic)",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "0f20981d-33eb-4bf0-a00e-baa89ff94ec7",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
       ],
-    );
-  }
-}
-
-//With slider
-class GaugeWithSlider extends GaugeWidget {
-  final double min;
-  final double max;
-  final double initialValue;
-  //final ValueChanged<double> onChanged;
-
-  void _onChanged(val) {
-    String? newCmnd = HardcodedCommands().injectVal(deviceName, cmndName, val);
-    mqttService.publish(cmndTopic, newCmnd!);
-  }
-
-  const GaugeWithSlider({
-    super.key,
-    required super.name,
-    required super.unit,
-    required super.deviceName,
-    required super.mqttService,
-    required super.deviceValueName,
-    required super.topic,
-    required super.address,
-    required this.min,
-    required this.max,
-    required this.initialValue,
-    required super.maxValue,
-    required super.cmndTopic,
-    required super.cmndName,
-    required super.unitMultiplier,
-  });
-
-  @override
-  _GaugeWithSliderState createState() => _GaugeWithSliderState();
-}
-
-class _GaugeWithSliderState extends GaugeWidgetState<GaugeWithSlider> {
-  late double _currentValue;
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentValue = widget.initialValue;
-    _controller = TextEditingController(text: _currentValue.toString());
-  }
-
-  void _updateValue(double value) {
-    setState(() {
-      _currentValue = value;
-      _controller.text = value.toString();
-    });
-    widget._onChanged(value);
-  }
-
-  @override
-  Widget buildGauge() {
-    return Column(
-      children: [
-        Flexible(
-          flex: 3,
-          child: SfRadialGauge(
-            title: GaugeTitle(
-              text: widget.name,
-              textStyle:
-                  const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-            ),
-            axes: <RadialAxis>[
-              RadialAxis(
-                startAngle: 180,
-                endAngle: 0,
-                minimum: 0,
-                maximum: widget.maxValue,
-                ranges: <GaugeRange>[
-                  GaugeRange(
-                    startValue: 0,
-                    endValue: widget.maxValue * 0.8,
-                    color: Colors.green,
-                    startWidth: 1,
-                    endWidth: 1.5,
-                  ),
-                  GaugeRange(
-                    startValue: widget.maxValue * 0.8,
-                    endValue: widget.maxValue,
-                    color: Colors.orange,
-                    startWidth: 2,
-                    endWidth: 2.5,
-                  ),
-                ],
-                pointers: <GaugePointer>[NeedlePointer(value: value)],
-                annotations: <GaugeAnnotation>[
-                  GaugeAnnotation(
-                    widget: Text(
-                      "${value.toStringAsFixed(1)} ${widget.unit}",
-                      style: const TextStyle(
-                          fontSize: 25, fontWeight: FontWeight.bold),
-                    ),
-                    angle: 90,
-                    positionFactor: 0.5,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        SliderWithTextField(
-          min: widget.min,
-          max: widget.max,
-          initialValue: widget.initialValue,
-          onChanged: _updateValue,
-          name: widget.name,
-          unit: widget.unit,
-          deviceName: widget.deviceName,
-          deviceValueName: widget.deviceValueName,
-          mqttService: widget.mqttService,
-          topic: widget.topic,
-          address: widget.address,
-        ),
-      ],
-    );
-  }
-}
-
-//With toggle
-class GaugeWithToggle extends GaugeWidget {
-  final bool initialValue;
-
-  void _onChanged(val) {
-    String? newCmnd = HardcodedCommands().injectVal(deviceName, cmndName, val);
-    mqttService.publish(cmndTopic, newCmnd!);
-  }
-
-  const GaugeWithToggle({
-    super.key,
-    required super.name,
-    required super.unit,
-    required super.deviceName,
-    required super.mqttService,
-    required super.deviceValueName,
-    required super.topic,
-    required super.address,
-    required this.initialValue,
-    required super.maxValue,
-    required super.cmndTopic,
-    required super.cmndName,
-    required super.unitMultiplier,
-  });
-
-  @override
-  _GaugeWithToggleState createState() => _GaugeWithToggleState();
-}
-
-class _GaugeWithToggleState extends GaugeWidgetState<GaugeWithToggle> {
-  late bool currentValue;
-
-  @override
-  void initState() {
-    super.initState();
-    currentValue = widget.initialValue;
-  }
-
-  void _updateValue(bool value) {
-    setState(() {
-      currentValue = value;
-    });
-    widget._onChanged(value);
-  }
-
-  @override
-  Widget buildGauge() {
-    return Column(
-      children: [
-        Flexible(
-          flex: 3,
-          child: SfRadialGauge(
-            title: GaugeTitle(
-              text: widget.name,
-              textStyle:
-                  const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-            ),
-            axes: <RadialAxis>[
-              RadialAxis(
-                startAngle: 180,
-                endAngle: 0,
-                minimum: 0,
-                maximum: widget.maxValue,
-                ranges: <GaugeRange>[
-                  GaugeRange(
-                    startValue: 0,
-                    endValue: widget.maxValue * 0.8,
-                    color: Colors.green,
-                    startWidth: 1,
-                    endWidth: 1.5,
-                  ),
-                  GaugeRange(
-                    startValue: widget.maxValue * 0.8,
-                    endValue: widget.maxValue,
-                    color: Colors.orange,
-                    startWidth: 2,
-                    endWidth: 2.5,
-                  ),
-                ],
-                pointers: <GaugePointer>[NeedlePointer(value: value)],
-                annotations: <GaugeAnnotation>[
-                  GaugeAnnotation(
-                    widget: Text(
-                      "${value.toStringAsFixed(1)} ${widget.unit}",
-                      style: const TextStyle(
-                          fontSize: 25, fontWeight: FontWeight.bold),
-                    ),
-                    angle: 90,
-                    positionFactor: 0.5,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Flexible(
-          flex: 1,
-          child: TrueFalseToggle(
-            initialValue: widget.initialValue,
-            onChanged: _updateValue,
-            name: widget.name,
-            unit: widget.unit,
-            deviceName: widget.deviceName,
-            deviceValueName: widget.deviceValueName,
-            mqttService: widget.mqttService,
-            topic: widget.topic,
-            address: widget.address,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-import 'package:flutter/material.dart';
-import 'package:flutter_flow_chart/includes/plutter.dart';
-//import 'package:flutter_flow_chart/includes/plutter.dart';
-import 'package:flutter_flow_chart/ui/gauges/gauge_widgets.dart';
-
-class GaugeBlock extends StatelessWidget {
-  final List<GaugeWidget> gauges;
-  final MqttService mqttService;
-
-  const GaugeBlock(
-      {super.key, required this.gauges, required this.mqttService});
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-      ),
-      itemCount: gauges.length,
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () {
-            print('WJ - Tapped on gauge: ${gauges[index].name}');
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "606ad94d-cb9d-499c-99cd-6178fca9ec27",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": 1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": 1,
+            "endArrowPositionY": 0
           },
-          child: Card(
-            margin: const EdgeInsets.all(8.0),
-            child: Center(
-              child: gauges[index],
-            ),
-          ),
-        );
-      },
-    );
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 103.30010986328125,
+      "positionDy": 485.300048828125,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "BPR (5 Bar)",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "178d5c7b-7656-4737-9741-3f750ae181fc",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "7282e43e-4081-4323-8845-fbc44f69e214",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": 1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 113.70001220703125,
+      "positionDy": 79.69998168945312,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "Valve",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "0f20981d-33eb-4bf0-a00e-baa89ff94ec7",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": -1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 120.9000244140625,
+      "positionDy": 278.9000244140625,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "Valve",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "1deec163-e052-48b0-bb10-9100373b26e7",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "0f20981d-33eb-4bf0-a00e-baa89ff94ec7",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": -1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 255.29998779296875,
+      "positionDy": 26.100006103515625,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "Stock",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "96315349-d28c-42cf-adbd-b6ed0190e27a",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": 1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 251.29998779296875,
+      "positionDy": 91.69999694824219,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "Stock",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "b698c86e-d142-49c9-8443-3ffe5762edd6",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": 1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 271.300048828125,
+      "positionDy": 322.1000061035156,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "Push",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "6e513c8e-3596-4a49-a2ce-8f4a358d8155",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "1deec163-e052-48b0-bb10-9100373b26e7",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": 1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 265.70001220703125,
+      "positionDy": 238.89999389648438,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "Stock",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "919ffbde-a019-411f-85fb-1629477a7225",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "1deec163-e052-48b0-bb10-9100373b26e7",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": 1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 299.300048828125,
+      "positionDy": 401.3000183105469,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "Hotcoil (10 mL)",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "606ad94d-cb9d-499c-99cd-6178fca9ec27",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "b5526ce9-fb43-4c62-96af-567f52002bfc",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": 1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 148.9000244140625,
+      "positionDy": 389.29998779296875,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "ReactIR 702L1",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "b5526ce9-fb43-4c62-96af-567f52002bfc",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": [
+        {
+          "destElementId": "178d5c7b-7656-4737-9741-3f750ae181fc",
+          "arrowParams": {
+            "thickness": 1.7,
+            "color": 4278190080,
+            "startArrowPositionX": -1,
+            "startArrowPositionY": 0,
+            "endArrowPositionX": 1,
+            "endArrowPositionY": 0
+          },
+          "tubingVolume": 1,
+          "tubingType": "Standard"
+        }
+      ]
+    },
+    {
+      "positionDx": 0.0999755859375,
+      "positionDy": 418.0999755859375,
+      "size.width": 100,
+      "size.height": 50,
+      "text": "Collection point",
+      "textColor": 4278190080,
+      "fontFamily": null,
+      "textSize": 10,
+      "textIsBold": false,
+      "id": "7282e43e-4081-4323-8845-fbc44f69e214",
+      "kind": 0,
+      "handlers": [
+        3,
+        2
+      ],
+      "handlerSize": 15,
+      "backgroundColor": 4294967295,
+      "borderColor": 4280391411,
+      "borderThickness": 3,
+      "elevation": 4,
+      "next": []
+    }
+  ]
+}
+
+WJ connections of dash -> {
+  "0f20981d-33eb-4bf0-a00e-baa89ff94ec7": {
+    "name": "R4 (Peristaltic)",
+    "flowsInto": [
+      "606ad94d-cb9d-499c-99cd-6178fca9ec27"
+    ],
+    "deviceName": "vapourtecR4P1700",
+    "deviceType": "vapourtecR4",
+    "volume": 5
+  },
+  "178d5c7b-7656-4737-9741-3f750ae181fc": {
+    "name": "BPR (5 Bar)",
+    "flowsInto": [
+      "7282e43e-4081-4323-8845-fbc44f69e214"
+    ],
+    "deviceName": "null",
+    "deviceType": "BPR",
+    "volume": 0.1
+  },
+  "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c": {
+    "name": "Valve",
+    "flowsInto": [
+      "0f20981d-33eb-4bf0-a00e-baa89ff94ec7"
+    ],
+    "deviceName": "null",
+    "deviceType": "Valve",
+    "volume": 0.25
+  },
+  "1deec163-e052-48b0-bb10-9100373b26e7": {
+    "name": "Valve",
+    "flowsInto": [
+      "0f20981d-33eb-4bf0-a00e-baa89ff94ec7"
+    ],
+    "deviceName": "null",
+    "deviceType": "Valve",
+    "volume": 0.25
+  },
+  "96315349-d28c-42cf-adbd-b6ed0190e27a": {
+    "name": "Stock",
+    "flowsInto": [
+      "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "b698c86e-d142-49c9-8443-3ffe5762edd6": {
+    "name": "Stock",
+    "flowsInto": [
+      "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "5d054051-afa1-4c7b-9905-aa7a913f7d61": {
+    "name": "Stock",
+    "flowsInto": [
+      "0f20981d-33eb-4bf0-a00e-baa89ff94ec7"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "61aab9b7-7b81-4faf-bd40-2a71d35e5daf": {
+    "name": "Stock",
+    "flowsInto": null,
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "6e513c8e-3596-4a49-a2ce-8f4a358d8155": {
+    "name": "Push",
+    "flowsInto": [
+      "1deec163-e052-48b0-bb10-9100373b26e7"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "919ffbde-a019-411f-85fb-1629477a7225": {
+    "name": "Stock",
+    "flowsInto": [
+      "1deec163-e052-48b0-bb10-9100373b26e7"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "606ad94d-cb9d-499c-99cd-6178fca9ec27": {
+    "name": "Hotcoil (10 mL)",
+    "flowsInto": [
+      "b5526ce9-fb43-4c62-96af-567f52002bfc"
+    ],
+    "deviceName": "hotcoil1",
+    "deviceType": "Coil",
+    "volume": 10
+  },
+  "b5526ce9-fb43-4c62-96af-567f52002bfc": {
+    "name": "ReactIR 702L1",
+    "flowsInto": [
+      "178d5c7b-7656-4737-9741-3f750ae181fc"
+    ],
+    "deviceName": "reactIR702L1",
+    "deviceType": "IR",
+    "volume": 0.25
+  },
+  "7282e43e-4081-4323-8845-fbc44f69e214": {
+    "name": "Collection point",
+    "flowsInto": null,
+    "deviceName": "null",
+    "deviceType": "FlowTerminus",
+    "volume": 0
   }
 }
