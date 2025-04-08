@@ -22,7 +22,7 @@ class FakeReactor:
         self.target_temp = 5
         self.temp_rate = 0.05
         self.flow_rate = 1.0
-        self.flow_range = (0.5, 5.0)
+        self.flow_range = (0.2, 5.0)
         self.pressure_noise = 0.05
         self.pumpAbase=1.2
         self.pumpBbase=0.9

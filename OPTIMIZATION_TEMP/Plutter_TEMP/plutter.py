@@ -260,6 +260,8 @@ class MqttService:
                 print(f'WJ - Streaming to db disabled')
             elif (_func=="abort"):
                 self.databaseOperations.mongoDb.currZeroTime=None
+                if not self.reqOptimization:
+                    self.reqOptimization=False
                 if not self.abort:
                     self.abort=True
                     print(f'WJ - Aborting run!')
@@ -270,7 +272,7 @@ class MqttService:
                 print("WJ - Let's go!")
         elif topic=="ui/parseFlowpath/in":
             pass
-        elif topic=="ui/optIn":
+        elif topic==MqttTopics.getUiTopic("optIn"):
             self.optimizationReqSettings=_msgContents["optInstructUI"]
             self.reqOptimization=True
         

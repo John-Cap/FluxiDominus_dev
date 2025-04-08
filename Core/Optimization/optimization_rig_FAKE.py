@@ -9,6 +9,7 @@ import paho.mqtt.client as mqtt
 import numpy as np
 
 from Core.Control.ScriptGenerator import FlowChemAutomation
+from Core.UI.brokers_and_topics import MqttTopics
 from Core.parametres.reaction_parametres import Flowrate, ReactionParametres, Temp
 from ReactionSimulation.fakeReactionLookup import ReactionLookup
 
@@ -215,13 +216,22 @@ class OptimizationRig:
             
             # if self.objectiveScore is None or not (0 <= self.objectiveScore <= 1):
             #     raise ValueError(f"Invalid objective score: {self.objectiveScore}")
-            msgOut={"goSummit":True,"instruct":{
+            evalInfo={
                 "eval":{
                     "yield":self.objectiveScore
                 }
-            }}
+            }
+            msgOut={"goSummit":True,"instruct":evalInfo}
             print(f"✅ Received Estimated Yield: {self.objectiveScore:.3f}")
             self.client.publish(self.topicOptOut,json.dumps(msgOut))
+            evalInfo={
+                "recommendationResult":{
+                    "Temperature":self.lastRecommendedVal["temperature"],
+                    "Flowrate":self.lastRecommendedVal["flowrate"],
+                    "yield":self.objectiveScore
+                }
+            }
+            self.mqttService.publish(MqttTopics.getUiTopic("optOut"),json.dumps({"optInfo":evalInfo}))
 
             self.optimizing = False
             self.evalYielded=True

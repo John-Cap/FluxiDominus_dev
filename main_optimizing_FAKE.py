@@ -42,6 +42,7 @@ metadata={"location": "Room 101", "type": "Demo_Data"}
 ###########################################################
 
 client = updater.client
+updater.armed=True
 
 fdpDecoder = updater.fdpDecoder
 automation = FlowChemAutomation()
@@ -65,14 +66,17 @@ rig=OptimizationRig(updater,host="172.30.243.138")
 rig.initRig()
 while not rig.client.is_connected():
     time.sleep(1)
+    
+while not updater.reqOptimization:
+    time.sleep(0.25)
 
 fdSubprocess = FdSubprocess()
 baseDir = os.path.dirname(os.path.abspath(__file__))
 evaluatorDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Evaluator')
 optimizerDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Summit')
 
-# pid = fdSubprocess.spawnExternalMain(evaluatorDir)
-# pid = fdSubprocess.spawnExternalMain(optimizerDir)
+# pid1 = fdSubprocess.spawnExternalMain(evaluatorDir)
+# pid2 = fdSubprocess.spawnExternalMain(optimizerDir)
 
 #Wait until both evaluator and optimizer initialized:
 print('Waiting for optimizers to initialize')
@@ -86,14 +90,32 @@ while not (rig.evaluatorInit and rig.optimizerInit):
 rig.setGoSummit(False)
 time.sleep(1)
 
-# Define devices
+# TODO - Define devices (Get from optimization settings)
 device1 = "hotcoil1"
 device2 = "vapourtecR4P1700"
 
-# Define tweakable parameters
-tempParam = Temp("temperature", associatedCommand="temp", ranges=[[10, 55]])
-flowrateParam1 = Flowrate("flowrateA", associatedCommand="pafr", ranges=[[0.1, 2]])
-flowrateParam2 = Flowrate("flowrateB", associatedCommand="pbfr", ranges=[[0.1, 2]])
+# TODO - Define tweakable parameters (Get from optimization settings)
+tempParam = Temp(
+    "temperature",
+    associatedCommand="temp",
+    ranges=[
+        updater.optimizationReqSettings["selectedParameters"]["Temperature"]
+    ]
+)
+flowrateParam1 = Flowrate(
+    "flowrateA",
+    associatedCommand="pafr",
+    ranges=[
+        updater.optimizationReqSettings["selectedParameters"]["Flowrate"]
+    ]
+)
+flowrateParam2 = Flowrate(
+    "flowrateB",
+    associatedCommand="pbfr",
+    ranges=[
+        updater.optimizationReqSettings["selectedParameters"]["Flowrate"]
+    ]
+)
 
 # Register devices
 rig.registerDevice(device1)

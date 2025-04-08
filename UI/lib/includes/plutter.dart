@@ -181,40 +181,16 @@ class MqttService extends ChangeNotifier {
 
   //Optimization
   Map<String, dynamic> optimizationDetails = {};
-  // List<String> optimizationOptions = [];
+  ValueNotifier<List<Map<String, Map<String, double>>>> resultHistory =
+      ValueNotifier([]);
+  ValueNotifier<Map<String, double>> recommendedParams = ValueNotifier({});
+  ValueNotifier<double> lastYield = ValueNotifier(0);
+  ValueNotifier<bool> goOptimization = ValueNotifier(false);
   // List<String> objectiveFunctions = [];
 
   // Mock options for optimizer and objective function
-  final List<String> optimizationOptions = [
-    "VIDAL_C13_3415",
-    "VIDAL_C13_3465",
-    "ERSILIA_BLANK_TS_54",
-    "WJ_LEAP_2024_01_30_3",
-    "STD_SUMMIT_1"
-  ];
-  final List<String> objectiveFunctions = [
-    "WJ_IR_800_2",
-    "WJ_IR_800_5",
-    "GEN_NMR_IR_13000"
-  ];
-  // Mocking a stream for optimization progress updates
-  Stream<Map<String, dynamic>> get optimizationProgressStream async* {
-    for (int i = 0; i <= 10; i++) {
-      await Future.delayed(Duration(seconds: 1));
-      yield {
-        'optimizer': optimizationDetails['optimizer'] ?? 'N/A',
-        'objectiveFunction': optimizationDetails['objectiveFunction'] ?? 'N/A',
-        'recommendedParams': {
-          'Temperature': '${20 + i}°C',
-          'Flowrate': '${5 + i * 0.5} mL/min'
-        },
-        'bestYield': '${80 + i}%',
-        'finalYield': i == 10 ? '${90 + i}%' : null,
-        'elapsedTime': '$i seconds',
-      };
-    }
-    runTest = false;
-  }
+  final List<String> optimizationOptions = ["SUMMIT_SOBO"];
+  final List<String> objectiveFunctions = ["WJ_IR_ALLYL_BROMIDE"];
 
   //
   //////////////////////////////////////////////////////////////////////////
@@ -336,6 +312,45 @@ class MqttService extends ChangeNotifier {
         }
       }
       //
+    } else if (topic == "ui/opt/out") {
+      if (messageMap.containsKey("optInfo")) {
+        if (messageMap["optInfo"].containsKey("eval")) {
+          if (messageMap["optInfo"]["eval"].containsKey("yield")) {
+            lastYield.value = messageMap["optInfo"]["eval"]["yield"];
+          }
+        }
+        if (messageMap["optInfo"].containsKey("recommendedParams")) {
+          recommendedParams.value =
+              (messageMap["optInfo"]["recommendedParams"]);
+        }
+        if (messageMap["optInfo"].containsKey("recommendationResult")) {
+          var result = Map<String, double>.from(
+              messageMap["optInfo"]["recommendationResult"]);
+          double yield = result["yield"] ?? 0;
+
+          // Update resultHistory
+          resultHistory.value = [
+            ...resultHistory.value,
+            {
+              'recommendation': {
+                'Temperature': result['Temperature'] ?? 0,
+                'Flowrate': result['Flowrate'] ?? 0,
+                'yield': yield
+              }
+            }
+          ];
+
+          // Optionally update best yield if you want to keep a separate variable for it
+          if (yield > lastYield.value) {
+            lastYield.value = yield;
+          }
+        }
+      }
+      if (messageMap.containsKey("goOptimization")) {
+        lastYield.value = 0;
+        resultHistory.value = [];
+        goOptimization.value = true;
+      }
     } else if (messageMap.containsKey("GraphWidgets")) {
       //TODO - FIX THIS HARDCODED DISASTER
     } else if (topic == "subflow/flowsynmaxi2/tele" &&

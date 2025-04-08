@@ -26,8 +26,8 @@ abstract class MqttTopics {
   };
 
   static final Map<String, String> topicsUI = {
-    "optOut": "ui/optIn",
-    "optIn": "ui/optOut",
+    //"optOut": "ui/opt/in",
+    "optIn": "ui/opt/out",
     "Flowsketcher": 'ui/Flowsketcher',
     "ScriptGeneratorWidget": 'chemistry/cmnd',
     "FormPanelWidget": 'ui/FormPanelWidget',

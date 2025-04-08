@@ -24,8 +24,8 @@ class MqttTopics:
     }
 
     topicsUI = {
-        "optOut":"ui/optOut",
-        "optIn":"ui/optIn",
+        "optOut":"ui/opt/out",
+        "optIn":"ui/opt/in",
         "Flowsketcher": "ui/Flowsketcher",
         "ScriptGeneratorWidget": "chemistry/cmnd",
         #"TestListWidget":"ui/TestListWidget",
