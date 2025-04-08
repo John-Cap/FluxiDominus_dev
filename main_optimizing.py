@@ -10,13 +10,13 @@ from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator import FlowChemAutomation
-from Core.Optimization.optimization_rig import OptimizationRig
+from Core.Optimization.optimization_rig_FAKE import OptimizationRig
 from Core.Utils.subprocessing import FdSubprocess
 from Core.parametres.reaction_parametres import Flowrate, Temp
 from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
-updater = MqttService(broker_address="localhost")
+updater = MqttService(broker_address="172.30.243.138")
 updater.connectDb=False
 # updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
@@ -61,7 +61,7 @@ noTestDetails=True
 ########################################################################
 #Optimizer rig
 #rig=OptimizationRig(updater,host="146.64.91.174")
-rig=OptimizationRig(updater,host="localhost")
+rig=OptimizationRig(updater,host="172.30.243.138")
 rig.initRig()
 while not rig.client.is_connected():
     time.sleep(1)

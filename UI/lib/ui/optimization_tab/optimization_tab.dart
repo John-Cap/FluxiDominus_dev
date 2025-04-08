@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
 
 import 'package:flutter_flow_chart/ui/list_generators/lists.dart';
+
+import '../../config/UI/brokers_and_topics.dart' show MqttTopics;
 
 class OptimizationTab extends StatefulWidget {
   final MqttService mqttService;
@@ -33,6 +37,10 @@ class _OptimizationTabState extends State<OptimizationTab>
 
     widget.mqttService.optimizationDetails = optimizationDetails;
     widget.mqttService.runTest = true;
+
+    //Signal backend
+    widget.mqttService.publish(MqttTopics.getUITopic("optOut"),
+        jsonEncode({"optInstructUI": optimizationDetails}));
 
     setState(() {
       isRunning = true;
@@ -209,7 +217,6 @@ class _OptimizationTabState extends State<OptimizationTab>
     );
   }
 }
-
 
 // void main() {
 //   runApp(MyApp());

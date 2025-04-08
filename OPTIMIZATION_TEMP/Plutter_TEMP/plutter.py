@@ -82,6 +82,9 @@ class MqttService:
         
         self.irAvailable=False
         
+        self.optimizationReqSettings={}
+        self.reqOptimization=False
+        
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
 
     def onSubscribe(self, client, userdata, mid, granted_qos):
@@ -267,8 +270,9 @@ class MqttService:
                 print("WJ - Let's go!")
         elif topic=="ui/parseFlowpath/in":
             pass
-        elif topic=="":
-            pass
+        elif topic=="ui/optIn":
+            self.optimizationReqSettings=_msgContents["optInstructUI"]
+            self.reqOptimization=True
         
     def start(self):
         self.authenticator.initPlutter(mqttService=self)

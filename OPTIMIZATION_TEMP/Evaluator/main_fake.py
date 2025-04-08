@@ -1,3 +1,4 @@
+import ast
 import json
 import os
 import time
@@ -11,6 +12,8 @@ class FakeReactor:
     def __init__(self, mqtt_host="localhost", data_folder=""):
         # MQTT setup
         self.mqtt_client = mqtt.Client()
+        self.mqtt_client.on_connect = self.onConnect
+        self.mqtt_client.on_message = self.onMessage
         self.mqtt_client.connect(host=mqtt_host)
         self.mqtt_client.loop_start()
 
@@ -42,6 +45,8 @@ class FakeReactor:
 
         # Load IR data
         self.ir_data = self.load_ir_data(data_folder)
+        
+        self.debugTemp=False
 
     def load_ir_data(self, folder_path):
         csv_files = [
@@ -63,9 +68,30 @@ class FakeReactor:
                 print(f"Warning: {file} not found in {folder_path}")
         return all_data
 
+    def onConnect(self, client, userdata, flags, rc):
+        #if self.connected:
+            #return
+        if rc == 0:
+            self.mqtt_client.subscribe(topic="debug/temp")
+            time.sleep(1)
+            print(f"WJ - Connected with rc {rc}!")
+            self.connected=True
+                
+    def onMessage(self, client, userdata, msg):
+        topic=msg.topic
+        msg = msg.payload.decode()
+        msg = msg.replace("true", "True").replace("false", "False")
+        msg = msg.replace("null","None")
+        msg = ast.literal_eval(msg)
+        
+        if "debugTemp" in msg:
+            self.target_temp=msg["debugTemp"]
+            print(f"Received target temperature: {self.target_temp}")
+            self.debugTemp=True
+
     def update_temperature(self):
         now = time.time()
-        if now - self.last_temp_switch >= self.temp_switch_interval:
+        if now - self.last_temp_switch >= self.temp_switch_interval and not self.debugTemp:
             self.target_temp = random.uniform(25, 120)
             self.last_temp_switch = now
 
@@ -143,9 +169,7 @@ class FakeReactor:
         self.mqtt_client.publish("subflow/vapourtecR4P1700/tele", json.dumps(msg))
 
     def publish_ir_data(self):
-        if not self.ir_data:
-            return
-        sample = random.choice(self.ir_data)
+        sample = np.random.uniform(size=599)
         payload = {
             "deviceName": "reactIR702L1",
             "deviceType": "IR",
@@ -156,7 +180,7 @@ class FakeReactor:
             "tele": {
                 "cmnd": "POLL",
                 "settings": {},
-                "state": {"data": sample},
+                "state": {"data": list(sample)},
                 "timestamp": time.time()
             }
         }

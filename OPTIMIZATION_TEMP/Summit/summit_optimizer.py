@@ -20,7 +20,7 @@ class SummitOptimizer:
         self.started=False
 
         # Use SOBO optimizer
-        self.strategy = SOBO(self.domain)
+        self.strategy = None
         self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yieldVal"])  # Store experiments
 
         self.prevExp={}
@@ -47,6 +47,7 @@ class SummitOptimizer:
             self.randomInitialAssigned=True
         else:
             # Generate recommendation from SOBO
+            print(f"Previous experiments: {self.experiments}")
             next_experiment = self.strategy.suggest_experiments(1,summit.DataSet.from_df(self.experiments))
 
             if next_experiment.empty:
@@ -83,6 +84,7 @@ class SummitOptimizer:
                     return
         
         yieldScore = data["yield"]
+        print(f"Summit received yield score: {yieldScore}")
         temp=self.prevExp["temperature"]
         flowrate=self.prevExp["flowrate"]
         
@@ -114,11 +116,13 @@ class SummitOptimizer:
                     self.domain += ContinuousVariable(name="temperature",bounds=[0,100], is_objective=False, description='temperature')
                     self.domain += ContinuousVariable(name="flowrate", bounds=[0.1,2], is_objective=False, description='flowrate')
                     self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
-
+                    if not self.strategy:
+                        self.strategy=SOBO(self.domain)
             if "start" in data["instruct"]:
                 self.update({"goSummit":True})
                 return
             if "eval" in data["instruct"]: #Only route for now, will automatically recommend
+                print(f"Evaluation result data: {data}")
                 self.update(
                     {
                         "goSummit":data["goSummit"],

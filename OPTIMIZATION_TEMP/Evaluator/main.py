@@ -4,12 +4,12 @@ import os
 import time
 import numpy as np
 
-from irmlp_trainer import IRMLPTrainer  
+from irmlp_trainer_fake import IRMLPTrainer  
 
 # Load trained TensorFlow model
 trainer = IRMLPTrainer(
-    #host="146.64.91.174",
-    host="localhost",
+    host="172.30.243.138",
+    #host="localhost",
     csv_path="ir_yield_no_resample_averages.csv",
     csv_path_unaveraged="ir_yield_no_resample_unaveraged.csv",
     csv_path_unmasked="ir_yield_no_resample_unmasked.csv"

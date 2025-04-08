@@ -1,3 +1,5 @@
+//Note - topics in/out are relative to backend
+
 abstract class MqttTopics {
   static final Map<String, String> topicsCnmd = {
     "sf10vapourtec1": "subflow/sf10vapourtec1/cmnd",
@@ -24,13 +26,14 @@ abstract class MqttTopics {
   };
 
   static final Map<String, String> topicsUI = {
+    "optOut": "ui/optIn",
+    "optIn": "ui/optOut",
     "Flowsketcher": 'ui/Flowsketcher',
     "ScriptGeneratorWidget": 'chemistry/cmnd',
     "FormPanelWidget": 'ui/FormPanelWidget',
     "LoginPageWidget": 'ui/LoginPageWidget',
     "GraphWidgets": 'ui/GraphWidgets',
-    "dbStreaming":
-        "ui/dbStreaming/out", //Rephrase...'out' is relative to Python
+    "dbStreaming": "ui/dbStreaming/out", //TODO...'out' is relative to Python
     //"dbCmndIn": "ui/dbCmnd/in",
     "dbCmndRet": "ui/dbCmnd/ret"
   };
