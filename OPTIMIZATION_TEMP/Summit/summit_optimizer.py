@@ -39,9 +39,10 @@ class SummitOptimizer:
         """ Generate the next recommendation. """
         if self.experiments.empty and not self.randomInitialAssigned:
             # Generate initial random experiments (needed for SOBO)
-            temp = np.random.uniform(40, 50)
-            flowrate = np.random.uniform(1, 2)
+            temp = np.random.uniform(10, 50)
+            flowrate = np.random.uniform(0.25, 2)
             recommendation = {"recomm":{"temperature": temp, "flowrate": flowrate}}
+            # recommendation = {"recomm":{"temperature": float(30), "flowrate": float(0.5)}}
             self.prevExp=recommendation["recomm"]
             print("First random experiment:", recommendation)
             self.randomInitialAssigned=True
@@ -75,12 +76,26 @@ class SummitOptimizer:
                     self.recommend()
                     self.started=True
                     return
+                else:
+                    #reset
+                    self.prevExp={}
+                    self.strategy=None
+                    self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yieldVal"])
+                    self.domain = Domain()
+                    self.started=False
+                    print("Summit was reset!")
+                    return
+                    
         else:
             if "goSummit" in data:
                 if not data["goSummit"]:
                     #reset
+                    self.strategy=None
+                    self.prevExp={}
                     self.experiments = pd.DataFrame(columns=["temperature", "flowrate", "yieldVal"])
+                    self.domain = Domain()
                     self.started=False
+                    print("Summit was reset!")
                     return
         
         yieldScore = data["yield"]
@@ -105,6 +120,10 @@ class SummitOptimizer:
         data=data.replace("null","None")
         data = ast.literal_eval(data)
         
+        if "goSummit" in data:
+            if not data["goSummit"]:
+                self.update({"goSummit":False})
+        
         if "statReq" in data:
             if "ping" in data["statReq"]:
                 self.pingOptRig()
@@ -113,8 +132,8 @@ class SummitOptimizer:
             if "init" in data["instruct"]:
                 if "initVal" in data["instruct"]["init"]:
                     print(f'initVal: {data["instruct"]["init"]}')
-                    self.domain += ContinuousVariable(name="temperature",bounds=[0,100], is_objective=False, description='temperature')
-                    self.domain += ContinuousVariable(name="flowrate", bounds=[0.1,2], is_objective=False, description='flowrate')
+                    self.domain += ContinuousVariable(name="temperature",bounds=[0,50], is_objective=False, description='temperature')
+                    self.domain += ContinuousVariable(name="flowrate", bounds=[0.1,3], is_objective=False, description='flowrate')
                     self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
                     if not self.strategy:
                         self.strategy=SOBO(self.domain)

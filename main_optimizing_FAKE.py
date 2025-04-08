@@ -83,14 +83,17 @@ while not (rig.evaluatorInit and rig.optimizerInit):
         rig.pingOptimizer()
     time.sleep(5)
 
+rig.setGoSummit(False)
+time.sleep(1)
+
 # Define devices
 device1 = "hotcoil1"
 device2 = "vapourtecR4P1700"
 
 # Define tweakable parameters
-tempParam = Temp("temperature", associatedCommand="temp", ranges=[[35, 55]])
-flowrateParam1 = Flowrate("flowrateA", associatedCommand="pafr", ranges=[[1, 2]])
-flowrateParam2 = Flowrate("flowrateB", associatedCommand="pbfr", ranges=[[1, 2]])
+tempParam = Temp("temperature", associatedCommand="temp", ranges=[[10, 55]])
+flowrateParam1 = Flowrate("flowrateA", associatedCommand="pafr", ranges=[[0.1, 2]])
+flowrateParam2 = Flowrate("flowrateB", associatedCommand="pbfr", ranges=[[0.1, 2]])
 
 # Register devices
 rig.registerDevice(device1)
@@ -177,6 +180,7 @@ while True:
     temp=rig.lastRecommendedVal["temperature"]
     fr=rig.lastRecommendedVal["flowrate"]
     res=rig.resTime
+    print(f"Virtual residence time: {res}")
     
     updater.client.publish(topic="debug/temp",payload=json.dumps({"debugTemp":temp}))
     updater.client.publish(topic="debug/fr",payload=json.dumps({"debugFlowrate":fr}))
@@ -187,6 +191,7 @@ while True:
     updater.client.publish("subflow/hotcoil1/cmnd",json.dumps({"deviceName":"hotcoil1","inUse":True, "connDetails":{"ipCom" : {"addr": "192.168.1.213", "port": 81}}, "settings": {"command":"SET","temp":temp}}))
     #Push through cooling solvent?
     if currTemp > temp:
+        updater.client.publish(topic="debug/fr",payload=json.dumps({"debugFlowrate":4}))
         print(f"Cooling hotcoil from {currTemp} deg to {temp} deg! Pushing through cooling solvent.")
         updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'PumpAFlowRate', 'value': 2}}))
         updater.client.publish("subflow/vapourtecR4P1700/cmnd",json.dumps({'deviceName': 'vapourtecR4P1700', 'inUse': True, 'connDetails': {'ipCom': {'addr': '192.168.1.51', 'port': 43344}}, 'settings': {'command': 'SET', 'subDevice': 'PumpBFlowRate', 'value': 2}}))
@@ -207,6 +212,7 @@ while True:
             time.sleep(1)
             currTemp=HardcodedTeleKeys.getTeleVal(updater.lastMsgFromTopic["subflow/hotcoil1/tele"],"temp")
     #Adjust scan time!!!
+    updater.client.publish(topic="debug/fr",payload=json.dumps({"debugFlowrate":fr}))
     shift=time.time() - start
     # rig.startScanAt=rig.startScanAt + shift
     # rig.endScanAt=rig.endScanAt + shift

@@ -1,82 +1,156 @@
-import atexit
-import subprocess
+#import json
+import copy
 import os
-import sys
-import time
 
-class FdSubprocess:
+from Config.Data.hardcoded_command_templates import HardcodedCommandTemplates
+
+class CustomCommands:
     def __init__(self):
-        self.pythonPaths = {}
-        self.subprocesses = {}
-        self._pathCnt = 0
+        self.commands = {}
+
+    def registerCommand(self, commandClass):
+        commandName = commandClass.__name__
+        commandParams = [param for param in vars(commandClass()).keys()]
+        self.commands[commandName] = commandParams
+
+    def getCommandParams(self, commandName):
+        return self.commands.get(commandName, None)
+
+class FlowChemAutomation:
+
+    def __init__(self):
+        self.output=""
+        self.varBrackets={
+            ">float<":float,
+            ">bool<":bool,
+            ">string<":str
+        }
+        self.blocks={}
+        self.blockNames=[]
+
+        self.commandTemplatesNested = HardcodedCommandTemplates.commandTemplatesNested
         
-        atexit.register(self.terminateAllProcesses)
+    def reset(self):
+        #Delete all block data
+        self.blocks={}
+        self.blockNames=[]
+        self.output=""
+        
+    def parsePlutterIn(self,blocks):
+        #print("WJ - Blocks in: " + str(blocks))
+        for key, val in blocks.items():
+            for cmnd in val:
+                #print("Adding " + str(cmnd) + " to block " + key)
+                if isinstance(cmnd["value"],bool):
+                    pass
+                elif isinstance(cmnd["value"],int):
+                    #print('WJ - ' + str(cmnd["value"]) + ' is an int')
+                    cmnd["value"]=float(cmnd["value"])
+                self.addBlockElement(key,cmnd["device"],cmnd["setting"],cmnd["value"])
+        return (self.parseToScript())
 
-    def addPythonPath(self, path):
-        cntr = self._pathCnt
-        self.pythonPaths[cntr] = path
-        self._pathCnt += 1
-        return cntr
-
-    def spawnExternalMain(self, scriptDir):
-        print(os.name)
-        if os.name == 'nt':
-            pythonPath = os.path.join(scriptDir, '.venv', 'Scripts', 'python.exe')
-        else:
-            pythonPath = os.path.join(scriptDir, '.venv', 'bin', 'python')
-
-        scriptPath = os.path.join(scriptDir, 'main.py')
-        env = os.environ.copy()
-        env["PYTHONIOENCODING"] = "utf-8"
-
-        process = subprocess.Popen(
-            [pythonPath, scriptPath],
-            cwd=scriptDir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=env
-        )
-
-        processId = self.addPythonPath(pythonPath)
-        self.subprocesses[processId] = process
-
-        print(f"Spawned subprocess {processId} for {scriptPath}")
-        return processId
-
-    def checkProcessOutput(self, processId):
-        proc = self.subprocesses.get(processId)
-        if proc is None:
-            print(f"No subprocess with ID {processId}")
+    def parseBlockElement(self,device,setting,val):
+        if not device in self.commandTemplatesNested:
+            print('WJ - Device not found!!')
             return
+        setThis=copy.deepcopy(self.commandTemplatesNested[device][setting])
+        #Valid setting?
+        for key in self.varBrackets: #TODO - this is stupid
+            if key in setThis:
+                #print('WJ - Val is ' + str(val))
+                if isinstance(val,self.varBrackets[key]):
+                    return ((setThis.replace(key,str(val))).replace(" ","")).replace("\n","")
+                else:
+                    #Throw
+                    print("WJ - Error!")
 
-        stdout, stderr = proc.communicate(timeout=0.1) if proc.poll() is not None else ("", "")
+    def addBlock(self,blockName):
+        #TODO - Check if block exists then throw
+        self.blocks[blockName]=[]
+        self.blockNames.append(blockName)
 
-        if stdout:
-            print(f"[{processId} STDOUT]: {stdout}")
-        if stderr:
-            print(f"[{processId} STDERR]: {stderr}")
-            
-    def terminateAllProcesses(self):
-        for pid, proc in self.subprocesses.items():
-            if proc.poll() is None:  # Still running
-                print(f"Auto-terminating subprocess {pid}")
-                proc.terminate()
-                
-    def terminateProcess(self, processId):
-        proc = self.subprocesses.get(processId)
-        if proc and proc.poll() is None:
-            proc.terminate()
-            print(f"Terminated subprocess {processId}")
+    def addBlockElement(self,blockName,device,setting,val):
+        if not blockName in self.blocks:
+            self.addBlock(blockName)
+        self.blocks[blockName].append(self.parseBlockElement(device,setting,val))
+        
+    def parseToScript(self):
+        if len(self.blockNames) != 0:
+            self.output=""
+            for blockName in self.blockNames:
+                blockElements=self.blocks[blockName]
+                self.output=self.output + blockName + "=["
+                finalIndex=len(blockElements)-1
+                for index, element in enumerate(blockElements):
+                    if index == finalIndex:
+                        self.output=self.output + element
+                    else:
+                        self.output=self.output + element + ","
+                self.output=self.output + "];" + "\n"
+            #print(self.output)
+            self.blocks={}
+            self.blockNames=[]
+            return self.output
         else:
-            print(f"Subprocess {processId} already exited or doesn't exist.")
+            print("WJ - No blocks!")
+
             
+    def saveBlocksToFile(self, filename="default_script",save_directory=""):
+        if save_directory=="":
+            home_directory = os.path.expanduser("~")
+            save_directory = os.path.join(home_directory, "flowchem_scripts")
+
+        # Ensure the directory exists
+        os.makedirs(save_directory, exist_ok=True)
+
+        file_path = os.path.join(save_directory, filename)
+        if not file_path.endswith('.fdp'):
+            file_path += '.fdp'
+        try:
+            with open(file_path, 'w') as file:
+                '''
+                blocks = ';\n'.join([
+                    f"{name}={json.dumps(block)}"
+                    for name, block in self.generatedBlocks.items()
+                ]) + ';'
+                blocks = self.convertJsonToPython(blocks)
+                '''
+                for blockName in self.blockNames:
+                    blockElements=self.blocks[blockName]
+                    self.output=self.output + blockName + "=["
+                    finalIndex=len(blockElements)-1
+                    for index, element in enumerate(blockElements):
+                        if index == finalIndex:
+                            self.output=self.output + element
+                        else:
+                            self.output=self.output + element + ","
+                    self.output=self.output + "];" + "\n"
+                print(self.output)
+                file.write(self.output)
+            print(f"File saved successfully at {file_path}")
+        except IOError as e:
+            print(f"An error occurred while writing to the file: {e}")
+
+# Define custom command classes
+# Example usage
 if __name__ == "__main__":
-    fdSubprocess = FdSubprocess()
-    baseDir = os.path.dirname(os.path.abspath(__file__))
-    evaluatorDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Evaluator')
+    automation = FlowChemAutomation()
 
-    pid = fdSubprocess.spawnExternalMain(evaluatorDir)
+    automation.addBlockElement("block_2","sf10vapourtec2","fr",1.0)
+    automation.addBlockElement("block_2","flowsynmaxi2","pbfr",1.0)
+    automation.addBlockElement("block_3","Delay","sleepTime",100.0)
+    automation.addBlockElement("block_2","vapourtecR4P1700","svasr",True)
 
-    print("Main optimizing continues...")
-    time.sleep(10)
+    print(automation.blocks)
+
+    automation.parseToScript()
+    print(automation.output)
+    #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")    
+    #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")
+    
+    '''
+    Output:
+    
+    myBlock_123=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}];
+    myBlock_456=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpAFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
+    '''

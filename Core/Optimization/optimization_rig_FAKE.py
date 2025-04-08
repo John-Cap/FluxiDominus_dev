@@ -67,6 +67,7 @@ class OptimizationRig:
         self.connected=False
         
         self.objTarget=0
+        self.optimized=False
         
         self.virtualYieldLookup = ReactionLookup()
         
@@ -202,12 +203,13 @@ class OptimizationRig:
         if "maxYield" in msg:
             #self.objectiveScore=msg["maxYield"]
             self.objectiveScore=self.virtualYieldLookup.getYield(self.lastRecommendedVal["temperature"],self.resTime)
-            # if self.objectiveScore >= self.objTarget:
-            #     self.terminate=True
-            #     self.setGoSummit(False)
-            #     self.setGoEvaluator(False)
-            #     print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
-            #     return
+            if self.objectiveScore >= self.objTarget:
+                self.terminate=True
+                rig.optimizing=False
+                self.setGoSummit(False)
+                self.setGoEvaluator(False)
+                print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
+                return
             
             print(f"Recommendation {self.lastRecommendedVal} delivered conversion of {self.objectiveScore}")
             
@@ -223,6 +225,7 @@ class OptimizationRig:
 
             self.optimizing = False
             self.evalYielded=True
+            
 
     def executeRecommendation(self):
         """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
@@ -286,6 +289,7 @@ class OptimizationRig:
         self.automation.addBlockElement("scanning","Delay","sleepTime",timeToScan)
                         
         # Convert to script and send to MQTT
+        print(f"Automation: {self.automation.blocks}")
         self.automation.parseToScript()
         self.optimizing = True
         self.mqttService.script = self.automation.output
@@ -311,8 +315,8 @@ class OptimizationRig:
             self.client.publish(topic=self.topicOptOut,payload=json.dumps(
                 {"goSummit":True,"instruct":{"start":"","init":{
                     "initVal":{ #TODO - Temp
-                        "temperature":[30,60],
-                        "flowrate":[0.5,4]
+                        "temperature":[10,60],
+                        "flowrate":[0.25,3]
                     }
                 }}}
             ))
