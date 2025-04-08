@@ -120,7 +120,7 @@ updater.abort=False
 # updater.databaseOperations.mongoDb.currZeroTime=None
 
 # Main loop!
-rig.optimise(objTarget=0.8)
+rig.optimise(objTarget=0.95)
 goTime=time.time()
 while True:
 

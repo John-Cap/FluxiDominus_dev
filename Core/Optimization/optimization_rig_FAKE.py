@@ -205,7 +205,7 @@ class OptimizationRig:
             self.objectiveScore=self.virtualYieldLookup.getYield(self.lastRecommendedVal["temperature"],self.resTime)
             if self.objectiveScore >= self.objTarget:
                 self.terminate=True
-                rig.optimizing=False
+                self.optimizing=False
                 self.setGoSummit(False)
                 self.setGoEvaluator(False)
                 print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
