@@ -47,6 +47,7 @@ class FakeReactor:
         self.ir_data = self.load_ir_data(data_folder)
         
         self.debugTemp=False
+        self.debugFlowrate=False
 
     def load_ir_data(self, folder_path):
         csv_files = [
@@ -73,6 +74,7 @@ class FakeReactor:
             #return
         if rc == 0:
             self.mqtt_client.subscribe(topic="debug/temp")
+            self.mqtt_client.subscribe(topic="debug/fr")
             time.sleep(1)
             print(f"WJ - Connected with rc {rc}!")
             self.connected=True
@@ -87,7 +89,11 @@ class FakeReactor:
         if "debugTemp" in msg:
             self.target_temp=msg["debugTemp"]
             print(f"Received target temperature: {self.target_temp}")
-            self.debugTemp=True
+            self.debugTemp=True        
+        if "debugFlowrate" in msg:
+            self.flow_rate=(msg["debugFlowrate"])/2
+            print(f"Received target flowrate: {self.flow_rate}")
+            self.debugFlowrate=True
 
     def update_temperature(self):
         now = time.time()
@@ -100,8 +106,14 @@ class FakeReactor:
         else:
             self.hotcoil_temp = (self.target_temp + random.uniform(-0.05, 0.05))
 
+        if self.debugTemp:
+            self.last_temp_switch = now
+
     def update_flowrate(self):
         now = time.time()
+        if self.debugFlowrate:
+            self.last_flow_switch = now
+            return
         if now - self.last_flow_switch >= self.flow_switch_interval:
             self.flow_rate = random.uniform(*self.flow_range)
             self.last_flow_switch = now

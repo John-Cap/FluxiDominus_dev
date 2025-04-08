@@ -175,9 +175,11 @@ while True:
     #TODO - wait for coil to heat up/cool down
     start=time.time()
     temp=rig.lastRecommendedVal["temperature"]
+    fr=rig.lastRecommendedVal["flowrate"]
     res=rig.resTime
     
     updater.client.publish(topic="debug/temp",payload=json.dumps({"debugTemp":temp}))
+    updater.client.publish(topic="debug/fr",payload=json.dumps({"debugFlowrate":fr}))
     
     while not "subflow/hotcoil1/tele" in updater.lastMsgFromTopic:
         time.sleep(0.25)
@@ -206,8 +208,11 @@ while True:
             currTemp=HardcodedTeleKeys.getTeleVal(updater.lastMsgFromTopic["subflow/hotcoil1/tele"],"temp")
     #Adjust scan time!!!
     shift=time.time() - start
-    rig.startScanAt=rig.startScanAt + shift
-    rig.endScanAt=rig.endScanAt + shift
+    # rig.startScanAt=rig.startScanAt + shift
+    # rig.endScanAt=rig.endScanAt + shift
+
+    rig.startScanAt=time.time() + 10
+    rig.endScanAt=rig.startScanAt + 15
     ########################################################################################################
     
     while runOptimization and rig.optimizing:
@@ -234,7 +239,7 @@ while True:
                 else:
                     print("Next procedure!")
             else:
-                procedure.currConfig.sendMQTT(waitForDelivery=True)
+                procedure.currConfig.sendMQTT(waitForDelivery=True,debugDelaySkip=True)
             
         if not scanDone:
             if not rig.scanning and rig.startScanAt < time.time():
