@@ -132,8 +132,8 @@ class SummitOptimizer:
             if "init" in data["instruct"]:
                 if "initVal" in data["instruct"]["init"]:
                     print(f'initVal: {data["instruct"]["init"]}')
-                    self.domain += ContinuousVariable(name="temperature",bounds=[0,50], is_objective=False, description='temperature')
-                    self.domain += ContinuousVariable(name="flowrate", bounds=[0.1,3], is_objective=False, description='flowrate')
+                    self.domain += ContinuousVariable(name="temperature",bounds=[0,100], is_objective=False, description='temperature')
+                    self.domain += ContinuousVariable(name="flowrate", bounds=[0.15,3], is_objective=False, description='flowrate')
                     self.domain += ContinuousVariable(name="yieldVal", bounds=[0, 1], is_objective=True, maximize=True, description='yieldVal')  # Yield is the objective
                     if not self.strategy:
                         self.strategy=SOBO(self.domain)

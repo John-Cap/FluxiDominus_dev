@@ -1,156 +1,94 @@
-#import json
-import copy
-import os
+import threading
+from time import sleep
+import pandas as pd
+import numpy as np
+from pathlib import Path
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.interpolate import griddata
 
-from Config.Data.hardcoded_command_templates import HardcodedCommandTemplates
-
-class CustomCommands:
-    def __init__(self):
-        self.commands = {}
-
-    def registerCommand(self, commandClass):
-        commandName = commandClass.__name__
-        commandParams = [param for param in vars(commandClass()).keys()]
-        self.commands[commandName] = commandParams
-
-    def getCommandParams(self, commandName):
-        return self.commands.get(commandName, None)
-
-class FlowChemAutomation:
-
-    def __init__(self):
-        self.output=""
-        self.varBrackets={
-            ">float<":float,
-            ">bool<":bool,
-            ">string<":str
-        }
-        self.blocks={}
-        self.blockNames=[]
-
-        self.commandTemplatesNested = HardcodedCommandTemplates.commandTemplatesNested
+class ReactionLookup:
+    def __init__(self, filename=r"ReactionSimulation\tables\max_at_34_10_1_2.csv"):
+        # Load the lookup table from the file
+        self.filePath = Path(filename)
+        if not self.filePath.exists():
+            raise FileNotFoundError(f"{filename} not found in the current directory.")
         
-    def reset(self):
-        #Delete all block data
-        self.blocks={}
-        self.blockNames=[]
-        self.output=""
+        self.lookupTable = pd.read_csv(self.filePath)
+        self.loopGraphUpdates = True
+        self.updateThread = None
+        self.fig = None
+        self.doUpdate = False
         
-    def parsePlutterIn(self,blocks):
-        #print("WJ - Blocks in: " + str(blocks))
-        for key, val in blocks.items():
-            for cmnd in val:
-                #print("Adding " + str(cmnd) + " to block " + key)
-                if isinstance(cmnd["value"],bool):
-                    pass
-                elif isinstance(cmnd["value"],int):
-                    #print('WJ - ' + str(cmnd["value"]) + ' is an int')
-                    cmnd["value"]=float(cmnd["value"])
-                self.addBlockElement(key,cmnd["device"],cmnd["setting"],cmnd["value"])
-        return (self.parseToScript())
+        # Create a numpy array from the lookup table data
+        self.data = self.lookupTable[['X', 'Y', 'Z']].values
 
-    def parseBlockElement(self,device,setting,val):
-        if not device in self.commandTemplatesNested:
-            print('WJ - Device not found!!')
-            return
-        setThis=copy.deepcopy(self.commandTemplatesNested[device][setting])
-        #Valid setting?
-        for key in self.varBrackets: #TODO - this is stupid
-            if key in setThis:
-                #print('WJ - Val is ' + str(val))
-                if isinstance(val,self.varBrackets[key]):
-                    return ((setThis.replace(key,str(val))).replace(" ","")).replace("\n","")
-                else:
-                    #Throw
-                    print("WJ - Error!")
+    def getYield(self, x, y):
+        # Find the closest point in the lookup table to the given (x, y)
+        closestIdx = ((self.lookupTable['X'] - x)**2 + (self.lookupTable['Y'] - y)**2).idxmin()
+        closestRow = self.lookupTable.iloc[closestIdx]
+        return closestRow['Z']
 
-    def addBlock(self,blockName):
-        #TODO - Check if block exists then throw
-        self.blocks[blockName]=[]
-        self.blockNames.append(blockName)
-
-    def addBlockElement(self,blockName,device,setting,val):
-        if not blockName in self.blocks:
-            self.addBlock(blockName)
-        self.blocks[blockName].append(self.parseBlockElement(device,setting,val))
+    def plotSurface(self):
+        # Extract X, Y, and Z from the data
+        x = self.data[:, 0]
+        y = self.data[:, 1]
+        z = self.data[:, 2]
         
-    def parseToScript(self):
-        if len(self.blockNames) != 0:
-            self.output=""
-            for blockName in self.blockNames:
-                blockElements=self.blocks[blockName]
-                self.output=self.output + blockName + "=["
-                finalIndex=len(blockElements)-1
-                for index, element in enumerate(blockElements):
-                    if index == finalIndex:
-                        self.output=self.output + element
-                    else:
-                        self.output=self.output + element + ","
-                self.output=self.output + "];" + "\n"
-            #print(self.output)
-            self.blocks={}
-            self.blockNames=[]
-            return self.output
-        else:
-            print("WJ - No blocks!")
+        # Create a grid for X and Y values
+        xi = np.linspace(x.min(), x.max(), 100)
+        yi = np.linspace(y.min(), y.max(), 100)
+        X, Y = np.meshgrid(xi, yi)
+        
+        # Interpolate Z values on the grid using griddata
+        Z = griddata((x, y), z, (X, Y), method='cubic')
+        
+        # Plotting
+        fig = plt.figure()
+        self.fig = fig
+        ax = fig.add_subplot(111, projection='3d')
+        surf = ax.plot_surface(X, Y, Z, cmap='viridis', edgecolor='k', alpha=0.7)
+        
+        # Add color bar and labels
+        fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Yield (Z)")
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Yield (Z)')
+        ax.set_title('Reaction Yield Surface Plot')
+        
+        # Print only, without showing the plot
+        plt.show()
+    def save_scaled_surface(self, x_max=34, y_max=10):
+        # Calculate the max distance within domain bounds
+        max_dist = np.sqrt((100 - x_max)**2 + (30 - y_max)**2)
 
-            
-    def saveBlocksToFile(self, filename="default_script",save_directory=""):
-        if save_directory=="":
-            home_directory = os.path.expanduser("~")
-            save_directory = os.path.join(home_directory, "flowchem_scripts")
+        # Compute distance from the max point
+        distances = np.sqrt((self.lookupTable['X'] - x_max)**2 + (self.lookupTable['Y'] - y_max)**2)
 
-        # Ensure the directory exists
-        os.makedirs(save_directory, exist_ok=True)
+        # Compute scaling factors
+        scale_factors = 2 * (1 - distances / max_dist)
 
-        file_path = os.path.join(save_directory, filename)
-        if not file_path.endswith('.fdp'):
-            file_path += '.fdp'
-        try:
-            with open(file_path, 'w') as file:
-                '''
-                blocks = ';\n'.join([
-                    f"{name}={json.dumps(block)}"
-                    for name, block in self.generatedBlocks.items()
-                ]) + ';'
-                blocks = self.convertJsonToPython(blocks)
-                '''
-                for blockName in self.blockNames:
-                    blockElements=self.blocks[blockName]
-                    self.output=self.output + blockName + "=["
-                    finalIndex=len(blockElements)-1
-                    for index, element in enumerate(blockElements):
-                        if index == finalIndex:
-                            self.output=self.output + element
-                        else:
-                            self.output=self.output + element + ","
-                    self.output=self.output + "];" + "\n"
-                print(self.output)
-                file.write(self.output)
-            print(f"File saved successfully at {file_path}")
-        except IOError as e:
-            print(f"An error occurred while writing to the file: {e}")
+        # Apply scaling to Z
+        self.lookupTable['Z'] = self.lookupTable['Z'] * scale_factors
 
-# Define custom command classes
+        # Normalize Z values to 0–1
+        self.lookupTable['Z'] = (self.lookupTable['Z'] - self.lookupTable['Z'].min()) / (self.lookupTable['Z'].max() - self.lookupTable['Z'].min())
+
+        # Save the modified DataFrame as a new CSV file
+        new_path = self.filePath.with_name(self.filePath.stem + "_2.csv")
+        self.lookupTable.to_csv(new_path, index=False)
+        print(f"Scaled and normalized surface saved to: {new_path}")
+
+    def _updateLoop(self):
+        while True:
+            self.doUpdate = True
+            while not self.doUpdate:
+                sleep(0.1)
+
+
 # Example usage
 if __name__ == "__main__":
-    automation = FlowChemAutomation()
-
-    automation.addBlockElement("block_2","sf10vapourtec2","fr",1.0)
-    automation.addBlockElement("block_2","flowsynmaxi2","pbfr",1.0)
-    automation.addBlockElement("block_3","Delay","sleepTime",100.0)
-    automation.addBlockElement("block_2","vapourtecR4P1700","svasr",True)
-
-    print(automation.blocks)
-
-    automation.parseToScript()
-    print(automation.output)
-    #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")    
-    #automation.saveBlocksToFile(save_directory=r"C:\Python_Projects\FluxiDominus_dev\devJunk")
-    
-    '''
-    Output:
-    
-    myBlock_123=[{"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 1.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}, {"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpBFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"Delay": {"initTimestamp": None, "sleepTime": 15}}];
-    myBlock_456=[{"deviceName": "flowsynmaxi2", "inUse": True, "settings": {"subDevice": "PumpAFlowRate", "command": "SET", "value": 0.0}, "topic": "subflow/flowsynmaxi2/cmnd", "client": "client"}, {"deviceName": "sf10Vapourtec1", "inUse": True, "settings": {"command": "SET", "mode": "FLOW", "flowrate": 0.0}, "topic": "subflow/sf10vapourtec1/cmnd", "client": "client"}];
-    '''
+    lookup = ReactionLookup()
+    print(lookup.getYield(34, 10))  # Sample yield lookup
+    lookup.plotSurface()
+    # lookup.save_scaled_surface()   # Save the scaled surface as CSV

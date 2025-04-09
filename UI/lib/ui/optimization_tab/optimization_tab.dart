@@ -5,8 +5,6 @@ import 'package:flutter_flow_chart/includes/plutter.dart';
 
 import 'package:flutter_flow_chart/ui/list_generators/lists.dart';
 
-import '../../config/UI/brokers_and_topics.dart' show MqttTopics;
-
 class OptimizationTab extends StatefulWidget {
   final MqttService mqttService;
 
@@ -25,8 +23,8 @@ class _OptimizationTabState extends State<OptimizationTab>
   bool isRunning = false;
   Map<String, dynamic> optimizationProgress = {};
   Map<String, List<double>> tempBounds = {
-    "Temperature": [10, 60],
-    "Flowrate": [0.25, 3],
+    "Temperature": [1, 100],
+    "Flowrate": [0.15, 3],
     "Residence Time": [5, 30]
   };
 
@@ -35,9 +33,9 @@ class _OptimizationTabState extends State<OptimizationTab>
 
   void startOptimization() {
     Map<String, List<double>> paramWithBounds = {};
-    selectedParameters.forEach((value) {
+    for (var value in selectedParameters) {
       paramWithBounds[value] = tempBounds[value]!;
-    });
+    }
     final optimizationDetails = {
       'optimizer': selectedOptimizer,
       'objectiveFunction': selectedObjectiveFunction,
