@@ -193,13 +193,21 @@ class _OptimizationTabState extends State<OptimizationTab>
                       'Objective Evaluator: ${widget.mqttService.optimizationDetails['objectiveFunction'] ?? 'N/A'}'),
                   ValueListenableBuilder(
                     valueListenable: widget.mqttService.recommendedParams,
-                    builder: (_, value, __) =>
-                        Text('Recommended Params: $value'),
+                    builder: (_, value, __) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Recommended Params:'),
+                        Text(
+                            '     Temperature: ${((value as Map<String, double>)["Temperature"])?.toStringAsFixed(1) ?? "N/A"} deg'),
+                        Text(
+                            '     Flowrate: ${((value)["Flowrate"])?.toStringAsFixed(3) ?? "N/A"} mL/min'),
+                      ],
+                    ),
                   ),
                   ValueListenableBuilder(
                     valueListenable: widget.mqttService.lastYield,
-                    builder: (_, value, __) =>
-                        Text('Best Yield: ${value.toString()}%'),
+                    builder: (_, value, __) => Text(
+                        'Best Yield: ${((value as double) * 100).toStringAsFixed(1)}%'),
                   ),
                   const SizedBox(height: 16),
                   const Text('History:',
@@ -216,9 +224,9 @@ class _OptimizationTabState extends State<OptimizationTab>
                                 safeResultList[index]['recommendation'] ?? {};
                             return ListTile(
                               title: Text(
-                                  'T: ${entry['Temperature'] ?? 'N/A'}°C, F: ${entry['Flowrate'] ?? 'N/A'} mL/min'),
-                              subtitle:
-                                  Text('Yield: ${entry['yield'] ?? 'N/A'}%'),
+                                  'T: ${(entry['Temperature']).toStringAsFixed(1) ?? 'N/A'}°C, F: ${(entry['Flowrate'].toStringAsFixed(2)) ?? 'N/A'} mL/min'),
+                              subtitle: Text(
+                                  'Yield: ${(entry['yield'] * 100).toStringAsFixed(0) ?? 'N/A'}%'),
                             );
                           },
                         );
@@ -231,7 +239,7 @@ class _OptimizationTabState extends State<OptimizationTab>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                            'Final Yield: ${widget.mqttService.lastYield.value.toStringAsFixed(2)}%'),
+                            'Final Yield: ${(widget.mqttService.lastYield.value * 100).toStringAsFixed(1)}%'),
                         // Elapsed time can be added with a timer later
                       ],
                     ),

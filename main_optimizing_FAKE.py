@@ -142,7 +142,7 @@ updater.abort=False
 # updater.databaseOperations.mongoDb.currZeroTime=None
 
 # Main loop!
-rig.optimise(objTarget=0.95)
+rig.optimise(objTarget=0.90)
 goTime=time.time()
 while True:
 
@@ -181,7 +181,7 @@ while True:
         procedure = parser.createProcedure(updater.fdpDecoder)
 
         print('#######')
-        print('WJ - Parsed script is: '+updater.script)
+        print('WJ - Script parsed successfully.')
         print('#######')
         
         updater.script=""

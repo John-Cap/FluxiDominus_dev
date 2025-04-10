@@ -193,7 +193,14 @@ class OptimizationRig:
             print(f"  Device: {device}")
             for paramId, val in params.items():
                 print(f"    {paramId}: {val:.3f}")
-                
+
+        evalInfo={
+            "recommendedParams":{
+                "Temperature":float(self.lastRecommendedVal["temperature"]),
+                "Flowrate":float(self.lastRecommendedVal["flowrate"])
+            }
+        }
+        self.mqttService.publish(MqttTopics.getUiTopic("optOut"),json.dumps({"optInfo":evalInfo}))
         self.executeRecommendation_TEMP()
 
     def evaluateRecommendation(self):
@@ -299,7 +306,6 @@ class OptimizationRig:
         self.automation.addBlockElement("scanning","Delay","sleepTime",timeToScan)
                         
         # Convert to script and send to MQTT
-        print(f"Automation: {self.automation.blocks}")
         self.automation.parseToScript()
         self.optimizing = True
         self.mqttService.script = self.automation.output

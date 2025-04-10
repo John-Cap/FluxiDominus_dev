@@ -156,7 +156,7 @@ while True:
         procedure = parser.createProcedure(updater.fdpDecoder)
 
         print('#######')
-        print('WJ - Parsed script is: '+updater.script)
+        print('WJ - Script parsed successfully.')
         print('#######')
         
         updater.script=""

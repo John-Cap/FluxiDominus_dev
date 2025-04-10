@@ -115,7 +115,7 @@ class MqttService extends ChangeNotifier {
         "deviceName": 'vapourtecR4P1700',
         "deviceValueName": '',
         "address": const ["tele", "state", "pressPumpA"],
-        "maxValue": 15,
+        "maxValue": 25,
         "cmndTopic": '',
         "cmndName": '',
         "unitMultiplier": 1,
@@ -142,7 +142,7 @@ class MqttService extends ChangeNotifier {
         "deviceName": 'vapourtecR4P1700',
         "deviceValueName": '',
         "address": const ["tele", "state", "pressPumpB"],
-        "maxValue": 15,
+        "maxValue": 25,
         "cmndTopic": '',
         "cmndName": '',
         "unitMultiplier": 1,
@@ -190,7 +190,7 @@ class MqttService extends ChangeNotifier {
 
   // Mock options for optimizer and objective function
   final List<String> optimizationOptions = ["SUMMIT_SOBO"];
-  final List<String> objectiveFunctions = ["WJ_IR_ALLYL_BROMIDE"];
+  final List<String> objectiveFunctions = ["BMC_WJ_IR_ALLYL_BROMIDE"];
 
   //
   //////////////////////////////////////////////////////////////////////////
@@ -320,8 +320,13 @@ class MqttService extends ChangeNotifier {
           }
         }
         if (messageMap["optInfo"].containsKey("recommendedParams")) {
-          recommendedParams.value =
-              (messageMap["optInfo"]["recommendedParams"]);
+          print(
+              "WJ - recommendedParams.value: ${messageMap["optInfo"]["recommendedParams"]}");
+          recommendedParams.value = ({
+            "Temperature": messageMap["optInfo"]["recommendedParams"]
+                ["Temperature"],
+            "Flowrate": messageMap["optInfo"]["recommendedParams"]["Flowrate"]
+          });
         }
         if (messageMap["optInfo"].containsKey("recommendationResult")) {
           var result = Map<String, double>.from(
