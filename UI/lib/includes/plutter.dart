@@ -317,6 +317,9 @@ class MqttService extends ChangeNotifier {
         if (messageMap["optInfo"].containsKey("eval")) {
           if (messageMap["optInfo"]["eval"].containsKey("yield")) {
             lastYield.value = messageMap["optInfo"]["eval"]["yield"];
+          } else if (messageMap["optInfo"]["eval"].containsKey("maxYield")) {
+            lastYield.value = messageMap["optInfo"]["eval"]["maxYield"];
+            goOptimization.value = false;
           }
         }
         if (messageMap["optInfo"].containsKey("recommendedParams")) {

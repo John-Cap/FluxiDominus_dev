@@ -106,7 +106,6 @@ class OptimizationRig:
         # Convert to script and send to MQTT
         self.automation.parseToScript()
         self.mqttService.script = self.automation.output
-        print(f"Automization output: {self.automation.output}")
 
     def start(self):
         """ Starts a background thread to continuously optimize until the target score is reached. """

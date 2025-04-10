@@ -63,6 +63,8 @@ class OptimizationRig:
         self.client = mqtt.Client(client_id="OptimizerRig", clean_session=True, userdata=None, protocol=mqtt.MQTTv311)
         self.client.on_message=self.onMessage
         self.client.on_connect=self.onConnect
+        self.client.on_disconnect=self.onDisconnect
+        
         self.host=host
         
         self.connected=False
@@ -141,7 +143,9 @@ class OptimizationRig:
             time.sleep(1)
             print(f"WJ - Connected with rc {rc}!")
             self.connected=True
-                
+    def onDisconnect(self, client, userdata, rc):
+        print(f"Optimization rig has disconnected! Reason code: {rc}")
+    
     def generateRecommendation_TEMP(self, msg):
         """ Check for evaluated yield and update optimizer. """
         
@@ -216,6 +220,12 @@ class OptimizationRig:
                 self.optimizing=False
                 self.setGoSummit(False)
                 self.setGoEvaluator(False)
+                evalInfo={
+                    "eval":{
+                        "maxYield":self.objectiveScore
+                    }
+                }
+                self.mqttService.publish(MqttTopics.getUiTopic("optOut"),json.dumps({"optInfo":evalInfo}))
                 print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
                 return
             
@@ -261,7 +271,6 @@ class OptimizationRig:
         # Convert to script and send to MQTT
         self.automation.parseToScript()
         self.mqttService.script = self.automation.output
-        print(f"Automization output: {self.automation.output}")
                         
     def executeRecommendation_TEMP(self):
         """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
@@ -317,8 +326,6 @@ class OptimizationRig:
         self.endScanAt=timeToScan + self.startScanAt
 
         self.awaitYield=True
-        
-        print(f"Automization output: {self.automation.output}")
         
         print(f"IR scanning will commence in {timeToReachExit/60} minutes. Scanning will take {timeToScan} seconds.")
 

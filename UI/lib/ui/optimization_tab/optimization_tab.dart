@@ -196,7 +196,7 @@ class _OptimizationTabState extends State<OptimizationTab>
                     builder: (_, value, __) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Recommended Params:'),
+                        Text('Current Parametres:'),
                         Text(
                             '     Temperature: ${((value as Map<String, double>)["Temperature"])?.toStringAsFixed(1) ?? "N/A"} deg'),
                         Text(
@@ -224,9 +224,9 @@ class _OptimizationTabState extends State<OptimizationTab>
                                 safeResultList[index]['recommendation'] ?? {};
                             return ListTile(
                               title: Text(
-                                  'T: ${(entry['Temperature']).toStringAsFixed(1) ?? 'N/A'}°C, F: ${(entry['Flowrate'].toStringAsFixed(2)) ?? 'N/A'} mL/min'),
+                                  '${index + 1}. T: ${(entry['Temperature']).toStringAsFixed(1) ?? 'N/A'}°C, F: ${(entry['Flowrate'].toStringAsFixed(2)) ?? 'N/A'} mL/min'),
                               subtitle: Text(
-                                  'Yield: ${(entry['yield'] * 100).toStringAsFixed(0) ?? 'N/A'}%'),
+                                  ' Yield: ${(entry['yield'] * 100).toStringAsFixed(0) ?? 'N/A'}%'),
                             );
                           },
                         );

@@ -236,7 +236,6 @@ class OptimizationRig:
         # Convert to script and send to MQTT
         self.automation.parseToScript()
         self.mqttService.script = self.automation.output
-        print(f"Automization output: {self.automation.output}")
                         
     def executeRecommendation_TEMP(self):
         """ Converts recommendation into commands, resets automation, and sends the script to MQTT. """
@@ -291,8 +290,6 @@ class OptimizationRig:
         self.endScanAt=timeToScan + self.startScanAt
 
         self.awaitYield=True
-        
-        print(f"Automization output: {self.automation.output}")
         
         print(f"IR scanning will commence in {timeToReachExit/60} minutes. Scanning will take {timeToScan} seconds.")
                 
