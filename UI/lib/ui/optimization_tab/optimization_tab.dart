@@ -62,6 +62,13 @@ class _OptimizationTabState extends State<OptimizationTab>
         setState(() {
           isRunning = true;
         });
+      } else {
+        if (isRunning) {
+          print("WJ - Optimization stopping.");
+          setState(() {
+            isRunning = false;
+          });
+        }
       }
     });
   }
@@ -196,6 +203,7 @@ class _OptimizationTabState extends State<OptimizationTab>
                     builder: (_, value, __) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('___________________'),
                         Text('Current Parametres:'),
                         Text(
                             '     Temperature: ${((value as Map<String, double>)["Temperature"])?.toStringAsFixed(1) ?? "N/A"} deg'),
@@ -206,8 +214,19 @@ class _OptimizationTabState extends State<OptimizationTab>
                   ),
                   ValueListenableBuilder(
                     valueListenable: widget.mqttService.lastYield,
-                    builder: (_, value, __) => Text(
-                        'Best Yield: ${((value as double) * 100).toStringAsFixed(1)}%'),
+                    builder: (_, value, __) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('________________'),
+                        Text('Best Parametres:'),
+                        Text(
+                            '     Temperature: ${widget.mqttService.bestParametres["Temperature"]?.toStringAsFixed(1) ?? "N/A"} deg'),
+                        Text(
+                            '     Flowrate: ${widget.mqttService.bestParametres["Flowrate"]?.toStringAsFixed(3) ?? "N/A"} mL/min'),
+                        Text(
+                            '     Yield: ${((value as double) * 100).toStringAsFixed(1)}%'),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Text('History:',
@@ -240,7 +259,6 @@ class _OptimizationTabState extends State<OptimizationTab>
                       children: [
                         Text(
                             'Final Yield: ${(widget.mqttService.lastYield.value * 100).toStringAsFixed(1)}%'),
-                        // Elapsed time can be added with a timer later
                       ],
                     ),
                 ],

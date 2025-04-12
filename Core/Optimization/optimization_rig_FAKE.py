@@ -215,20 +215,6 @@ class OptimizationRig:
         if "maxYield" in msg:
             #self.objectiveScore=msg["maxYield"]
             self.objectiveScore=self.virtualYieldLookup.getYield(self.lastRecommendedVal["temperature"],self.resTime)
-            if self.objectiveScore >= self.objTarget:
-                self.terminate=True
-                self.optimizing=False
-                self.setGoSummit(False)
-                self.setGoEvaluator(False)
-                evalInfo={
-                    "eval":{
-                        "maxYield":self.objectiveScore
-                    }
-                }
-                self.mqttService.publish(MqttTopics.getUiTopic("optOut"),json.dumps({"optInfo":evalInfo}))
-                print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
-                return
-            
             print(f"Recommendation {self.lastRecommendedVal} delivered conversion of {self.objectiveScore}")
             
             # if self.objectiveScore is None or not (0 <= self.objectiveScore <= 1):
@@ -249,6 +235,20 @@ class OptimizationRig:
                 }
             }
             self.mqttService.publish(MqttTopics.getUiTopic("optOut"),json.dumps({"optInfo":evalInfo}))
+            if self.objectiveScore >= self.objTarget:
+                self.terminate=True
+                self.optimizing=False
+                self.setGoSummit(False)
+                self.setGoEvaluator(False)
+                evalInfo={
+                    "eval":{
+                        "maxYield":self.objectiveScore
+                    }
+                }
+                self.mqttService.publish(MqttTopics.getUiTopic("optOut"),json.dumps({"optInfo":evalInfo}))
+                print(f"Target conversion of {self.objTarget} reached with max conversion {self.objectiveScore}!")
+                return
+            
 
             self.optimizing = False
             self.evalYielded=True

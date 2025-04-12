@@ -184,6 +184,7 @@ class MqttService extends ChangeNotifier {
   ValueNotifier<List<Map<String, Map<String, double>>>> resultHistory =
       ValueNotifier([]);
   ValueNotifier<Map<String, double>> recommendedParams = ValueNotifier({});
+  Map<String, double> bestParametres = {};
   ValueNotifier<double> lastYield = ValueNotifier(0);
   ValueNotifier<bool> goOptimization = ValueNotifier(false);
   // List<String> objectiveFunctions = [];
@@ -350,14 +351,20 @@ class MqttService extends ChangeNotifier {
 
           // Optionally update best yield if you want to keep a separate variable for it
           if (yield > lastYield.value) {
+            bestParametres = {
+              'Temperature': result['Temperature'] ?? 0,
+              'Flowrate': result['Flowrate'] ?? 0
+            };
             lastYield.value = yield;
           }
         }
       }
       if (messageMap.containsKey("goOptimization")) {
-        lastYield.value = 0;
-        resultHistory.value = [];
-        goOptimization.value = true;
+        if (messageMap["goOptimization"]) {
+          lastYield.value = 0;
+          resultHistory.value = [];
+          goOptimization.value = true;
+        }
       }
     } else if (messageMap.containsKey("GraphWidgets")) {
       //TODO - FIX THIS HARDCODED DISASTER
