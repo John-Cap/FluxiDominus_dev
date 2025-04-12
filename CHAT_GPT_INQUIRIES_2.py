@@ -1,5 +1,5 @@
-'''
-{
+
+flowComp={
   "3f6e37eb-40ee-4ed3-862e-d9800cd0c43e": {
     "name": "R4 Pump A",
     "flowsInto": [
@@ -55,7 +55,7 @@
     "volume": 0.123
   },
   "e76868c1-4c46-4c35-be71-7cf388c4765d": {
-    "name": "PushSolvent A",
+    "name": "PushSolventA",
     "flowsInto": [
       "tubing_4_e76868c1-4c46-4c35-be71-7cf388c4765d_11aff382-a458-4a25-a311-db62c3c45843"
     ],
@@ -202,7 +202,7 @@
     "name": "WasteOrCollect",
     "flowsInto": [
       "tubing_12_e64f27b7-c346-4c86-94cd-c00398796894_27151161-8edf-4152-9ea6-ce1df14f6f46",
-      "tubing_12_e64f27b7-c346-4c86-94cd-c00398796894_f14f0372-3504-4559-ad7e-6a8661fdb7b4"
+      "tubing_13_e64f27b7-c346-4c86-94cd-c00398796894_f14f0372-3504-4559-ad7e-6a8661fdb7b4"
     ],
     "deviceName": "null",
     "deviceType": "Valve",
@@ -241,7 +241,6 @@
     "volume": 0
   }
 }
-'''
 ###Example
 
 import random
@@ -250,156 +249,32 @@ import time
 from Core.Fluids.FlowPath import IR, Coil, FlowOrigin, FlowPath, FlowTerminus, Pump, Slugs, TPiece, Tubing, Valve
 ###Examples
 if __name__ == "__main__":
-    _path=FlowPath()
-    comp=[]
+    from Core.Fluids.FlowPath import FlowPath, Slugs, FlowTerminus, FlowOrigin
     
-    #Stocks
-    _KOH_sol=FlowOrigin(volume=0,name="KOH_sol")
-    comp.append(_KOH_sol)
-    _allylIso=FlowOrigin(volume=0,name="AllylIsoval")
-    comp.append(_allylIso)
-    _push_A=FlowOrigin(volume=0,name="PushSolvent A")
-    comp.append(_push_A)
-    _push_B=FlowOrigin(volume=0,name="PushSolvent B")
-    comp.append(_push_B)
-    
-    #Pump lines
-    _hplc_A=Pump(volume=5,name="R4 Pump A")
-    comp.append(_hplc_A)
-    _hplc_B=Pump(volume=5,name="R4 Pump B")
-    comp.append(_hplc_B)
-    #Valves
-    _SR_A=Valve(volume=0.25,name="SR_A")
-    comp.append(_SR_A)
-    _SR_B=Valve(volume=0.25,name="SR_B")
-    comp.append(_SR_B)
-    _WC_valve=Valve(volume=0.25,name="WasteOrCollect")
-    comp.append(_WC_valve)
-    #IR
-    _IR=(IR(volume=0.25,name="ReactIR 702L1"))
-    comp.append(_IR)
-    #Coil
-    _coil_40=(Coil(volume=5,name="Hotcoil_1")) #Smaller volume for sped up debugging
-    # _coil_40=(Coil(volume=40,name="Hotcoil_1"))
-    comp.append(_coil_40)
-    #Termini
-    _waste=FlowTerminus(volume=0,name="Waste")
-    comp.append(_waste)
-    _product=FlowTerminus(volume=0,name="Product")
-    comp.append(_product)
-    
-    _tPiece_1=TPiece(volume=0.05,name="StaticMixer")
-    comp.append(_tPiece_1)
-    
-    _tubing_1=Tubing(volume=0.123,name="TUBE_1")
-    comp.append(_tubing_1)
-    _tubing_2=Tubing(volume=0.123,name="TUBE_2")
-    comp.append(_tubing_2)
-    _tubing_3=Tubing(volume=0.123,name="TUBE_3")
-    comp.append(_tubing_3)
-    _tubing_4=Tubing(volume=0.123,name="TUBE_4")
-    comp.append(_tubing_4)
-    _tubing_5=Tubing(volume=0.123,name="TUBE_5")
-    comp.append(_tubing_5)
-    _tubing_6=Tubing(volume=0.123,name="TUBE_6")
-    comp.append(_tubing_6)
-    _tubing_7=Tubing(volume=0.123,name="TUBE_7")
-    comp.append(_tubing_7)
-    _tubing_8=Tubing(volume=0.123,name="TUBE_8")
-    comp.append(_tubing_8)
-    _tubing_9=Tubing(volume=0.123,name="TUBE_9")
-    comp.append(_tubing_9)
-    _tubing_10=Tubing(volume=0.123,name="TUBE_10")
-    comp.append(_tubing_10)
-    _tubing_11=Tubing(volume=0.123,name="TUBE_11")
-    comp.append(_tubing_11)
-    _tubing_12=Tubing(volume=0.123,name="TUBE_12")
-    comp.append(_tubing_12)
-    _tubing_13=Tubing(volume=0.123,name="TUBE_13")
-    comp.append(_tubing_13)
-    ###################
-    #Connect components
+    _path = FlowPath()
+    _path.parseFlowSketch(flowComp)
 
-    #Stock solutions
-    _allylIso.flowInto(_tubing_3)
-    _push_A.flowInto(_tubing_4)
-    
-    _KOH_sol.flowInto(_tubing_7)
-    _push_B.flowInto(_tubing_8)
-    
-    _tubing_3.flowInto(_SR_A)
-    _tubing_4.flowInto(_SR_A)
-    
-    _tubing_7.flowInto(_SR_B)
-    _tubing_8.flowInto(_SR_B)
-    
-    #To pumps
-    _SR_A.flowInto(_tubing_2)
-    _tubing_2.flowInto(_hplc_A)
-    
-    _SR_B.flowInto(_tubing_5)
-    _tubing_5.flowInto(_hplc_B)
-    
-    #To static mixer
-    _hplc_A.flowInto(_tubing_1)
-    _tubing_1.flowInto(_tPiece_1)
-    
-    _hplc_B.flowInto(_tubing_6)
-    _tubing_6.flowInto(_tPiece_1)
-    
-    #From static mixer to hotcoil
-    _tPiece_1.flowInto(_tubing_9)
-    _tubing_9.flowInto(_coil_40)
+    #Find component references from names
+    nameLookup = {comp.name: comp for comp in _path.segments}
+    _KOH_sol = nameLookup["KOH_sol"]
+    _allylIso = nameLookup["AllylIsoval"]
+    _push_A = nameLookup["PushSolventA"]
+    _push_B = nameLookup["PushSolventB"]
 
-    #To IR
-    _coil_40.flowInto(_tubing_10)
-    _tubing_10.flowInto(_IR)
-    
-    #From IR to W/C valve
-    _IR.flowInto(_tubing_11)
-    _tubing_11.flowInto(_WC_valve)
-    
-    #From W/C valve to termini
-    _WC_valve.flowInto(_tubing_13)
-    _tubing_13.flowInto(_waste)
-    
-    _WC_valve.flowInto(_tubing_12)
-    _tubing_12.flowInto(_product)
-    
-    '''
-    #Create path
-    '''
-    _path.addPath(comp)
-
-    #TODO - Manually assign starting point for now
+    #Get terminus addresses
     _path.mapPathTermini()
-    adrses=[str(key) for key in _path.addressesAll.keys()]
-    
-    print("*********************Segment details*********************")
-    for _x in _path.segments:
-        print(f"Comp name: {_x.name}")
-        print(f" Inlet sets: {_x.inletSets}")
-        print(f" Outlet sets: {_x.outletSets}")
-        print(f" Curr inlets: {_x.inlets}")   
-        print(f" Curr outlets: {_x.outlets}")
-        print("--")
-        
-    print("************************Addresses*************************")
-    for _x, _y in _path.addressesAll.items():
-        print(f"Address for {_x}:")
-        for x in _y:
-            print(f" Comp: {x[0].name}")
-            print(f"  Inlet set: UNDEFINED")
-            print(f"  Outlet set: {x[1]}")
-        print("--")
+    adrses = [name for name in _path.addressesAll.keys()]
+
+    allSlugs = Slugs()
+
     #Some example things:
-    # flowRates=[0,1,2,3,4]
+    #flowRates=[0,1,2,3,4]
     flowRates=[1]
     dispVol=[1]
     
-    # Flag variable to indicate whether the thread should continue running?
+    #Flag variable to indicate whether the thread should continue running?
     running=True
-    allSlugs=Slugs()
+    time.sleep(5)
     def run_code():
         global running
         global allSlugs
@@ -430,23 +305,6 @@ if __name__ == "__main__":
             _jiggleFlowrate=time.perf_counter() + 5
             #_path.timePrev=time.perf_counter()
             while not (isinstance(_slug.tailHost,FlowTerminus)):
-                # if time.time() - _jiggleFlowrate > 30:
-                #     _flow_1=random.choice(flowRates)
-                #     if _flow_1 == 0:
-                #         _flow_1=1
-                #     _flow_2=random.choice(flowRates)
-                #     _flow_3=random.choice(flowRates)
-                #     _flow_4=random.choice(flowRates)
-                #     print("--")
-                #     print(f"New flowrates: {_flow_1}, {_flow_2}, {_flow_3}, {_flow_4}")
-                #     print("--")
-                                        
-                #     _KOH_sol.setFlowrate(_flow_1/60)
-                #     _allylIso.setFlowrate(_flow_2/60)
-                #     _push_A.setFlowrate(_flow_3/60)
-                #     _push_B.setFlowrate(_flow_4/60)
-                    
-                #     _jiggleFlowrate=time.time()
 
                 _path.advanceSlugs()
                 if time.time() - _nowRefresh > 1:

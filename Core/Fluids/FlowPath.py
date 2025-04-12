@@ -224,6 +224,73 @@ class FlowPath:
         
         global FLOW_PATH
         FLOW_PATH=self
+        
+    def parseFlowSketch(self, sketchJson):
+        """
+        Parse the FlowSketch JSON format from the frontend and build the full flow path,
+        connecting all components and tubing into a usable FlowPath structure.
+        """
+        self.segments = []
+        self._componentLookup = {}
+        self._tubingCounter = 1
+
+        # Create components
+        for uid, entry in sketchJson.items():
+            component = self._createComponent(uid, entry)
+            self.segments.append(component)
+
+        # Wire up connections
+        for uid, entry in sketchJson.items():
+            source = self._componentLookup[uid]
+            for targetUid in entry.get("flowsInto", []):
+                print(f"WJ - Target UUID: {targetUid}")
+                target = self._componentLookup.get(targetUid)
+                if target:
+                    source.flowInto(target)
+
+        print(f"Segments: {self.segments}")
+
+        # Register path
+        self.addPath(self.segments)
+
+        # Map possible outlet routing
+        self.mapPathTermini()
+        
+    def _createComponent(self, uid, entry):
+        """
+        Create a component based on its deviceType from the JSON description.
+        """
+        name = entry.get("name", f"Unnamed_{uid}")
+        volume = entry.get("volume", 0)
+        deviceType = entry.get("deviceType", "null")
+        deviceName = entry.get("deviceName", None)
+
+        classMap = {
+            "Pump": Pump,
+            "Valve": Valve,
+            "FlowOrigin": FlowOrigin,
+            "FlowTerminus": FlowTerminus,
+            "TPiece": TPiece,
+            "Tubing": Tubing,
+            "Coil": Coil,
+            "IR": IR
+        }
+
+        componentClass = classMap.get(deviceType, VolObjNull)
+
+        if deviceType == "Tubing":
+            name = f"TUBE_{self._tubingCounter}"
+            self._tubingCounter += 1
+
+        obj = componentClass(
+            volume=volume,
+            name=name,
+            deviceType=deviceType,
+            deviceName=deviceName
+        )
+
+        self._componentLookup[uid] = obj
+        return obj
 
     def switchToAddress(self,address):
         _inlets=address.inletsSett
@@ -386,6 +453,7 @@ class FlowPath:
         indegree = defaultdict(int)
 
         for segment in self.segments:
+            print(f"This segment and inlets: {[segment.name,segment.inlets]}")
             for inlet in segment.inlets:
                 graph[inlet].append(segment)
                 indegree[segment] += 1

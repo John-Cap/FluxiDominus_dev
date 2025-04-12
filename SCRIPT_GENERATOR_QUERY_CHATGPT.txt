@@ -1,513 +1,1211 @@
-{
-  "elements": [
-    {
-      "positionDx": 217.7000732421875,
-      "positionDy": 161.3000030517578,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "R4 (Peristaltic)",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "0f20981d-33eb-4bf0-a00e-baa89ff94ec7",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "606ad94d-cb9d-499c-99cd-6178fca9ec27",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": 1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": 1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 103.30010986328125,
-      "positionDy": 485.300048828125,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "BPR (5 Bar)",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "178d5c7b-7656-4737-9741-3f750ae181fc",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "7282e43e-4081-4323-8845-fbc44f69e214",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": 1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 113.70001220703125,
-      "positionDy": 79.69998168945312,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "Valve",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "0f20981d-33eb-4bf0-a00e-baa89ff94ec7",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": -1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 120.9000244140625,
-      "positionDy": 278.9000244140625,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "Valve",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "1deec163-e052-48b0-bb10-9100373b26e7",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "0f20981d-33eb-4bf0-a00e-baa89ff94ec7",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": -1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 255.29998779296875,
-      "positionDy": 26.100006103515625,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "Stock",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "96315349-d28c-42cf-adbd-b6ed0190e27a",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": 1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 251.29998779296875,
-      "positionDy": 91.69999694824219,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "Stock",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "b698c86e-d142-49c9-8443-3ffe5762edd6",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": 1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 271.300048828125,
-      "positionDy": 322.1000061035156,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "Push",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "6e513c8e-3596-4a49-a2ce-8f4a358d8155",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "1deec163-e052-48b0-bb10-9100373b26e7",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": 1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 265.70001220703125,
-      "positionDy": 238.89999389648438,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "Stock",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "919ffbde-a019-411f-85fb-1629477a7225",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "1deec163-e052-48b0-bb10-9100373b26e7",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": 1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 299.300048828125,
-      "positionDy": 401.3000183105469,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "Hotcoil (10 mL)",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "606ad94d-cb9d-499c-99cd-6178fca9ec27",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "b5526ce9-fb43-4c62-96af-567f52002bfc",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": 1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 148.9000244140625,
-      "positionDy": 389.29998779296875,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "ReactIR 702L1",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "b5526ce9-fb43-4c62-96af-567f52002bfc",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": [
-        {
-          "destElementId": "178d5c7b-7656-4737-9741-3f750ae181fc",
-          "arrowParams": {
-            "thickness": 1.7,
-            "color": 4278190080,
-            "startArrowPositionX": -1,
-            "startArrowPositionY": 0,
-            "endArrowPositionX": 1,
-            "endArrowPositionY": 0
-          },
-          "tubingVolume": 1,
-          "tubingType": "Standard"
-        }
-      ]
-    },
-    {
-      "positionDx": 0.0999755859375,
-      "positionDy": 418.0999755859375,
-      "size.width": 100,
-      "size.height": 50,
-      "text": "Collection point",
-      "textColor": 4278190080,
-      "fontFamily": null,
-      "textSize": 10,
-      "textIsBold": false,
-      "id": "7282e43e-4081-4323-8845-fbc44f69e214",
-      "kind": 0,
-      "handlers": [
-        3,
-        2
-      ],
-      "handlerSize": 15,
-      "backgroundColor": 4294967295,
-      "borderColor": 4280391411,
-      "borderThickness": 3,
-      "elevation": 4,
-      "next": []
-    }
-  ]
-}
+The attached picture shows a flow chemistry setup connected in the UI.
 
-WJ connections of dash -> {
-  "0f20981d-33eb-4bf0-a00e-baa89ff94ec7": {
-    "name": "R4 (Peristaltic)",
+When saved, a JSON is sent to backend of form:
+
+'''
+{
+  "3f6e37eb-40ee-4ed3-862e-d9800cd0c43e": {
+    "name": "R4 Pump A",
     "flowsInto": [
-      "606ad94d-cb9d-499c-99cd-6178fca9ec27"
+      "tubing_1_3f6e37eb-40ee-4ed3-862e-d9800cd0c43e_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9"
     ],
     "deviceName": "vapourtecR4P1700",
-    "deviceType": "vapourtecR4",
+    "deviceType": "Pump",
     "volume": 5
   },
-  "178d5c7b-7656-4737-9741-3f750ae181fc": {
-    "name": "BPR (5 Bar)",
+  "tubing_1_3f6e37eb-40ee-4ed3-862e-d9800cd0c43e_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9": {
+    "name": "Tubing",
     "flowsInto": [
-      "7282e43e-4081-4323-8845-fbc44f69e214"
+      "29b52a6f-8bb5-41c0-baa8-3bab6d685ae9"
     ],
-    "deviceName": "null",
-    "deviceType": "BPR",
-    "volume": 0.1
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
   },
-  "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c": {
-    "name": "Valve",
+  "11aff382-a458-4a25-a311-db62c3c45843": {
+    "name": "SR_A",
     "flowsInto": [
-      "0f20981d-33eb-4bf0-a00e-baa89ff94ec7"
-    ],
-    "deviceName": "null",
-    "deviceType": "Valve",
-    "volume": 0.25
-  },
-  "1deec163-e052-48b0-bb10-9100373b26e7": {
-    "name": "Valve",
-    "flowsInto": [
-      "0f20981d-33eb-4bf0-a00e-baa89ff94ec7"
+      "tubing_2_11aff382-a458-4a25-a311-db62c3c45843_3f6e37eb-40ee-4ed3-862e-d9800cd0c43e"
     ],
     "deviceName": "null",
     "deviceType": "Valve",
     "volume": 0.25
   },
-  "96315349-d28c-42cf-adbd-b6ed0190e27a": {
-    "name": "Stock",
+  "tubing_2_11aff382-a458-4a25-a311-db62c3c45843_3f6e37eb-40ee-4ed3-862e-d9800cd0c43e": {
+    "name": "Tubing",
     "flowsInto": [
-      "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c"
+      "3f6e37eb-40ee-4ed3-862e-d9800cd0c43e"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "ad33a7da-5b9d-4963-b9b3-9ed61d029bd2": {
+    "name": "AllylIsoval",
+    "flowsInto": [
+      "tubing_3_ad33a7da-5b9d-4963-b9b3-9ed61d029bd2_11aff382-a458-4a25-a311-db62c3c45843"
     ],
     "deviceName": "null",
     "deviceType": "FlowOrigin",
     "volume": 0
   },
-  "b698c86e-d142-49c9-8443-3ffe5762edd6": {
-    "name": "Stock",
+  "tubing_3_ad33a7da-5b9d-4963-b9b3-9ed61d029bd2_11aff382-a458-4a25-a311-db62c3c45843": {
+    "name": "Tubing",
     "flowsInto": [
-      "4fde36c6-47a1-40e4-bf7c-d7e83a63e27c"
+      "11aff382-a458-4a25-a311-db62c3c45843"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "e76868c1-4c46-4c35-be71-7cf388c4765d": {
+    "name": "PushSolvent A",
+    "flowsInto": [
+      "tubing_4_e76868c1-4c46-4c35-be71-7cf388c4765d_11aff382-a458-4a25-a311-db62c3c45843"
     ],
     "deviceName": "null",
     "deviceType": "FlowOrigin",
     "volume": 0
   },
-  "5d054051-afa1-4c7b-9905-aa7a913f7d61": {
-    "name": "Stock",
+  "tubing_4_e76868c1-4c46-4c35-be71-7cf388c4765d_11aff382-a458-4a25-a311-db62c3c45843": {
+    "name": "Tubing",
     "flowsInto": [
-      "0f20981d-33eb-4bf0-a00e-baa89ff94ec7"
+      "11aff382-a458-4a25-a311-db62c3c45843"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "fcd5fb07-66aa-4b21-a306-6d8a873d60d9": {
+    "name": "SR_B",
+    "flowsInto": [
+      "tubing_5_fcd5fb07-66aa-4b21-a306-6d8a873d60d9_59e6ec63-6719-483c-8467-c5ccffa0f563"
+    ],
+    "deviceName": "null",
+    "deviceType": "Valve",
+    "volume": 0.25
+  },
+  "tubing_5_fcd5fb07-66aa-4b21-a306-6d8a873d60d9_59e6ec63-6719-483c-8467-c5ccffa0f563": {
+    "name": "Tubing",
+    "flowsInto": [
+      "59e6ec63-6719-483c-8467-c5ccffa0f563"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "59e6ec63-6719-483c-8467-c5ccffa0f563": {
+    "name": "R4 Pump B",
+    "flowsInto": [
+      "tubing_6_59e6ec63-6719-483c-8467-c5ccffa0f563_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9"
+    ],
+    "deviceName": "vapourtecR4P1700",
+    "deviceType": "Pump",
+    "volume": 5
+  },
+  "tubing_6_59e6ec63-6719-483c-8467-c5ccffa0f563_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9": {
+    "name": "Tubing",
+    "flowsInto": [
+      "29b52a6f-8bb5-41c0-baa8-3bab6d685ae9"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "5915e364-75c6-49d0-b6af-f641f7b45754": {
+    "name": "KOH_sol",
+    "flowsInto": [
+      "tubing_7_5915e364-75c6-49d0-b6af-f641f7b45754_fcd5fb07-66aa-4b21-a306-6d8a873d60d9"
     ],
     "deviceName": "null",
     "deviceType": "FlowOrigin",
     "volume": 0
   },
-  "61aab9b7-7b81-4faf-bd40-2a71d35e5daf": {
-    "name": "Stock",
-    "flowsInto": null,
-    "deviceName": "null",
-    "deviceType": "FlowOrigin",
-    "volume": 0
-  },
-  "6e513c8e-3596-4a49-a2ce-8f4a358d8155": {
-    "name": "Push",
+  "tubing_7_5915e364-75c6-49d0-b6af-f641f7b45754_fcd5fb07-66aa-4b21-a306-6d8a873d60d9": {
+    "name": "Tubing",
     "flowsInto": [
-      "1deec163-e052-48b0-bb10-9100373b26e7"
+      "fcd5fb07-66aa-4b21-a306-6d8a873d60d9"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "f926cf59-bfbc-4a69-9d52-e63d58f0d695": {
+    "name": "PushSolventB",
+    "flowsInto": [
+      "tubing_8_f926cf59-bfbc-4a69-9d52-e63d58f0d695_fcd5fb07-66aa-4b21-a306-6d8a873d60d9"
     ],
     "deviceName": "null",
     "deviceType": "FlowOrigin",
     "volume": 0
   },
-  "919ffbde-a019-411f-85fb-1629477a7225": {
-    "name": "Stock",
+  "tubing_8_f926cf59-bfbc-4a69-9d52-e63d58f0d695_fcd5fb07-66aa-4b21-a306-6d8a873d60d9": {
+    "name": "Tubing",
     "flowsInto": [
-      "1deec163-e052-48b0-bb10-9100373b26e7"
+      "fcd5fb07-66aa-4b21-a306-6d8a873d60d9"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "29b52a6f-8bb5-41c0-baa8-3bab6d685ae9": {
+    "name": "StaticMixer",
+    "flowsInto": [
+      "tubing_9_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9_d25f31e2-002b-48c7-b060-992d321ed9c4"
     ],
     "deviceName": "null",
-    "deviceType": "FlowOrigin",
-    "volume": 0
+    "deviceType": "TPiece",
+    "volume": 0.05
   },
-  "606ad94d-cb9d-499c-99cd-6178fca9ec27": {
-    "name": "Hotcoil (10 mL)",
+  "tubing_9_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9_d25f31e2-002b-48c7-b060-992d321ed9c4": {
+    "name": "Tubing",
     "flowsInto": [
-      "b5526ce9-fb43-4c62-96af-567f52002bfc"
+      "d25f31e2-002b-48c7-b060-992d321ed9c4"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "d25f31e2-002b-48c7-b060-992d321ed9c4": {
+    "name": "Hotcoil_1",
+    "flowsInto": [
+      "tubing_10_d25f31e2-002b-48c7-b060-992d321ed9c4_fdcc2834-213b-42f7-bdde-b38e6a5c8172"
     ],
     "deviceName": "hotcoil1",
     "deviceType": "Coil",
-    "volume": 10
+    "volume": 40
   },
-  "b5526ce9-fb43-4c62-96af-567f52002bfc": {
+  "tubing_10_d25f31e2-002b-48c7-b060-992d321ed9c4_fdcc2834-213b-42f7-bdde-b38e6a5c8172": {
+    "name": "Tubing",
+    "flowsInto": [
+      "fdcc2834-213b-42f7-bdde-b38e6a5c8172"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "fdcc2834-213b-42f7-bdde-b38e6a5c8172": {
     "name": "ReactIR 702L1",
     "flowsInto": [
-      "178d5c7b-7656-4737-9741-3f750ae181fc"
+      "tubing_11_fdcc2834-213b-42f7-bdde-b38e6a5c8172_e64f27b7-c346-4c86-94cd-c00398796894"
     ],
     "deviceName": "reactIR702L1",
     "deviceType": "IR",
     "volume": 0.25
   },
-  "7282e43e-4081-4323-8845-fbc44f69e214": {
-    "name": "Collection point",
-    "flowsInto": null,
+  "tubing_11_fdcc2834-213b-42f7-bdde-b38e6a5c8172_e64f27b7-c346-4c86-94cd-c00398796894": {
+    "name": "Tubing",
+    "flowsInto": [
+      "e64f27b7-c346-4c86-94cd-c00398796894"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "e64f27b7-c346-4c86-94cd-c00398796894": {
+    "name": "WasteOrCollect",
+    "flowsInto": [
+      "tubing_12_e64f27b7-c346-4c86-94cd-c00398796894_27151161-8edf-4152-9ea6-ce1df14f6f46",
+      "tubing_12_e64f27b7-c346-4c86-94cd-c00398796894_f14f0372-3504-4559-ad7e-6a8661fdb7b4"
+    ],
+    "deviceName": "null",
+    "deviceType": "Valve",
+    "volume": 0.25
+  },
+  "tubing_12_e64f27b7-c346-4c86-94cd-c00398796894_27151161-8edf-4152-9ea6-ce1df14f6f46": {
+    "name": "Tubing",
+    "flowsInto": [
+      "27151161-8edf-4152-9ea6-ce1df14f6f46"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "tubing_13_e64f27b7-c346-4c86-94cd-c00398796894_f14f0372-3504-4559-ad7e-6a8661fdb7b4": {
+    "name": "Tubing",
+    "flowsInto": [
+      "f14f0372-3504-4559-ad7e-6a8661fdb7b4"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.123
+  },
+  "27151161-8edf-4152-9ea6-ce1df14f6f46": {
+    "name": "Product",
+    "flowsInto": [],
+    "deviceName": "null",
+    "deviceType": "FlowTerminus",
+    "volume": 0
+  },
+  "f14f0372-3504-4559-ad7e-6a8661fdb7b4": {
+    "name": "Waste",
+    "flowsInto": [],
     "deviceName": "null",
     "deviceType": "FlowTerminus",
     "volume": 0
   }
 }
+'''
+
+describing the connections. classes from Core.Fluids.FlowPath can then be used to set up the corresponding example below:
+
+###Example
+
+import random
+import threading
+import time
+from Core.Fluids.FlowPath import IR, Coil, FlowOrigin, FlowPath, FlowTerminus, Pump, Slugs, TPiece, Tubing, Valve
+###Examples
+if __name__ == "__main__":
+    _path=FlowPath()
+    comp=[]
+    
+    #Stocks
+    _KOH_sol=FlowOrigin(volume=0,name="KOH_sol")
+    comp.append(_KOH_sol)
+    _allylIso=FlowOrigin(volume=0,name="AllylIsoval")
+    comp.append(_allylIso)
+    _push_A=FlowOrigin(volume=0,name="PushSolvent A")
+    comp.append(_push_A)
+    _push_B=FlowOrigin(volume=0,name="PushSolvent B")
+    comp.append(_push_B)
+    
+    #Pump lines
+    _hplc_A=Pump(volume=5,name="R4 Pump A")
+    comp.append(_hplc_A)
+    _hplc_B=Pump(volume=5,name="R4 Pump B")
+    comp.append(_hplc_B)
+    #Valves
+    _SR_A=Valve(volume=0.25,name="SR_A")
+    comp.append(_SR_A)
+    _SR_B=Valve(volume=0.25,name="SR_B")
+    comp.append(_SR_B)
+    _WC_valve=Valve(volume=0.25,name="WasteOrCollect")
+    comp.append(_WC_valve)
+    #IR
+    _IR=(IR(volume=0.25,name="ReactIR 702L1"))
+    comp.append(_IR)
+    #Coil
+    _coil_40=(Coil(volume=5,name="Hotcoil_1")) #Smaller volume for sped up debugging
+    # _coil_40=(Coil(volume=40,name="Hotcoil_1"))
+    comp.append(_coil_40)
+    #Termini
+    _waste=FlowTerminus(volume=0,name="Waste")
+    comp.append(_waste)
+    _product=FlowTerminus(volume=0,name="Product")
+    comp.append(_product)
+    
+    _tPiece_1=TPiece(volume=0.05,name="StaticMixer")
+    comp.append(_tPiece_1)
+    
+    *(Note the 'name' for tubing is always "Tubing" in the json. Instead generate an arbitrary name "Tubing #" for each with a counter)
+    _tubing_1=Tubing(volume=0.123,name="TUBE_1")
+    comp.append(_tubing_1)
+    _tubing_2=Tubing(volume=0.123,name="TUBE_2")
+    comp.append(_tubing_2)
+    _tubing_3=Tubing(volume=0.123,name="TUBE_3")
+    comp.append(_tubing_3)
+    _tubing_4=Tubing(volume=0.123,name="TUBE_4")
+    comp.append(_tubing_4)
+    _tubing_5=Tubing(volume=0.123,name="TUBE_5")
+    comp.append(_tubing_5)
+    _tubing_6=Tubing(volume=0.123,name="TUBE_6")
+    comp.append(_tubing_6)
+    _tubing_7=Tubing(volume=0.123,name="TUBE_7")
+    comp.append(_tubing_7)
+    _tubing_8=Tubing(volume=0.123,name="TUBE_8")
+    comp.append(_tubing_8)
+    _tubing_9=Tubing(volume=0.123,name="TUBE_9")
+    comp.append(_tubing_9)
+    _tubing_10=Tubing(volume=0.123,name="TUBE_10")
+    comp.append(_tubing_10)
+    _tubing_11=Tubing(volume=0.123,name="TUBE_11")
+    comp.append(_tubing_11)
+    _tubing_12=Tubing(volume=0.123,name="TUBE_12")
+    comp.append(_tubing_12)
+    _tubing_13=Tubing(volume=0.123,name="TUBE_13")
+    comp.append(_tubing_13)
+    ###################
+    #Connect components
+
+    #Stock solutions
+    _allylIso.flowInto(_tubing_3)
+    _push_A.flowInto(_tubing_4)
+    
+    _KOH_sol.flowInto(_tubing_7)
+    _push_B.flowInto(_tubing_8)
+    
+    _tubing_3.flowInto(_SR_A)
+    _tubing_4.flowInto(_SR_A)
+    
+    _tubing_7.flowInto(_SR_B)
+    _tubing_8.flowInto(_SR_B)
+    
+    #To pumps
+    _SR_A.flowInto(_tubing_2)
+    _tubing_2.flowInto(_hplc_A)
+    
+    _SR_B.flowInto(_tubing_5)
+    _tubing_5.flowInto(_hplc_B)
+    
+    #To static mixer
+    _hplc_A.flowInto(_tubing_1)
+    _tubing_1.flowInto(_tPiece_1)
+    
+    _hplc_B.flowInto(_tubing_6)
+    _tubing_6.flowInto(_tPiece_1)
+    
+    #From static mixer to hotcoil
+    _tPiece_1.flowInto(_tubing_9)
+    _tubing_9.flowInto(_coil_40)
+
+    #To IR
+    _coil_40.flowInto(_tubing_10)
+    _tubing_10.flowInto(_IR)
+    
+    #From IR to W/C valve
+    _IR.flowInto(_tubing_11)
+    _tubing_11.flowInto(_WC_valve)
+    
+    #From W/C valve to termini
+    _WC_valve.flowInto(_tubing_13)
+    _tubing_13.flowInto(_waste)
+    
+    _WC_valve.flowInto(_tubing_12)
+    _tubing_12.flowInto(_product)
+    
+    '''
+    #Create path
+    '''
+    _path.addPath(comp)
+
+    #TODO - Manually assign starting point for now
+    _path.mapPathTermini()
+    adrses=[str(key) for key in _path.addressesAll.keys()]
+    
+    print("*********************Segment details*********************")
+    for _x in _path.segments:
+        print(f"Comp name: {_x.name}")
+        print(f" Inlet sets: {_x.inletSets}")
+        print(f" Outlet sets: {_x.outletSets}")
+        print(f" Curr inlets: {_x.inlets}")   
+        print(f" Curr outlets: {_x.outlets}")
+        print("--")
+        
+    print("************************Addresses*************************")
+    for _x, _y in _path.addressesAll.items():
+        print(f"Address for {_x}:")
+        for x in _y:
+            print(f" Comp: {x[0].name}")
+            print(f"  Inlet set: UNDEFINED")
+            print(f"  Outlet set: {x[1]}")
+        print("--")
+
+    allSlugs=Slugs()
+
+    *NEW METHOD MUST SET UP AND PREPARE FLOWPATH UP TO ABOVE*
+
+    __ rest of example __
+
+    #Some example things:
+    # flowRates=[0,1,2,3,4]
+    flowRates=[1]
+    dispVol=[1]
+    
+    # Flag variable to indicate whether the thread should continue running?
+    running=True
+    def run_code():
+        global running
+        global allSlugs
+        global _path
+        _i=0
+        while running:
+            _flow_1=random.choice(flowRates)
+            _flow_2=random.choice(flowRates)
+            _flow_3=random.choice(flowRates)
+            _flow_4=random.choice(flowRates)
+            _slugVol=random.choice(dispVol)
+            
+            _KOH_sol.setFlowrate(_flow_1/60)
+            _allylIso.setFlowrate(_flow_2/60)
+            # _push_A.setFlowrate(_flow_3/60)
+            # _push_B.setFlowrate(_flow_4/60)
+            _push_A.setFlowrate(0)
+            _push_B.setFlowrate(0)
+
+            _path.updateFlowrates()
+
+            _path.setCurrDestination(random.choice(adrses))
+            _slug=_path.currRelOrigin.dispense(_slugVol)
+            allSlugs.slugs.append(_slug)
+
+            _now=time.perf_counter()
+            _nowRefresh=_now
+            _jiggleFlowrate=time.perf_counter() + 5
+            #_path.timePrev=time.perf_counter()
+            while not (isinstance(_slug.tailHost,FlowTerminus)):
+                # if time.time() - _jiggleFlowrate > 30:
+                #     _flow_1=random.choice(flowRates)
+                #     if _flow_1 == 0:
+                #         _flow_1=1
+                #     _flow_2=random.choice(flowRates)
+                #     _flow_3=random.choice(flowRates)
+                #     _flow_4=random.choice(flowRates)
+                #     print("--")
+                #     print(f"New flowrates: {_flow_1}, {_flow_2}, {_flow_3}, {_flow_4}")
+                #     print("--")
+                                        
+                #     _KOH_sol.setFlowrate(_flow_1/60)
+                #     _allylIso.setFlowrate(_flow_2/60)
+                #     _push_A.setFlowrate(_flow_3/60)
+                #     _push_B.setFlowrate(_flow_4/60)
+                    
+                #     _jiggleFlowrate=time.time()
+
+                _path.advanceSlugs()
+                if time.time() - _nowRefresh > 1:
+                    _vol=_slug.slugVolume()
+                    _nowRefresh=time.time()
+                    rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[_flow_1,_flow_2,_flow_3,_flow_4]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
+                    print(rep)
+                time.sleep(0.1)
+            print("***************************************")
+            print("Collected slug volumes")
+            for _x in _path.collectedSlugs:
+                print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
+                print(f'Slug was collected at terminus "{_x.frontHost.name}"')
+            print("***************************************")
+            _i+=1
+            if _i > 10:
+                exit()
+            time.sleep(10)
+
+    # Create a thread for running the code
+    thread=threading.Thread(target=run_code)
+    thread.start()
+
+    # Wait for the thread to finish
+    thread.join()
+    print("We're done here")
+
+    #######################################################################################
+
+Create a new method "parseFlowsketch" for class FlowPath that receives the UI output as a Python dictionary and prepares everything
+up to '*NEW METHOD MUST SET UP AND PREPARE FLOWPATH UP TO ABOVE*'.
+
+Class FlowPath etc. :
+
+import random
+import time
+import threading
+import uuid
+from Core.Utils.Utils import Utils
+from collections import defaultdict, deque
+
+FLOW_PATH=None
+
+class FlowAddresses:
+    def __init__(self,addressBookName) -> None: #inlets
+        self.addressBookName=addressBookName
+        self.addresses={}
+        
+    def addAddress(self,targetComponent,address):
+        '''
+        Add the neccessary outlets to select for each component to reach 'targetComponent' in the
+        flowline.
+        targetComponent: volObj
+        address: dict with component names as keys and array [inletName,outletName] for each
+        '''
+        if not isinstance(targetComponent,str):
+            targetComponent=targetComponent.name
+        self.addresses[targetComponent]=address
+
+class VolumeObject:
+
+    #Class var
+    idCounter=0
+
+    def __init__(self,volume=None,name=None,inlets=None,outlets=None,deviceName=None,deviceType=None,flowrateOut=None,flowrateIn=None,slugs=None,lastAdvance=None,outletSets=None,inletSets=None,currOutlets=None,currInlets=None,remainder=None,settings=None,state=None,availableCommands=None,dispensing=False) -> None:
+        self.volume=volume
+        #######################################################################################
+        #Inlet/outlet control
+        self.inlets=inlets #Array with currently used inlets (array with any number of flow components)
+        self.outlets=outlets #Array with currently used outlets (array with only one element, an outlet set can have only a single flow component for now)
+        self.inletSets=inletSets #Dict with named sets of 'inlets'. One will be selected to act as self.inlets
+        self.outletSets=outletSets #Dict with named sets of 'outlets'. One will be selected to act as self.outlets
+        self.currInletSet=None
+        self.currOutletSet=None
+        #######################################################################################
+        self.name=name
+        self.deviceName=deviceName
+        self.deviceType=deviceType
+        self.flowrateIn=flowrateIn
+        self.flowrateOut=flowrateOut
+        self.slugs=slugs
+        self.lastAdvance=lastAdvance
+        self.dispensing=dispensing
+        self.remainderToDispense=None
+        #FLOW_PATH=FLOW_PATH
+        self.remainder=remainder
+        #Boolean flags
+        #Settings and commands
+        self.settings=settings
+        self.state=state
+        self.availableCommands=availableCommands
+        #Hashmap id generator
+        self.id=VolumeObject.idCounter
+        VolumeObject.idCounter+=1
+    
+    def dispense(self,vol=-1):
+        if not (self.dispensing) and FLOW_PATH:
+            print(str(self.name) + " has started dispensing!")
+            self.dispensing=True
+            _return=Slug(frontHost=self,tailHost=self,frontHostPos=0,tailHostPos=0)
+            FLOW_PATH.slugs.append(_return)
+            if vol != -1:
+                self.remainderToDispense=vol
+            return _return
+
+    @NotImplementedError        
+    def start(self):
+        '''
+        start pumping whatever is in flow path
+        '''
+        pass
+
+    @NotImplementedError
+    def stop(self):
+        '''
+        stop pumping whatever is in flow path (does not cancel dispensing=True!)
+        '''
+        pass
+
+    def setFlowrate(self,fr):
+        '''
+        Alter flowrate and notify FLOW_PATH of change
+        '''
+        self.flowrateIn=fr
+        self.cumulativeFlowrates()
+        FLOW_PATH.flowrateShifted=True
+     
+    def terminateDispensing(self):
+        if self.dispensing:
+            self.dispensing=False
+
+    def _addInlet(self,comp,setName):
+        inletSet=self._getInletSet(setName)
+        if len(inletSet)==0:
+            self.inletSets[setName]=[comp]
+            self.inlets=self.inletSets[setName]
+        elif len(inletSet)==1 and inletSet[0] is None:   
+            self.inletSets[setName]=[comp]
+            self.inlets=self.inletSets[setName]
+        else:
+            if not comp in inletSet:
+                inletSet.append(comp)
+
+    def _addOutlet(self,comp,setName):
+        outletSet=self._getOutletSet(setName)
+        if len(outletSet)==0:
+            self.outletSets[setName]=[comp]
+            self.outlets=outletSet
+        elif len(outletSet)==1 and outletSet[0] is None:
+            outletSet=[(comp)]
+            self.outlets=outletSet
+        else:
+            if not comp in outletSet:
+                outletSet.append(comp)
+
+    def flowInto(self,outlet,setNameIn="DEFAULT",setNameOut=""):
+        if setNameOut == "":
+            setNameOut=f"{self.name}_{self.id}_to_{outlet.name}_{outlet.id}"
+        self._addOutlet(outlet,setNameOut)
+        outlet._addInlet(self,setNameIn)
+        if not len(self.outlets):
+            self.switchToOutlets(setNameOut)
+        if not len(outlet.inlets):
+            outlet.switchToInlets(setNameIn)
+        FLOW_PATH.flowrateShifted=True
+            
+    def switchToInlets(self,setName):
+        if setName in self.inletSets:
+            self.inlets=self.inletSets[setName]
+            self.currInletSet=setName
+            return self.inlets
+        else:
+            return []
+        
+    def switchToOutlets(self,setName):
+        if setName in self.outletSets:
+            self.outlets=self.outletSets[setName]
+        if isinstance(self.outlets[0],FlowTerminus) and not FLOW_PATH.currTerminus:
+            print(f"Setting currTerminus as: {self.outlets[0].name}")
+            FLOW_PATH.currTerminus=self.outlets[0]
+        self.currOutletSet=setName
+        return self.outlets
+
+    def _getInletSet(self,setName):
+        if self.inletSets is None:
+            self.inletSets={}
+        if setName in self.inletSets:
+            return self.inletSets[setName]
+        else:
+            self.inletSets[setName]=[]
+            return self.inletSets[setName]
+        
+    def _getOutletSet(self,setName):
+        if self.outletSets is None:
+            self.outletSets={}
+        if setName in self.outletSets:
+            return self.outletSets[setName]
+        else:
+            self.outletSets[setName]=[]
+            return self.outletSets[setName]
+
+    def cumulativeFlowrates(self):
+        if not self.inlets:
+            self.inlets = []
+
+        # If no inputs, propagate flowrateOut directly from flowrateIn
+        if len(self.inlets) == 0:
+            self.flowrateOut = self.flowrateIn
+            FLOW_PATH.flowrateShifted=True
+            return
+
+        # Calculate flowrate from all resolved inlets
+        _flowrate = 0
+        unresolved = False
+
+        for inlet in self.inlets:
+            if inlet.flowrateOut is not None:
+                _flowrate += inlet.flowrateOut
+            else:
+                unresolved = True
+
+        # Update flowrate if all inputs are resolved
+        if not unresolved:
+            self.flowrateIn = _flowrate
+            self.flowrateOut = _flowrate  # Assume a single outlet for now
+            if not FLOW_PATH.flowrateShifted:
+                FLOW_PATH.flowrateShifted=True
+        else:
+            raise ValueError(f"Unresolved flowrate inputs for {self.name}.")
+
+    def hostSlug(self,slug,initPos):
+        self.slugs.insert(0,slug)
+        slug.frontHost=self
+        slug.frontHostPos=initPos
+
+class VolObjNull(VolumeObject):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+
+class FlowPath:
+    def __init__(self,flowPathName=uuid.uuid4(),segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
+        self.flowPathName=flowPathName
+        self.segments=segments
+        self.segmentSets=segmentSets
+        self.volume=0
+        self.componentIndex=0
+        self.slugs=slugs
+        self.flowrate=flowrate
+        self.timePrev=time
+        self.collectedSlugs=collectedSlugs
+        self.flowrateShifted=True
+        
+        self.addresses=FlowAddresses("DEFAULT") #TODO - impliment instead of below
+        self.addressesAll={}
+        
+        self.currTerminus=None
+        self.currRelOrigin=None #Relative starting point in flow path that 'dispenses' slugs
+        
+        global FLOW_PATH
+        FLOW_PATH=self
+
+    def switchToAddress(self,address):
+        _inlets=address.inletsSett
+        _outlets=address.outletsSett
+        for _x in _inlets:
+            _x[0].switchToInlets(_x[1])
+        for _x in _outlets:
+            _x[0].switchToOutlets(_x[1])            
+
+    def pathVolume(self,segmentSet=None):
+        if segmentSet is None:
+            segmentSet=self.segments
+        _vol=0
+        for _x in segmentSet:
+            _vol=_vol + _x.volume
+        return _vol
+
+    def addPath(self,segments):
+        self.segments=segments
+        if not self.currRelOrigin:
+            for x in segments:
+                if not self.currRelOrigin and isinstance(x,FlowOrigin):
+                    self.currRelOrigin=x
+
+    # def selectPath(self,pathName="DEFAULT"):
+    #     self.segments=self.segmentSets[pathName]
+    #     for _x in self.segments:
+    #         _x.associatedFlowPath=self
+    #         if not self.currRelOrigin and isinstance(_x,FlowOrigin):
+    #             self.currRelOrigin=_x
+    #     return self.segments
+
+    def mapPathTermini(self):
+        # Identify all FlowTerminus objects
+        termini = [seg for seg in self.segments if isinstance(seg, FlowTerminus)]
+
+        if not termini:
+            # Nothing to map
+            return
+
+        # Identify the origin component from which we should map paths.
+        # If currRelOrigin is defined, use that. Otherwise, try to find a FlowOrigin or a node with no inlets.
+        if self.currRelOrigin:
+            start = self.currRelOrigin
+        else:
+            # Try to find a FlowOrigin
+            origins = [seg for seg in self.segments if isinstance(seg, FlowOrigin)]
+            if origins:
+                start = origins[0]
+            else:
+                # If no FlowOrigin, pick a segment with no inlets as start
+                # (i.e., a node that doesn't receive flow from any other node)
+                candidates = []
+                for seg in self.segments:
+                    # If no inlets or inlets empty, it's a potential start
+                    if not seg.inlets or len(seg.inlets) == 0:
+                        candidates.append(seg)
+                if candidates:
+                    start = candidates[0]
+                else:
+                    # If no clear start found, just pick the first segment as start (fallback)
+                    start = self.segments[0]
+
+        # Build a graph from segments: component -> list of downstream components
+        # Note: we consider the currently active outlets. If multiple outlet sets exist,
+        # we still have them stored in outletSets, but for pathfinding we just need the structure.
+        self.graph = {}
+        for seg in self.segments:
+            # Combine all possible outlet sets to know the potential downstream connections
+            # For mapping, we just want to know topologically who can be reached from who.
+            # We'll store the union of all outlets in current sets for pathfinding.
+            # If a component can switch outlets, they must appear in some outletSet.
+            # We'll union all sets to find possible paths.
+            
+            downstream_nodes = set()
+            if seg.outletSets:
+                for oSet in seg.outletSets.values():
+                    for outcomp in oSet:
+                        if outcomp is not None:
+                            downstream_nodes.add(outcomp)
+
+            self.graph[seg] = list(downstream_nodes)
+
+        # Now for each terminus, find a path and record the necessary outlet sets
+        self.addressesAll = {}
+        for terminus in termini:
+            path = self._findPath(start, terminus)
+            if path is None:
+                # No path found to this terminus
+                continue
+
+            # path is a list of components from start to terminus
+            # We want to record the outlet sets chosen at branching components
+            # The address form: TerminusName: [ [ValveX, "A"], [ValveY, "B"] ... ]
+            addresses = []
+
+            # Iterate through path components and figure out which outletSet leads to the next node in the path
+            # We look at pairs (currentComp, nextComp)
+            for i in range(len(path)-1):
+                currComp = path[i]
+                nextComp = path[i+1]
+
+                # Check if currComp has multiple outlet sets
+                if currComp.outletSets and len(currComp.outletSets.keys()) > 1:
+                    # Find the outletSet that contains nextComp
+                    chosenSetName = None
+                    for oSetName, oSetComps in currComp.outletSets.items():
+                        if nextComp in oSetComps:
+                            chosenSetName = oSetName
+                            break
+                    if chosenSetName is not None:
+                        addresses.append([currComp, chosenSetName])
+
+            self.addressesAll[terminus.name] = addresses
+
+    def setCurrDestination(self, terminus):
+        if isinstance(terminus, str):
+            name = terminus
+        else:
+            name = terminus.name
+
+        if name not in self.addressesAll:
+            print(f"No route info available for {name}")
+            return
+
+        theseAddresses = self.addressesAll[name]
+        # each element in theseAddresses is [component, outletSetName]
+        for comp, outletSetName in theseAddresses:
+            comp.switchToOutlets(outletSetName)
+
+        # Optionally, we can set self.currTerminus to the target terminus
+        # if we have a reference to the actual terminus object:
+        self.currTerminus = terminus
+        
+    # Helper function to find a path from start to end
+    def _findPath(self,start, end, visited=None):
+        if visited is None:
+            visited = set()
+        if start == end:
+            return [start]
+        visited.add(start)
+        for nxt in self.graph.get(start, []):
+            if nxt not in visited:
+                p = self._findPath(nxt, end, visited)
+                if p:
+                    return [start] + p
+        return None
+
+    def appendComponent(self,comp):
+        if not self.currRelOrigin and isinstance(comp,FlowOrigin):
+            self.currRelOrigin=comp
+        self.segments.append(comp)
+        self.volume=self.pathVolume()
+        self.updateFlowrates()
+        
+    def updateFlowrates(self):
+
+        # Build a dependency graph and calculate indegrees
+        graph = defaultdict(list)
+        indegree = defaultdict(int)
+
+        for segment in self.segments:
+            for inlet in segment.inlets:
+                graph[inlet].append(segment)
+                indegree[segment] += 1
+
+        # Initialize queue with segments that have no unresolved dependencies (indegree == 0)
+        queue = deque(segment for segment in self.segments if indegree[segment] == 0)
+
+        resolved = set()
+        while queue:
+            current = queue.popleft()
+            resolved.add(current)
+
+            # Update flowrates for the current segment
+            current.cumulativeFlowrates()
+
+            # Process downstream segments
+            for downstream in graph[current]:
+                indegree[downstream] -= 1
+                if indegree[downstream] == 0:
+                    queue.append(downstream)
+
+        # Check if all segments were resolved
+        if len(resolved) < len(self.segments):
+            unresolved = [segment for segment in self.segments if segment not in resolved]
+            raise ValueError(f"Unresolved dependencies in flow path: {unresolved}")
+
+    def updateSlugs(self):
+        for _x in self.segments:
+            pass
+    def advanceSlugs(self):
+        if self.flowrateShifted:
+            self.updateFlowrates()
+            self.flowrateShifted = False
+
+        _nowTime = time.perf_counter()
+        _dT = _nowTime - self.timePrev
+        self.timePrev = _nowTime
+
+        # Front movement
+        for slug in self.slugs:
+            _frontHost = slug.frontHost
+
+            # If frontHost is None, no advancement
+            if _frontHost is None:
+                continue
+
+            # If slug has reached a terminus and is collecting
+            if isinstance(_frontHost, FlowTerminus):
+                if not slug.collected:
+                    # Increase collected volume by input flow * dT
+                    slug.collectedVol += _frontHost.flowrateIn * _dT
+                    if slug.reachedTerminusAt == 0:
+                        slug.reachedTerminusAt = _nowTime
+                # No further advancement needed for a terminus
+                continue
+
+            # Calculate displacement volume for this timestep
+            _dV = _frontHost.flowrateOut * _dT
+            _newVol = slug.frontHostPos + _dV
+
+            # Check if slug surpasses the current frontHost volume
+            if _newVol > _frontHost.volume:
+                # We have leftover volume after filling this component
+                _remainder = _newVol - _frontHost.volume
+
+                # Move to next host(s)
+                # Compute initial leftover time at the moment slug left _frontHost
+                _currHostLeftToFill = (_frontHost.volume - slug.frontHostPos)
+                _frontHostFillTime = _currHostLeftToFill / _frontHost.flowrateOut
+                _dTRemainder = _dT - _frontHostFillTime
+
+                # Identify the next host
+                if len(_frontHost.outlets) == 0:
+                    # No next host, slug stops here
+                    slug.frontHostPos = _frontHost.volume
+                    continue
+
+                _nextHost = _frontHost.outlets[0]
+
+                # If flowrates differ between hosts, adjust volume based on the nextHost’s flowrate
+                if isinstance(_nextHost, FlowTerminus):
+                    # If next host is a terminus, slug enters and is collected
+                    slug.frontHost = _nextHost
+                    # Adjust collectedVol by remainder
+                    slug.collectedVol += _remainder
+                    slug.frontHostPos = 0
+                    slug.collecting = True
+                else:
+                    # If next host has a different flowrate
+                    if _nextHost.flowrateOut != _frontHost.flowrateOut:
+                        _volumeAdd = _dTRemainder * _nextHost.flowrateOut
+                    else:
+                        _volumeAdd = _remainder
+
+                    # Now, potentially continue through multiple hosts
+                    slug.frontHost = _nextHost
+                    # Use a loop to handle multiple jumps
+                    _stillToFill = _volumeAdd
+
+                    while _stillToFill > _nextHost.volume:
+                        # Surpass this host entirely
+                        _stillToFill -= _nextHost.volume
+
+                        # Move to the next outlet
+                        if len(_nextHost.outlets) == 0:
+                            # No further hosts, slug ends here
+                            slug.frontHostPos = _nextHost.volume
+                            break
+
+                        _nextHost = _nextHost.outlets[0]
+
+                        if isinstance(_nextHost, FlowTerminus):
+                            # Slug enters terminus and is collected
+                            slug.frontHost = _nextHost
+                            slug.collectedVol += _stillToFill
+                            slug.frontHostPos = 0
+                            slug.collecting = True
+                            _stillToFill = 0
+                            break
+
+                        # If next host differs in flowrate, we’d need additional logic here
+                        # But for now we assume the computed _stillToFill works directly
+                        slug.frontHost = _nextHost
+
+                    # If we still have leftover that doesn't surpass the new host fully
+                    if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
+                        slug.frontHostPos = _stillToFill
+
+            else:
+                # Slug remains within the same host
+                slug.frontHostPos = _newVol
+
+        # Tail movement
+        # Similar logic applies for the tail. We allow multiple host jumps if needed.
+        for slug in self.slugs[:]:  # copy list since we may remove slugs
+            _tailHost = slug.tailHost
+
+            # If tail is in a terminus, slug is collected
+            if isinstance(_tailHost, FlowTerminus):
+                if not slug.collected:
+                    slug.collected = True
+                continue
+
+            _dV = _tailHost.flowrateOut * _dT
+            
+            if _tailHost.dispensing:
+                # Only dispense up to the remainder
+                if _tailHost.remainderToDispense is not None:
+                    if _dV > _tailHost.remainderToDispense:
+                        # Cap _dV so we don't overshoot
+                        _dV = _tailHost.remainderToDispense
+                
+                slug.totalDispensed += _dV
+
+                if _tailHost.remainderToDispense is not None:
+                    _tailHost.remainderToDispense -= _dV
+                    if _tailHost.remainderToDispense <= 0:
+                        _tailHost.dispensing = False
+                        _tailHost.remainderToDispense = 0
+                continue
+
+            _tailHostPos = slug.tailHostPos
+            _newVol = _tailHostPos + _dV
+
+            # Check if we surpass the tailHost's volume
+            if _newVol > _tailHost.volume:
+                _remainder = _newVol - _tailHost.volume
+
+                # Move on to next host
+                if len(_tailHost.outlets) == 0:
+                    # No further hosts, so slug remains here
+                    slug.tailHostPos = _tailHost.volume
+                    continue
+
+                _nextHost = _tailHost.outlets[0]
+
+                if isinstance(_nextHost, FlowTerminus):
+                    # Slug tail enters terminus - slug is collected
+                    slug.tailHost = _nextHost
+                    slug.tailHostPos = 0
+                    self.collectedSlugs.append(slug)
+                    self.slugs.remove(slug)
+                else:
+                    # Handle multiple jumps for the tail
+                    _currHostLeftToFill = (_tailHost.volume - _tailHostPos)
+                    _tailHostFillTime = _currHostLeftToFill / (_tailHost.flowrateOut)
+                    _dTRemainder = _dT - _tailHostFillTime
+
+                    if _nextHost.flowrateOut != _tailHost.flowrateOut:
+                        _volumeAdd = _dTRemainder * _nextHost.flowrateOut
+                    else:
+                        _volumeAdd = _remainder
+
+                    slug.tailHost = _nextHost
+                    _stillToFill = _volumeAdd
+
+                    while _stillToFill > _nextHost.volume:
+                        _stillToFill -= _nextHost.volume
+                        if len(_nextHost.outlets) == 0:
+                            # No further hosts for the tail
+                            slug.tailHostPos = _nextHost.volume
+                            break
+
+                        _nextHost = _nextHost.outlets[0]
+
+                        if isinstance(_nextHost, FlowTerminus):
+                            # Slug tail enters terminus
+                            slug.tailHost = _nextHost
+                            slug.tailHostPos = 0
+                            self.collectedSlugs.append(slug)
+                            if slug in self.slugs:
+                                self.slugs.remove(slug)
+                            _stillToFill = 0
+                            break
+
+                        slug.tailHost = _nextHost
+
+                    if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
+                        slug.tailHostPos = _stillToFill
+            else:
+                # Tail remains within the same host
+                slug.tailHostPos = _newVol
+
+class FlowComponent(VolumeObject):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class BPR(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class Tubing(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class TPiece(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class IR(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+    def scan(self):
+        pass
+class Chip(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class Coil(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class Valve(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class Pump(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class FlowOrigin(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+class FlowTerminus(FlowComponent):
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
+
+class CompoundDevice:
+    def __init__(self):
+        self.subDevices={}
+
+class Slugs:
+    def __init__(self,slugs=[],slugsCollected=[]) -> None:
+        self.slugs=slugs
+        self.slugsCollected=slugsCollected
+
+class SlugNull:
+    def __init__(self,volume=None,location=None,parentSlug=None,childSlug=None,elastic=None,hosts=None,tailHost=None,frontHost=None,tailHostPos=None,frontHostPos=None,stationary=True,collectedVol=0,collecting=False,reachedTerminusAt=0,collected=False,totalDispensed=None,lastDispenseCycleTime=None) -> None:
+        self.volume=volume
+        self.location=location
+        self.parentSlug=parentSlug
+        self.childSlug=childSlug
+        self.elastic=elastic #If elastic,the slug will be 'stretched' at junctions and not branched into new one
+        self.hosts=hosts
+        self.tailHost=tailHost
+        self.frontHost=frontHost
+        self.tailHostPos=tailHostPos #Volume of progress
+        self.frontHostPos=frontHostPos
+        self.stationary=stationary
+        self.collectedVol=collectedVol
+        self.collecting=collecting
+        self.reachedTerminusAt=reachedTerminusAt
+        self.collected=collected
+        
+        self.totalDispensed=totalDispensed
+        self.lastDispenseCycleTime=lastDispenseCycleTime
+
+    def branchSlug(self):
+        if self.elastic:
+            return self
+        _child=Slug(parentSlug=self)
+        return _child
+
+    def dispensedSlugVolume(self):
+        """
+        Volume of slug dispensed from origin
+        """
+        return self.totalDispensed
+
+    def slugVolume(self):
+        '''
+        Volume of slug currently in flow path
+        '''
+        _frontHost=self.frontHost
+        _tailHost=self.tailHost
+
+        if (_frontHost is _tailHost):
+            return (self.frontHostPos-self.tailHostPos)
+        else:
+            _thisComp=_tailHost
+            _volume=_tailHost.volume - self.tailHostPos
+            while True:
+                _thisComp=_thisComp.outlets[0]
+                if isinstance(_thisComp,FlowTerminus):
+                    return _volume
+                elif _thisComp is _frontHost:
+                    return (_volume+self.frontHostPos)
+                else:
+                    _volume=_volume+_thisComp.volume
+
+class Slug(SlugNull):
+    def __init__(self, volume=None, location=None, parentSlug=None, childSlug=None, elastic=None, hosts=None, tailHost=None, frontHost=None, tailHostPos=None, frontHostPos=None, stationary=True, collectedVol=0, collecting=False, reachedTerminusAt=0,  collected=False, totalDispensed=None, lastDispenseCycleTime=None):
+        super().__init__(volume, location, parentSlug, childSlug, elastic, hosts, tailHost, frontHost, tailHostPos, frontHostPos, stationary, collectedVol, collecting, reachedTerminusAt, collected, totalDispensed=0, lastDispenseCycleTime=0)
+#######################################################################################
