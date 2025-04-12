@@ -601,7 +601,7 @@ class FlowSketcherState extends State<FlowSketcher>
                 },
               ),
               ActionChip(
-                label: const Text('Add Vapourtec R4 (HPLC)'),
+                label: const Text('Add Vapourtec R4 (HPLC) Pump'),
                 onPressed: () {
                   widget.dashboard.addElement(Component(
                     position: position,
@@ -614,7 +614,7 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
-                    deviceType: 'vapourtecR4',
+                    deviceType: 'Pump',
                     volume: 5,
                   ));
                   _updateConnections();
@@ -721,17 +721,37 @@ class FlowSketcherState extends State<FlowSketcher>
                 },
               ),
               ActionChip(
+                label: const Text('Add T-Piece'),
+                onPressed: () {
+                  widget.dashboard.addElement(Component(
+                    position: position,
+                    size: const Size(100, 50),
+                    text: 'T-Piece',
+                    deviceName: "null",
+                    handlerSize: 15,
+                    kind: ElementKind.rectangle,
+                    handlers: [
+                      Handler.leftCenter,
+                      Handler.rightCenter,
+                    ],
+                    deviceType: 'TPiece',
+                    volume: 0.05,
+                  ));
+                  _updateConnections();
+                },
+              ),
+              ActionChip(
                 label: const Text('Save'),
                 onPressed: () {
                   print('WJ - Attempting to publish');
                   _updateConnections();
                   _buildMqttReport();
+                  _mergeTubingIntoMqttReport(); //setState(() {});
                   widget.mqttService.currDashboardJson =
                       widget.dashboard.saveDashboard();
                   widget.mqttService.publish(
                       MqttTopics.getUITopic("Flowsketcher"),
                       jsonEncode(widget.mqttService.currFlowScript));
-                  _mergeTubingIntoMqttReport(); //setState(() {});
                 },
               ),
               ActionChip(

@@ -509,9 +509,9 @@ class MqttService extends ChangeNotifier {
     }
     builder.clear();
     builder.addString(message);
-    print('WJ - Attempting to publish $message!');
+    // print('WJ - Attempting to publish $message!');
     var ret = client.publishMessage(topic, qos, builder.payload!);
-    print('WJ - Publish attempt for $message resulted in: $ret!');
+    // print('WJ - Publish attempt for $message resulted in: $ret!');
   }
 
   //Util methods

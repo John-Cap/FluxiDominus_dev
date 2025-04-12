@@ -1,92 +1,242 @@
-
-The attached picture describes a virtual reaction surface with temperature and residence time on the xy and yield on the z.
-temperature runs from 0 - 100 and residence time from 0 - 30, with max z at ~34 degrees and 10 min.
-
-I want to scale the maximum value x2, with the rest of the surface scaled by 2*(1 - (distance from max z/max distance from max z)) i.e. the furthest point received no scaling.
-
-Generate another image of the reaction surface.
-
-Class describing the fake reaction yield:
-
-import threading
-from time import sleep
-import pandas as pd
-import numpy as np
-from pathlib import Path
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.interpolate import griddata
-
-class ReactionLookup:
-    def __init__(self, filename=r"ReactionSimulation/tables/max_at_34_10_1.csv"):
-        # Load the lookup table from the file
-        self.filePath = Path(filename)
-        if not self.filePath.exists():
-            raise FileNotFoundError(f"{filename} not found in the current directory.")
-        
-        self.lookupTable = pd.read_csv(self.filePath)
-        
-        self.loopGraphUpdates=True
-        self.updateThread=None
-        
-        self.fig=None
-        
-        self.doUpdate=False
-        
-        # Create a numpy array from the lookup table data
-        self.data = self.lookupTable[['X', 'Y', 'Z']].values
-
-    def getYield(self, x, y):
-        # Find the closest point in the lookup table to the given (x, y)
-        closestIdx = ((self.lookupTable['X'] - x)**2 + (self.lookupTable['Y'] - y)**2).idxmin()
-        closestRow = self.lookupTable.iloc[closestIdx]
-        
-        # Return the Z value at the closest (X, Y) point
-        return closestRow['Z']
-
-    def plotSurface(self):
-        # Extract X, Y, and Z from the data
-        x = self.data[:, 0]
-        y = self.data[:, 1]
-        z = self.data[:, 2]
-        
-        # Create a grid for X and Y values
-        xi = np.linspace(x.min(), x.max(), 100)
-        yi = np.linspace(y.min(), y.max(), 100)
-        X, Y = np.meshgrid(xi, yi)
-        
-        # Interpolate Z values on the grid using griddata
-        Z = griddata((x, y), z, (X, Y), method='cubic')
-        
-        # Plotting
-        fig = plt.figure()
-        self.fig=fig
-        ax = fig.add_subplot(111, projection='3d')
-        surf = ax.plot_surface(X, Y, Z, cmap='viridis', edgecolor='k', alpha=0.7)
-        
-        # Add color bar and labels
-        fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5, label="Yield (Z)")
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Yield (Z)')
-        ax.set_title('Reaction Yield Surface Plot')
-        
-        # Print only, without showing the plot
-        print("Plot prepared but not displayed.")
-    
-    def _updateLoop(self):
-        while True:
-            self.doUpdate=True
-            while not self.doUpdate:
-                sleep(0.1)
-# Example usage
-if __name__ == "__main__": #Max yield at around x: 33, y: 10
-    lookup = ReactionLookup()
-    print(lookup.get_yield(33,10))
-    lookup.plot_surface()
-    while True:
-        while lookup.doUpdate:
-            plt.pause(1)
-        #plt.pause(1)
-        sleep(1)
-    print('Here')
+{
+  "9a2478fc-b8e2-4375-951f-bb83cbc56df4": {
+    "name": "R4 (HPLC)",
+    "flowsInto": [
+      "259a4b51-bb64-4b9f-aa11-e6a681410ba5"
+    ],
+    "deviceName": "vapourtecR4P1700",
+    "deviceType": "Pump",
+    "volume": 5
+  },
+  "tubing_1_9a2478fc-b8e2-4375-951f-bb83cbc56df4_259a4b51-bb64-4b9f-aa11-e6a681410ba5": {
+    "name": "Tubing",
+    "flowsInto": [
+      "259a4b51-bb64-4b9f-aa11-e6a681410ba5"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.2
+  },
+  "2ec4e29e-68b3-4725-81e2-f734d582f3e9": {
+    "name": "R4 (HPLC)",
+    "flowsInto": [
+      "259a4b51-bb64-4b9f-aa11-e6a681410ba5"
+    ],
+    "deviceName": "vapourtecR4P1700",
+    "deviceType": "Pump",
+    "volume": 5
+  },
+  "tubing_2_2ec4e29e-68b3-4725-81e2-f734d582f3e9_259a4b51-bb64-4b9f-aa11-e6a681410ba5": {
+    "name": "Tubing",
+    "flowsInto": [
+      "259a4b51-bb64-4b9f-aa11-e6a681410ba5"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.5
+  },
+  "e5788697-bf6c-4a55-83c6-eff30bd779e4": {
+    "name": "Valve",
+    "flowsInto": [
+      "2ec4e29e-68b3-4725-81e2-f734d582f3e9"
+    ],
+    "deviceName": "null",
+    "deviceType": "Valve",
+    "volume": 0.25
+  },
+  "tubing_3_e5788697-bf6c-4a55-83c6-eff30bd779e4_2ec4e29e-68b3-4725-81e2-f734d582f3e9": {
+    "name": "Tubing",
+    "flowsInto": [
+      "2ec4e29e-68b3-4725-81e2-f734d582f3e9"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.1
+  },
+  "dd980c1b-eaca-42cc-9f38-0c964138b6a8": {
+    "name": "Valve",
+    "flowsInto": [
+      "9a2478fc-b8e2-4375-951f-bb83cbc56df4"
+    ],
+    "deviceName": "null",
+    "deviceType": "Valve",
+    "volume": 0.25
+  },
+  "tubing_4_dd980c1b-eaca-42cc-9f38-0c964138b6a8_9a2478fc-b8e2-4375-951f-bb83cbc56df4": {
+    "name": "Tubing",
+    "flowsInto": [
+      "9a2478fc-b8e2-4375-951f-bb83cbc56df4"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.1
+  },
+  "9985e7f7-6c45-4a99-9d4d-a87945334627": {
+    "name": "Push",
+    "flowsInto": [
+      "e5788697-bf6c-4a55-83c6-eff30bd779e4"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "tubing_5_9985e7f7-6c45-4a99-9d4d-a87945334627_e5788697-bf6c-4a55-83c6-eff30bd779e4": {
+    "name": "Tubing",
+    "flowsInto": [
+      "e5788697-bf6c-4a55-83c6-eff30bd779e4"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.5
+  },
+  "2b684bdc-34f6-4e98-9113-20d9e96ea3ba": {
+    "name": "Stock",
+    "flowsInto": [
+      "e5788697-bf6c-4a55-83c6-eff30bd779e4"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "tubing_6_2b684bdc-34f6-4e98-9113-20d9e96ea3ba_e5788697-bf6c-4a55-83c6-eff30bd779e4": {
+    "name": "Tubing",
+    "flowsInto": [
+      "e5788697-bf6c-4a55-83c6-eff30bd779e4"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.5
+  },
+  "84bb43ab-8485-4913-9325-a93ba94c7542": {
+    "name": "Push",
+    "flowsInto": [
+      "dd980c1b-eaca-42cc-9f38-0c964138b6a8"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "tubing_7_84bb43ab-8485-4913-9325-a93ba94c7542_dd980c1b-eaca-42cc-9f38-0c964138b6a8": {
+    "name": "Tubing",
+    "flowsInto": [
+      "dd980c1b-eaca-42cc-9f38-0c964138b6a8"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.1
+  },
+  "c3331c75-b886-455d-8d82-8fe89049e2d9": {
+    "name": "Stock",
+    "flowsInto": [
+      "dd980c1b-eaca-42cc-9f38-0c964138b6a8"
+    ],
+    "deviceName": "null",
+    "deviceType": "FlowOrigin",
+    "volume": 0
+  },
+  "tubing_8_c3331c75-b886-455d-8d82-8fe89049e2d9_dd980c1b-eaca-42cc-9f38-0c964138b6a8": {
+    "name": "Tubing",
+    "flowsInto": [
+      "dd980c1b-eaca-42cc-9f38-0c964138b6a8"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.1
+  },
+  "259a4b51-bb64-4b9f-aa11-e6a681410ba5": {
+    "name": "T-Piece",
+    "flowsInto": [
+      "c7994240-72f1-4472-91e3-7dd77b72a28f"
+    ],
+    "deviceName": "null",
+    "deviceType": "TPiece",
+    "volume": 0.05
+  },
+  "tubing_9_259a4b51-bb64-4b9f-aa11-e6a681410ba5_c7994240-72f1-4472-91e3-7dd77b72a28f": {
+    "name": "Tubing",
+    "flowsInto": [
+      "c7994240-72f1-4472-91e3-7dd77b72a28f"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.2
+  },
+  "c7994240-72f1-4472-91e3-7dd77b72a28f": {
+    "name": "Hotcoil (40 mL)",
+    "flowsInto": [
+      "cf781cdc-ab48-4376-9e3b-95df24572fd2"
+    ],
+    "deviceName": "hotcoil1",
+    "deviceType": "Coil",
+    "volume": 40
+  },
+  "tubing_10_c7994240-72f1-4472-91e3-7dd77b72a28f_cf781cdc-ab48-4376-9e3b-95df24572fd2": {
+    "name": "Tubing",
+    "flowsInto": [
+      "cf781cdc-ab48-4376-9e3b-95df24572fd2"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.1
+  },
+  "cf781cdc-ab48-4376-9e3b-95df24572fd2": {
+    "name": "ReactIR 702L1",
+    "flowsInto": [
+      "4bf6eb31-7f8a-4acf-bece-861f1455e9ee"
+    ],
+    "deviceName": "reactIR702L1",
+    "deviceType": "IR",
+    "volume": 0.25
+  },
+  "tubing_11_cf781cdc-ab48-4376-9e3b-95df24572fd2_4bf6eb31-7f8a-4acf-bece-861f1455e9ee": {
+    "name": "Tubing",
+    "flowsInto": [
+      "4bf6eb31-7f8a-4acf-bece-861f1455e9ee"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.3
+  },
+  "4bf6eb31-7f8a-4acf-bece-861f1455e9ee": {
+    "name": "Valve",
+    "flowsInto": [
+      "6cb17adf-809d-414d-8501-d8516e468fe9",
+      "08b27f08-f652-44b2-b48b-70c9c455eea8"
+    ],
+    "deviceName": "null",
+    "deviceType": "Valve",
+    "volume": 0.25
+  },
+  "tubing_12_4bf6eb31-7f8a-4acf-bece-861f1455e9ee_6cb17adf-809d-414d-8501-d8516e468fe9": {
+    "name": "Tubing",
+    "flowsInto": [
+      "6cb17adf-809d-414d-8501-d8516e468fe9"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.3
+  },
+  "tubing_13_4bf6eb31-7f8a-4acf-bece-861f1455e9ee_08b27f08-f652-44b2-b48b-70c9c455eea8": {
+    "name": "Tubing",
+    "flowsInto": [
+      "08b27f08-f652-44b2-b48b-70c9c455eea8"
+    ],
+    "deviceName": "tubingStandard",
+    "deviceType": "Tubing",
+    "volume": 0.4
+  },
+  "6cb17adf-809d-414d-8501-d8516e468fe9": {
+    "name": "Collection point",
+    "flowsInto": null,
+    "deviceName": "null",
+    "deviceType": "FlowTerminus",
+    "volume": 0
+  },
+  "08b27f08-f652-44b2-b48b-70c9c455eea8": {
+    "name": "Collection point",
+    "flowsInto": null,
+    "deviceName": "null",
+    "deviceType": "FlowTerminus",
+    "volume": 0
+  }
+}

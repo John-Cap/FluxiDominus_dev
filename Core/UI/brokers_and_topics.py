@@ -32,7 +32,9 @@ class MqttTopics:
         "FormPanelWidget":"ui/FormPanelWidget",
         "LoginPageWidget": "ui/LoginPageWidget",
         #"dbStreamingOut":"ui/dbStreaming/out",
-        "dbCmndIn":"ui/dbCmnd/in" #Ui posts here
+        "dbCmndIn":"ui/dbCmnd/in", #Ui posts here
+        "uiInfoOut":"ui/info/out",
+        "uiInfoIn":"ui/info/in"
     }
 
     topicsOptimization = {
