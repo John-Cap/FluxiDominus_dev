@@ -22,6 +22,7 @@ class FlowSketcher extends StatefulWidget {
   });
   final MqttService mqttService;
   final String topic;
+  Map<String, Map<String, dynamic>> updatedReport = {};
   Dashboard dashboard;
 
   @override
@@ -265,7 +266,7 @@ class FlowSketcherState extends State<FlowSketcher>
         "volume": element.volume
       };
       print('WJ connections of dash -> ${jsonEncode(mqttReport.report)}');
-      widget.mqttService.currFlowScript = mqttReport.report;
+      widget.mqttService.currFlowScript = {"FlowSketcher": mqttReport.report};
     }
     //print("WJ - $availableDevices");
   }
@@ -747,11 +748,12 @@ class FlowSketcherState extends State<FlowSketcher>
                   _updateConnections();
                   _buildMqttReport();
                   _mergeTubingIntoMqttReport(); //setState(() {});
-                  widget.mqttService.currDashboardJson =
+                  widget.mqttService
+                          .currDashboardJson = //Necessary for db operations?
                       widget.dashboard.saveDashboard();
                   widget.mqttService.publish(
-                      MqttTopics.getUITopic("Flowsketcher"),
-                      jsonEncode(widget.mqttService.currFlowScript));
+                      MqttTopics.getUITopic("FlowSketcher"),
+                      mqttReport.toJsonString());
                 },
               ),
               ActionChip(
@@ -770,7 +772,7 @@ class FlowSketcherState extends State<FlowSketcher>
   }
 
   void _mergeTubingIntoMqttReport() {
-    final updatedReport = <String, Map<String, dynamic>>{};
+    widget.updatedReport = {};
     int tubingCounter = 1;
 
     for (final element in widget.dashboard.elements) {
@@ -783,7 +785,7 @@ class FlowSketcherState extends State<FlowSketcher>
 
         flowsIntoList.add(tubingId); // Correctly named and ordered here
 
-        updatedReport[tubingId] = {
+        widget.updatedReport[tubingId] = {
           "name": "Tubing",
           "flowsInto": [connection.destElementId],
           "deviceName": "tubing${connection.tubingType}",
@@ -794,7 +796,7 @@ class FlowSketcherState extends State<FlowSketcher>
         tubingCounter++; // Increment after use
       }
 
-      updatedReport[fromId] = {
+      widget.updatedReport[fromId] = {
         "name": element.text,
         "flowsInto": flowsIntoList,
         "deviceName": element.deviceName,
@@ -803,8 +805,8 @@ class FlowSketcherState extends State<FlowSketcher>
       };
     }
 
-    mqttReport.report = updatedReport;
-    widget.mqttService.currFlowScript = updatedReport;
+    mqttReport.report = widget.updatedReport;
+    widget.mqttService.currFlowScript = widget.updatedReport;
     debugPrint("Merged report with tubing: ${mqttReport.toJsonString()}");
   }
 
@@ -920,6 +922,11 @@ class FlowSketcherState extends State<FlowSketcher>
 class ConnectionMqttReport {
   Map<String, Map<String, dynamic>> report = {};
   String toJsonString() {
-    return jsonEncode(report);
+    Map<String, dynamic> pub = {
+      "reqUI": {
+        "FlowSketcher": {"parseFlowsketch": report}
+      }
+    };
+    return jsonEncode(pub);
   }
 }

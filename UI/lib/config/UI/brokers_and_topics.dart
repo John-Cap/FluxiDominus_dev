@@ -28,7 +28,7 @@ abstract class MqttTopics {
   static final Map<String, String> topicsUI = {
     //"optOut": "ui/opt/in",
     "optIn": "ui/opt/out",
-    "Flowsketcher": 'ui/Flowsketcher',
+    "FlowSketcher": 'ui/Flowsketcher',
     "ScriptGeneratorWidget": 'chemistry/cmnd',
     "FormPanelWidget": 'ui/FormPanelWidget',
     "LoginPageWidget": 'ui/LoginPageWidget',
@@ -74,5 +74,5 @@ abstract class MqttTopics {
 
 void main() {
   print(MqttTopics.topicsUI);
-  print(MqttTopics.getUITopic("Flowsketcher"));
+  print(MqttTopics.getUITopic("FlowSketcher"));
 }

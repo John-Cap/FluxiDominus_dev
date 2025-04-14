@@ -59,6 +59,7 @@ class Dashboard extends ChangeNotifier {
       return;
     }
     // Method to find a connection by source and destination elements
+    /*
     ConnectionParams? findConnection(
         FlowElement sourceElement, FlowElement destElement) {
       try {
@@ -68,6 +69,7 @@ class Dashboard extends ChangeNotifier {
         return null;
       }
     }
+    */
 
     arrowParams.setScale(1, gridBackgroundParams.scale);
     // Remove any existing connection to the same destination

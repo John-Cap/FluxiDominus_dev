@@ -28,7 +28,7 @@ class FluxiDominusDefTabs {
     FlowSketcher flowSketcher = FlowSketcher(
       key: flowSketcherKey,
       mqttService: mqttService,
-      topic: MqttTopics.getUITopic("Flowsketcher"),
+      topic: MqttTopics.getUITopic("FlowSketcher"),
       dashboard: Dashboard(),
     );
     mqttService.flowSketcher = flowSketcher;

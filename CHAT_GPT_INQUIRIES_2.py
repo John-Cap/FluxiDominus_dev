@@ -247,82 +247,75 @@ import random
 import threading
 import time
 from Core.Fluids.FlowPath import IR, Coil, FlowOrigin, FlowPath, FlowTerminus, Pump, Slugs, TPiece, Tubing, Valve
+from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 ###Examples
 if __name__ == "__main__":
     from Core.Fluids.FlowPath import FlowPath, Slugs, FlowTerminus, FlowOrigin
     
-    _path = FlowPath()
-    _path.parseFlowSketch(flowComp)
+    updater = MqttService(broker_address="172.30.243.138")
+    updater.connectDb=False
+    updater.start()
+    
+    while not updater.flowSystem.flowpath.terminiMapped:
+      time.sleep(1)
+      
+    path = updater.flowSystem.flowpath
+
+    allSlugs = updater.flowSystem.allSlugs
 
     #Find component references from names
-    nameLookup = {comp.name: comp for comp in _path.segments}
-    _KOH_sol = nameLookup["KOH_sol"]
-    _allylIso = nameLookup["AllylIsoval"]
-    _push_A = nameLookup["PushSolventA"]
-    _push_B = nameLookup["PushSolventB"]
-
-    #Get terminus addresses
-    _path.mapPathTermini()
-    adrses = [name for name in _path.addressesAll.keys()]
-
-    allSlugs = Slugs()
+    origins = [comp for comp in path.segments if isinstance(comp,FlowOrigin)]
+    
+    print(f'Origins: {origins}')
+    
+    adrses = [name for name in path.addressesAll.keys()]
 
     #Some example things:
     #flowRates=[0,1,2,3,4]
-    flowRates=[1]
+    flowRates=[0.5,1,2]
     dispVol=[1]
     
     #Flag variable to indicate whether the thread should continue running?
     running=True
-    time.sleep(5)
+    time.sleep(1)
     def run_code():
-        global running
-        global allSlugs
-        global _path
-        _i=0
-        while running:
-            _flow_1=random.choice(flowRates)
-            _flow_2=random.choice(flowRates)
-            _flow_3=random.choice(flowRates)
-            _flow_4=random.choice(flowRates)
-            _slugVol=random.choice(dispVol)
-            
-            _KOH_sol.setFlowrate(_flow_1/60)
-            _allylIso.setFlowrate(_flow_2/60)
-            # _push_A.setFlowrate(_flow_3/60)
-            # _push_B.setFlowrate(_flow_4/60)
-            _push_A.setFlowrate(0)
-            _push_B.setFlowrate(0)
+      global running
+      global allSlugs
+      global path
+      _i=0
+      while running:
 
-            _path.updateFlowrates()
+        for orig in origins:
+          orig.setFlowrate((random.choice(flowRates)/60))
 
-            _path.setCurrDestination(random.choice(adrses))
-            _slug=_path.currRelOrigin.dispense(_slugVol)
-            allSlugs.slugs.append(_slug)
+        path.updateFlowrates()
 
-            _now=time.perf_counter()
-            _nowRefresh=_now
-            _jiggleFlowrate=time.perf_counter() + 5
-            #_path.timePrev=time.perf_counter()
-            while not (isinstance(_slug.tailHost,FlowTerminus)):
+        path.setCurrDestination(random.choice(adrses))
+        _slug=path.currRelOrigin.dispense(1)
+        allSlugs.slugs.append(_slug)
 
-                _path.advanceSlugs()
-                if time.time() - _nowRefresh > 1:
-                    _vol=_slug.slugVolume()
-                    _nowRefresh=time.time()
-                    rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[_flow_1,_flow_2,_flow_3,_flow_4]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
-                    print(rep)
-                time.sleep(0.1)
-            print("***************************************")
-            print("Collected slug volumes")
-            for _x in _path.collectedSlugs:
-                print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
-                print(f'Slug was collected at terminus "{_x.frontHost.name}"')
-            print("***************************************")
-            _i+=1
-            if _i > 10:
-                exit()
-            time.sleep(10)
+        _now=time.perf_counter()
+        _nowRefresh=_now
+        _jiggleFlowrate=time.perf_counter() + 5
+        #path.timePrev=time.perf_counter()
+        while not (isinstance(_slug.tailHost,FlowTerminus)):
+            path.advanceSlugs()
+            if time.time() - _nowRefresh > 1:
+                _vol=_slug.slugVolume()
+                _nowRefresh=time.time()
+                rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut for orig in origins]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
+                print(rep)
+            time.sleep(0.1)
+        print("***************************************")
+        print("Collected slug volumes")
+        for _x in path.collectedSlugs:
+            print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
+            print(f'Slug was collected at terminus "{_x.frontHost.name}"')
+        print("***************************************")
+        _i+=1
+        if _i > 10:
+            exit()
+        time.sleep(10)
 
     # Create a thread for running the code
     thread=threading.Thread(target=run_code)

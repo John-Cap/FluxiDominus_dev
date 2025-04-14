@@ -5,6 +5,7 @@ import uuid
 from Core.Utils.Utils import Utils
 from collections import defaultdict, deque
 
+
 FLOW_PATH=None
 
 class FlowAddresses:
@@ -221,11 +222,13 @@ class FlowPath:
         
         self.currTerminus=None
         self.currRelOrigin=None #Relative starting point in flow path that 'dispenses' slugs
+        self.terminiMapped=False
         
         global FLOW_PATH
         FLOW_PATH=self
         
     def parseFlowSketch(self, sketchJson):
+        self.terminiMapped=False
         """
         Parse the FlowSketch JSON format from the frontend and build the full flow path,
         connecting all components and tubing into a usable FlowPath structure.
@@ -405,6 +408,7 @@ class FlowPath:
                         addresses.append([currComp, chosenSetName])
 
             self.addressesAll[terminus.name] = addresses
+            self.terminiMapped=True
 
     def setCurrDestination(self, terminus):
         if isinstance(terminus, str):
@@ -779,195 +783,81 @@ class SlugNull:
 class Slug(SlugNull):
     def __init__(self, volume=None, location=None, parentSlug=None, childSlug=None, elastic=None, hosts=None, tailHost=None, frontHost=None, tailHostPos=None, frontHostPos=None, stationary=True, collectedVol=0, collecting=False, reachedTerminusAt=0,  collected=False, totalDispensed=None, lastDispenseCycleTime=None):
         super().__init__(volume, location, parentSlug, childSlug, elastic, hosts, tailHost, frontHost, tailHostPos, frontHostPos, stationary, collectedVol, collecting, reachedTerminusAt, collected, totalDispensed=0, lastDispenseCycleTime=0)
+
+class FlowSystem:
+    def __init__(self):
+        self.flowpath=FlowPath()
+        self.allSlugs=Slugs()
 #######################################################################################
 ###Examples
 if __name__ == "__main__":
-    _path=FlowPath()
-    comp=[]
+    from Core.Fluids.FlowPath import FlowPath, Slugs, FlowTerminus, FlowOrigin
+    from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
     
-    #Stocks
-    _redStock=FlowOrigin(volume=0,name="RED_STOCK")
-    comp.append(_redStock)
-    _blueStock=FlowOrigin(volume=0,name="BLUE_STOCK")
-    comp.append(_blueStock)
-    _pinkStock=FlowOrigin(volume=0,name="PINK_STOCK")
-    comp.append(_pinkStock)
-    _purpleStock=FlowOrigin(volume=0,name="PURPLE_STOCK")
-    #comp.append(_purpleStock)
+    updater = MqttService(broker_address="172.30.243.138")
+    updater.connectDb=False
+    updater.start()
     
-    #Pump lines
-    _pump_1=Pump(volume=1.5,name="PUMP_1")
-    comp.append(_pump_1)
-    _pump_2=Pump(volume=1.5,name="PUMP_2")
-    comp.append(_pump_2)
-    _pump_3=Pump(volume=1.5,name="PUMP_3")
-    comp.append(_pump_3)
-    _pump_4=Pump(volume=1.5,name="PUMP_4")
-    #comp.append(_pump_4)
-    #Valves
-    _3wayValve=Valve(volume=0.05)
-    _cwValve=Valve(volume=0.05,name="CW_VALVE")
-    comp.append(_cwValve)
-    _valve_1=Valve(volume=0.05,name="DIVERT_VALVE")
-    comp.append(_valve_1)
-    _flushCoilValve=Valve(volume=0.05,name="FLUSH_VALVE")
-    comp.append(_flushCoilValve)
-    #IR
-    _IR=(IR(volume=0.5,name="IR"))
-    comp.append(_IR)
-    #Coil
-    _coil=(Coil(volume=5,name="COIL"))
-    comp.append(_coil)
-    #Termini
-    _waste=FlowTerminus(volume=0,name="WASTE")
-    comp.append(_waste)
-    _collect=FlowTerminus(volume=0,name="COLLECT")
-    comp.append(_collect)
-    _terminus_3=FlowTerminus(volume=0,name="TERMINUS_3")
-    comp.append(_terminus_3)
-    _terminus_4=FlowTerminus(volume=0,name="TERMINUS_4")
-    comp.append(_terminus_4)
-    
-    _tPiece_1=TPiece(volume=0.05,name="TPIECE_1")
-    comp.append(_tPiece_1)
-    _tPiece_2=TPiece(volume=0.05,name="TPIECE_2")
-    comp.append(_tPiece_2)
-    
-    _tubing_1=Tubing(volume=0.5,name="TUBE_1")
-    comp.append(_tubing_1)
-    _tubing_2=Tubing(volume=1,name="TUBE_2")
-    comp.append(_tubing_2)
-    _tubing_3=Tubing(volume=0.5,name="TUBE_3")
-    comp.append(_tubing_3)
-    _tubing_4=Tubing(volume=1,name="TUBE_4")
-    comp.append(_tubing_4)
-    ###################
-    #Connect components
+    while not updater.flowSystem.flowpath.terminiMapped:
+      time.sleep(1)
+      
+    path = updater.flowSystem.flowpath
 
-    #Stock solutions
-    _redStock.flowInto(_pump_1)
-    _blueStock.flowInto(_pump_2)
-    _pinkStock.flowInto(_pump_3)
-    #Pumplines 1/2
-    _pump_1.flowInto(_tPiece_1)
-    _pump_2.flowInto(_tPiece_1)
-    #Divert valve
-    _tPiece_1.flowInto(_tubing_1)
-    _tubing_1.flowInto(_valve_1)
-    _valve_1.flowInto(_coil)
-    _valve_1.flowInto(_tubing_2)
-    #Flush coil valve
-    _tubing_2.flowInto(_flushCoilValve)
-    _flushCoilValve.flowInto(_terminus_3)
-    _flushCoilValve.flowInto(_terminus_4)
-    #Coil
-    _coil.flowInto(_tPiece_2)
-    _pump_3.flowInto(_tPiece_2)
-    _tPiece_2.flowInto(_tubing_3)
-    _tubing_3.flowInto(_IR)
-    _IR.flowInto(_tubing_4)
-    _tubing_4.flowInto(_cwValve)
-    _cwValve.flowInto(_waste)
-    _cwValve.flowInto(_collect)
-    #select one of the termini
-    '''
-    #Create path
-    '''
-    _path.addPath(comp)
+    allSlugs = updater.flowSystem.allSlugs
 
-    #TODO - Manually assign starting point for now
-    _path.mapPathTermini()
-    adrses=[str(key) for key in _path.addressesAll.keys()]
+    #Find component references from names
+    origins = [comp for comp in path.segments if isinstance(comp,FlowOrigin)]
     
-    print("*********************Segment details*********************")
-    for _x in _path.segments:
-        print(f"Comp name: {_x.name}")
-        print(f" Inlet sets: {_x.inletSets}")
-        print(f" Outlet sets: {_x.outletSets}")
-        print(f" Curr inlets: {_x.inlets}")   
-        print(f" Curr outlets: {_x.outlets}")
-        print("--")
-        
-    print("************************Addresses*************************")
-    for _x, _y in _path.addressesAll.items():
-        print(f"Address for {_x}:")
-        for x in _y:
-            print(f" Comp: {x[0].name}")
-            print(f"  Inlet set: UNDEFINED")
-            print(f"  Outlet set: {x[1]}")
-        print("--")
+    print(f'Origins: {origins}')
+    
+    adrses = [name for name in path.addressesAll.keys()]
+
     #Some example things:
-    flowRates=[0,1,2,3,4]
-    dispVol=[1,2,3,4,5]
+    #flowRates=[0,1,2,3,4]
+    flowRates=[0.5,1,2]
+    dispVol=[1]
     
-    # Flag variable to indicate whether the thread should continue running?
+    #Flag variable to indicate whether the thread should continue running?
     running=True
-    allSlugs=Slugs()
+    time.sleep(1)
     def run_code():
-        global running
-        global allSlugs
-        global _path
-        _i=0
-        while running:
-            '''
-            _flow_1=eval(input("Pump 1 flowrate: "))
-            _flow_2=eval(input("Pump 2 flowrate: "))
-            _flow_3=eval(input("Pump 3 flowrate: "))
-            _slugVol=eval(input("Vol to dispense: "))
-            '''
-            _flow_1=random.choice(flowRates)
-            _flow_2=random.choice(flowRates)
-            _flow_3=random.choice(flowRates)
-            _slugVol=random.choice(dispVol)
-            
-            _redStock.setFlowrate(_flow_1/60)
-            _blueStock.setFlowrate(_flow_2/60)
-            _pinkStock.setFlowrate(_flow_3/60)
+      global running
+      global allSlugs
+      global path
+      _i=0
+      while running:
 
-            _path.updateFlowrates()
+        for orig in origins:
+          orig.setFlowrate((random.choice(flowRates)/60))
 
-            _path.setCurrDestination(random.choice(adrses))
-            _slug=_path.currRelOrigin.dispense(_slugVol)
-            allSlugs.slugs.append(_slug)
+        path.updateFlowrates()
 
-            _now=time.perf_counter()
-            _nowRefresh=_now
-            _jiggleFlowrate=time.perf_counter() + 5
-            #_path.timePrev=time.perf_counter()
-            while not (isinstance(_slug.tailHost,FlowTerminus)):
-                if time.time() - _jiggleFlowrate > 30:
-                    _flow_1=random.choice(flowRates)
-                    if _flow_1 == 0:
-                        _flow_1=1
-                    _flow_2=random.choice(flowRates)
-                    _flow_3=random.choice(flowRates)
-                    print("--")
-                    print(f"New flowrates: {_flow_1}, {_flow_2}, {_flow_3}")
-                    print("--")
-                                        
-                    _redStock.setFlowrate(_flow_1/60)
-                    _blueStock.setFlowrate(_flow_2/60)
-                    _pinkStock.setFlowrate(_flow_3/60)
-                    
-                    _jiggleFlowrate=time.time()
+        path.setCurrDestination(random.choice(adrses))
+        _slug=path.currRelOrigin.dispense(1)
+        allSlugs.slugs.append(_slug)
 
-                _path.advanceSlugs()
-                if time.time() - _nowRefresh > 1:
-                    _vol=_slug.slugVolume()
-                    _nowRefresh=time.time()
-                    rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[_flow_1,_flow_2,_flow_3]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
-                    print(rep)
-                time.sleep(0.1)
-            print("***************************************")
-            print("Collected slug volumes")
-            for _x in _path.collectedSlugs:
-                print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
-                print(f'Slug was collected at terminus "{_x.frontHost.name}"')
-            print("***************************************")
-            _i+=1
-            if _i > 10:
-                exit()
-            time.sleep(10)
+        _now=time.perf_counter()
+        _nowRefresh=_now
+        _jiggleFlowrate=time.perf_counter() + 5
+        #path.timePrev=time.perf_counter()
+        while not (isinstance(_slug.tailHost,FlowTerminus)):
+            path.advanceSlugs()
+            if time.time() - _nowRefresh > 1:
+                _vol=_slug.slugVolume()
+                _nowRefresh=time.time()
+                rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut for orig in origins]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
+                print(rep)
+            time.sleep(0.1)
+        print("***************************************")
+        print("Collected slug volumes")
+        for _x in path.collectedSlugs:
+            print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
+            print(f'Slug was collected at terminus "{_x.frontHost.name}"')
+        print("***************************************")
+        _i+=1
+        if _i > 10:
+            exit()
+        time.sleep(10)
 
     # Create a thread for running the code
     thread=threading.Thread(target=run_code)
