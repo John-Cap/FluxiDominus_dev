@@ -253,7 +253,7 @@ import random
 import time
 import threading
 
-from Core.Fluids.FlowPath import FlowOrigin, FlowTerminus, visualize_flow_path
+from Core.Fluids.FlowPath import FlowOrigin, FlowTerminus, Valve, visualize_flow_path
 
 dumpNo=1
 def dump_inlet_outlet_sets(path):
@@ -313,14 +313,21 @@ if __name__ == "__main__":
     for orig in origins:
       orig.setFlowrate(2/60)
         
-    dump_inlet_outlet_sets(path)
+    path.dumpInletOutletSets()
     
     path.updateFlowrates()
 
     path.setCurrDestination(random.choice(adrses))
     
-    visualize_flow_path(path)
+    # route=path._findPath(path._findComponentByName("KOH_sol"),path._findComponentByName("PushSolventA"))
     
+    # print(f'Route to get from {path._findComponentByName("KOH_sol").name} to {path._findComponentByName("PushSolventA").name}: {[x.name for x in route]}')
+
+    path.pullFromOrigin("AllylIsoval")
+    path.pullFromOrigin("KOH_sol")
+    
+    path.visualizeFlowPath()
+        
     slug=path.currRelOrigin.dispense(1)
     
     #Flag variable to indicate whether the thread should continue running?
@@ -343,7 +350,7 @@ if __name__ == "__main__":
           for orig in origins:
             orig.setFlowrate(2/60)
               
-          dump_inlet_outlet_sets(path)
+          path.dumpInletOutletSets()
           
           path.updateFlowrates()
 
@@ -364,7 +371,9 @@ if __name__ == "__main__":
             if time.time() - _nowRefresh > 1:
                 _vol=slug.slugVolume()
                 _nowRefresh=time.time()
-                rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL"""
+                rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL\n Current valve states:\n {
+                  [[x.name,x.inlets[0].name,x.outlets[0].name] for x in path.segments if isinstance(x,Valve)]  
+                })"""
                 print(rep)
             time.sleep(0.1)
         print("***************************************")
