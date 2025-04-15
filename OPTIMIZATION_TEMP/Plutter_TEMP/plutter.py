@@ -94,6 +94,8 @@ class MqttService:
         }
         
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
+        
+        self.connected=False
 
     def onSubscribe(self, client, userdata, mid, granted_qos):
         if mid in self.topicIDs:
@@ -122,6 +124,7 @@ class MqttService:
             self.connected=True
         else:
             print("Connection failed with error code " + str(rc))
+            self.connected=False
         # print(self.topicIDs)
     
     def onConnectTele(self, client, userdata, flags, rc):

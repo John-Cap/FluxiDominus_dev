@@ -4,9 +4,135 @@ import threading
 import uuid
 from Core.Utils.Utils import Utils
 from collections import defaultdict, deque
+import networkx as nx
+import matplotlib.pyplot as plt
 
 
 FLOW_PATH=None
+def visualize_flow_path(flowpath):
+    import matplotlib.pyplot as plt
+    import networkx as nx
+    from collections import defaultdict
+
+    G = nx.DiGraph()
+    node_labels = {}
+    node_colors = []
+
+    for comp in flowpath.segments:
+        if isinstance(comp, Valve):
+            inlet_label = str([x.name for x in comp.inlets]) if comp.inlets else "None"
+            outlet_label = str([x.name for x in comp.outlets]) if comp.outlets else "None"
+            node_labels[comp] = f"{comp.name}\nIN: {inlet_label} | OUT: {outlet_label}"
+        else:
+            node_labels[comp] = comp.name
+        if isinstance(comp, FlowOrigin):
+            node_colors.append("green")
+        elif isinstance(comp, FlowTerminus):
+            node_colors.append("red")
+        elif isinstance(comp, Valve):
+            node_colors.append("orange")
+        elif isinstance(comp, Pump):
+            node_colors.append("blue")
+        elif isinstance(comp, Tubing):
+            node_colors.append("grey")
+        else:
+            node_colors.append("lightblue")
+
+        for oSet in comp.outletSets.values():
+            for target in oSet:
+                if target:
+                    G.add_edge(comp, target)
+
+    # --- Assign node depth by topological sort ---
+    levels = defaultdict(list)
+    node_depths = {}
+    try:
+        topo_order = list(nx.topological_sort(G))
+        for node in topo_order:
+            preds = list(G.predecessors(node))
+            depth = max([node_depths[p] for p in preds], default=-1) + 1
+            node_depths[node] = depth
+            levels[depth].append(node)
+    except Exception as e:
+        print("⚠️ Topological sort error:", e)
+        return
+
+    # --- Position layout ---
+    pos = {}
+    for depth, nodes in levels.items():
+        for i, node in enumerate(nodes):
+            pos[node] = (depth * 2.0, -i * 2.0)
+
+    def find_comp_by_name(name):
+        for comp in flowpath.segments:
+            if comp.name == name:
+                return comp
+        return None
+
+    terminus = flowpath.currTerminus
+    if isinstance(terminus, str):
+        terminus = find_comp_by_name(terminus)
+
+    path_edges = []
+
+    # Ensure we have routing info
+    address_info = flowpath.addressesAll.get(terminus.name) if terminus else None
+    if terminus and address_info:
+        # Components with explicitly selected outlet sets in the active path
+        routed_switches = {comp: setName for comp, setName, *_ in address_info}
+        
+        for origin in [node for node in G.nodes if isinstance(node, FlowOrigin)]:
+            
+            try:
+                path_nodes = nx.shortest_path(G, source=origin, target=terminus)
+            except nx.NetworkXNoPath:
+                continue
+
+            # Validate that all switching components along this path match the active address
+            valid = True
+            for i in range(len(path_nodes) - 1):
+                comp = path_nodes[i]
+                nxt = path_nodes[i + 1]
+
+                # This now checks the live outlet routing — not just outletSets definitions
+                if nxt not in comp.outlets or comp not in nxt.inlets:
+                    print(f"{[x.name for x in comp.outlets]} and {[x.name for x in nxt.inlets]} have no common current connections!")
+                    valid = False
+                    break
+
+            if valid:
+                print(f"{[x.name for x in comp.outlets]} and {[x.name for x in nxt.inlets]} have valid common current connections!")
+                edges = list(zip(path_nodes[:-1], path_nodes[1:]))
+                path_edges.extend(edges)
+
+    # --- Draw base graph ---
+    fig, ax = plt.subplots(figsize=(14, 8))
+    nx.draw(
+        G, pos, with_labels=False, node_size=1500, node_color=node_colors,
+        edgecolors="black", linewidths=1.2,
+        arrows=True, arrowsize=20, connectionstyle="arc3,rad=0.05", ax=ax
+    )
+
+    for node, (x, y) in pos.items():
+        ax.text(
+            x, y - 0.6, node_labels[node],
+            ha='center', va='top',
+            fontsize=8, fontweight='bold'
+        )
+
+    if path_edges:
+        nx.draw_networkx_edges(
+            G, pos, edgelist=path_edges,
+            edge_color="black", width=3.8,
+            arrows=True, arrowsize=15, connectionstyle="arc3,rad=0.05", ax=ax
+        )
+
+    print(f"WJ - current relative origin: {flowpath.currRelOrigin.name}")
+    
+    ax.set_title("Flow System — Topological Layout", fontsize=14)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.show()
 
 class FlowAddresses:
     def __init__(self,addressBookName) -> None: #inlets
@@ -33,18 +159,18 @@ class VolumeObject:
         self.volume=volume
         #######################################################################################
         #Inlet/outlet control
-        self.inlets=inlets #Array with currently used inlets (array with any number of flow components)
-        self.outlets=outlets #Array with currently used outlets (array with only one element, an outlet set can have only a single flow component for now)
-        self.inletSets=inletSets #Dict with named sets of 'inlets'. One will be selected to act as self.inlets
-        self.outletSets=outletSets #Dict with named sets of 'outlets'. One will be selected to act as self.outlets
+        self.inlets=inlets if inlets else []
+        self.outlets=outlets if outlets else []
+        self.inletSets=inletSets if inletSets else {}
+        self.outletSets=outletSets if outletSets else {}
         self.currInletSet=None
         self.currOutletSet=None
         #######################################################################################
         self.name=name
         self.deviceName=deviceName
         self.deviceType=deviceType
-        self.flowrateIn=flowrateIn
-        self.flowrateOut=flowrateOut
+        self.flowrateIn=flowrateIn if flowrateIn else 0
+        self.flowrateOut=flowrateOut if flowrateOut else 0
         self.slugs=slugs
         self.lastAdvance=lastAdvance
         self.dispensing=dispensing
@@ -123,11 +249,14 @@ class VolumeObject:
     def flowInto(self,outlet,setNameIn="DEFAULT",setNameOut=""):
         if setNameOut == "":
             setNameOut=f"{self.name}_{self.id}_to_{outlet.name}_{outlet.id}"
+        if isinstance(outlet,Valve): #TODO - Temp fix for switchable valves inlets being lumped into same set
+            setNameIn=setNameIn + "_" + str(outlet.valveCntr)
+            outlet.valveCntr+=1
         self._addOutlet(outlet,setNameOut)
         outlet._addInlet(self,setNameIn)
-        if not len(self.outlets):
+        if not self.currOutletSet:
             self.switchToOutlets(setNameOut)
-        if not len(outlet.inlets):
+        if not outlet.currInletSet:
             outlet.switchToInlets(setNameIn)
         FLOW_PATH.flowrateShifted=True
             
@@ -251,7 +380,7 @@ class FlowPath:
                 if target:
                     source.flowInto(target)
 
-        print(f"Segments: {self.segments}")
+        # print(f"Segments: {self.segments}")
 
         # Register path
         self.addPath(self.segments)
@@ -294,14 +423,6 @@ class FlowPath:
 
         self._componentLookup[uid] = obj
         return obj
-
-    def switchToAddress(self,address):
-        _inlets=address.inletsSett
-        _outlets=address.outletsSett
-        for _x in _inlets:
-            _x[0].switchToInlets(_x[1])
-        for _x in _outlets:
-            _x[0].switchToOutlets(_x[1])            
 
     def pathVolume(self,segmentSet=None):
         if segmentSet is None:
@@ -405,8 +526,17 @@ class FlowPath:
                             chosenSetName = oSetName
                             break
                     if chosenSetName is not None:
-                        addresses.append([currComp, chosenSetName])
-
+                        # Also record inlet set name from nextComp
+                        # This assumes the inletSet that contains currComp is unique
+                        inletSetName = None
+                        for iSetName, iSetComps in nextComp.inletSets.items():
+                            print(f"Inletset names, components for {currComp}: {[iSetName,iSetComps]}")
+                            if currComp in iSetComps:
+                                inletSetName = iSetName
+                                break
+                        addresses.append([currComp, chosenSetName, nextComp, inletSetName])
+                    else:
+                        print(f"ChosenSetName for {[oSetName,oSetComps]} is None")
             self.addressesAll[terminus.name] = addresses
             self.terminiMapped=True
 
@@ -422,13 +552,15 @@ class FlowPath:
 
         theseAddresses = self.addressesAll[name]
         # each element in theseAddresses is [component, outletSetName]
-        for comp, outletSetName in theseAddresses:
+        for comp, outletSetName, nextComp, inletSetName in theseAddresses:
             comp.switchToOutlets(outletSetName)
+            if inletSetName:
+                nextComp.switchToInlets(inletSetName)
 
         # Optionally, we can set self.currTerminus to the target terminus
         # if we have a reference to the actual terminus object:
         self.currTerminus = terminus
-        
+
     # Helper function to find a path from start to end
     def _findPath(self,start, end, visited=None):
         if visited is None:
@@ -705,6 +837,7 @@ class Coil(FlowComponent):
     def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
         super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
 class Valve(FlowComponent):
+    valveCntr=0
     def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
         super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
 class Pump(FlowComponent):
@@ -788,6 +921,7 @@ class FlowSystem:
     def __init__(self):
         self.flowpath=FlowPath()
         self.allSlugs=Slugs()
+        
 #######################################################################################
 ###Examples
 if __name__ == "__main__":
