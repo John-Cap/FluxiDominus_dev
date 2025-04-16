@@ -297,7 +297,7 @@ class FlowSketcherState extends State<FlowSketcher>
           Wrap(
             children: [
               ActionChip(
-                label: const Text('Add valve'),
+                label: const Text('Add 3-way Valve'),
                 onPressed: () {
                   widget.dashboard.addElement(
                     Component(
@@ -311,6 +311,7 @@ class FlowSketcherState extends State<FlowSketcher>
                       handlers: [
                         Handler.leftCenter,
                         Handler.rightCenter,
+                        Handler.bottomCenter,
                       ],
                       deviceType: 'Valve',
                     ),
@@ -734,6 +735,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     handlers: [
                       Handler.leftCenter,
                       Handler.rightCenter,
+                      Handler.bottomCenter,
                     ],
                     deviceType: 'TPiece',
                     volume: 0.05,

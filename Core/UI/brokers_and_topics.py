@@ -27,6 +27,8 @@ class MqttTopics:
         "optOut":"ui/opt/out",
         "optIn":"ui/opt/in",
         "FlowSketcher": "ui/FlowSketcher",
+        "FlowTrackerOut": "ui/FlowSketcher/flowtracking/out",
+        "FlowTrackerIn": "ui/FlowSketcher/flowtracking/in",
         "ScriptGeneratorWidget": "chemistry/cmnd",
         #"TestListWidget":"ui/TestListWidget",
         "FormPanelWidget":"ui/FormPanelWidget",

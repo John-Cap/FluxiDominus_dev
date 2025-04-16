@@ -29,6 +29,8 @@ abstract class MqttTopics {
     //"optOut": "ui/opt/in",
     "optIn": "ui/opt/out",
     "FlowSketcher": 'ui/FlowSketcher',
+    "FlowTrackerIn": "ui/FlowSketcher/flowtracking/out",
+    "FlowTrackerOut": "ui/FlowSketcher/flowtracking/in",
     "ScriptGeneratorWidget": 'chemistry/cmnd',
     "FormPanelWidget": 'ui/FormPanelWidget',
     "LoginPageWidget": 'ui/LoginPageWidget',

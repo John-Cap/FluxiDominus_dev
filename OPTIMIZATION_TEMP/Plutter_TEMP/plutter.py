@@ -86,6 +86,7 @@ class MqttService:
         self.optimizationReqSettings={}
         self.reqOptimization=False
         self.flowSystem=FlowSystem()
+        self.flowSystem.flowpath.mqttService=self
         
         self.reqUIhandlers={
             "FlowSketcher":{

@@ -253,24 +253,7 @@ import random
 import time
 import threading
 
-from Core.Fluids.FlowPath import FlowOrigin, FlowTerminus, Valve, visualize_flow_path
-
-dumpNo=1
-def dump_inlet_outlet_sets(path):
-  global dumpNo
-  for seg in path.segments:
-      if seg.inletSets:
-          print(f"\n[INFO #{dumpNo}] {seg.name}: Inlet Sets")
-          for name, comps in seg.inletSets.items():
-              print(f"  Set '{name}': {[x.name for x in comps]}")
-          print(f"  Currently selected: {seg.currInletSet}")
-
-      if seg.outletSets:
-          print(f"[INFO #{dumpNo}] {seg.name}: Outlet Sets")
-          for name, comps in seg.outletSets.items():
-              print(f"  Set '{name}': {[x.name for x in comps]}")
-          print(f"  Currently selected: {seg.currOutletSet}")
-  dumpNo+=1
+from Core.Fluids.FlowPath import FlowOrigin, FlowTerminus, Valve
 
 if __name__ == "__main__":
     from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
@@ -291,7 +274,7 @@ if __name__ == "__main__":
     
     while not updater.flowSystem.flowpath.terminiMapped:
       time.sleep(1)
-      
+    
     path = updater.flowSystem.flowpath
 
     allSlugs = updater.flowSystem.allSlugs
@@ -318,17 +301,19 @@ if __name__ == "__main__":
     path.updateFlowrates()
 
     path.setCurrDestination(random.choice(adrses))
-    
-    # route=path._findPath(path._findComponentByName("KOH_sol"),path._findComponentByName("PushSolventA"))
-    
+
+    path.pullFromOrigin(path.currRelOrigin)
+    path.visualizeFlowPath()
+    print(f"Path name conf. : {[[path.currRelOrigin.name],[path._findComponentByName(path.currTerminus).name,path._findComponentByName('Waste').name]]}")
+    route=path._findPath(path.currRelOrigin,path._findComponentByName('Waste'))
+    print(f"The route: {[x.name for x in route]}")
     # print(f'Route to get from {path._findComponentByName("KOH_sol").name} to {path._findComponentByName("PushSolventA").name}: {[x.name for x in route]}')
 
-    path.pullFromOrigin("AllylIsoval")
-    path.pullFromOrigin("KOH_sol")
     
-    path.visualizeFlowPath()
-        
-    slug=path.currRelOrigin.dispense(1)
+    path.publishUI=True
+    slug=path.dispense(1)
+    
+    exit()
     
     #Flag variable to indicate whether the thread should continue running?
     running=True
@@ -355,13 +340,13 @@ if __name__ == "__main__":
           path.updateFlowrates()
 
           path.setCurrDestination(random.choice(adrses))
-          slug=path.currRelOrigin.dispense(1)
+          slug=path.dispense(1)
           allSlugs.slugs.append(slug)
-              
-          dump_inlet_outlet_sets(path)
         else:
           firstSet=False
-          
+
+        # path.visualizeFlowPath()
+                  
         _now=time.perf_counter()
         _nowRefresh=_now
         _jiggleFlowrate=time.perf_counter() + 5

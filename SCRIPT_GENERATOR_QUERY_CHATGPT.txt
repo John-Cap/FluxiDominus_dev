@@ -1,357 +1,608 @@
-Problem:
+Can I instead display the generated graph in a standalone Flutter widget through MQTT?
 
-The debug
+Python backend and my Flutter UI communicate through mirror class MqttService:
 
-from Core.Fluids.FlowPath import FlowOrigin, FlowTerminus, visualize_flow_path
+plutter.dart:
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_flow_chart/config/UI/brokers_and_topics.dart';
+import 'package:flutter_flow_chart/ui/authentication/login_page.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/flutter_flow_chart.dart';
+import 'package:flutter_flow_chart/ui/flow_sketcher/sketcher.dart';
+import 'package:flutter_flow_chart/ui/graphing/graph_panel.dart';
+import 'package:flutter_flow_chart/ui/script_builder.dart/hardcoded_tele_templates.dart';
+import 'package:flutter_flow_chart/ui/script_builder.dart/script_generator.dart';
+//import 'package:flutter_flow_chart/config/UI/data_queue_instructions.dart' as dq;
+import 'package:flutter_flow_chart/utils/timing.dart';
+import 'package:mqtt_client/mqtt_browser_client.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:uuid/uuid.dart';
 
-dumpNo=1
-def dump_inlet_outlet_sets(path):
-  global dumpNo
-  for seg in path.segments:
-      if seg.inletSets:
-          print(f"\n[INFO #{dumpNo}] {seg.name}: Inlet Sets")
-          for name, comps in seg.inletSets.items():
-              print(f"  Set '{name}': {[x.name for x in comps]}")
-          print(f"  Currently selected: {seg.currInletSet}")
+import '../ui/gauges/gauge_widgets.dart';
 
-      if seg.outletSets:
-          print(f"[INFO #{dumpNo}] {seg.name}: Outlet Sets")
-          for name, comps in seg.outletSets.items():
-              print(f"  Set '{name}': {[x.name for x in comps]}")
-          print(f"  Currently selected: {seg.currOutletSet}")
-  dumpNo+=1
+class MqttService extends ChangeNotifier {
+  late MqttClient client;
+  Map<String, String> topicsCmnd = MqttTopics.getCmndTopics();
+  Map<String, String> topicsTele = MqttTopics.getTeleTopics();
+  Map<String, String> topicsUI = MqttTopics.getUITopics();
+  Map<String, dynamic> lastMsgFromTopic = {};
+  final String server;
+  final builder = MqttClientPayloadBuilder();
+  List<String> availableDevices = [];
 
-in example
+  double minTeleGap = 0.25; //Min time to wait between logging tele
 
-if __name__ == "__main__":
-    from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
-    
-    updater = MqttService(broker_address="172.30.243.138")
-    updater.connectDb=False
-    updater.arm()
-    updater.start()
-    
-    print("Waiting for connection")
-    
-    while not updater.connected:
-      time.sleep(0.5)
-    
-    updater.publish("ui/FlowSketcher",json.dumps(example))
-    
-    print("Waiting for termini mapping")
-    
-    while not updater.flowSystem.flowpath.terminiMapped:
-      time.sleep(1)
-      
-    path = updater.flowSystem.flowpath
+  Map<String, Map<String, dynamic>> currFlowScript = {};
+  String currDashboardJson = '{"elements":[]}';
+  late Dashboard currDashboard;
 
-    allSlugs = updater.flowSystem.allSlugs
+  late FlowSketcher flowSketcher;
+  late GlobalKey<FlowSketcherState> flowSketcherKey;
 
-    #Find component references from names
-    origins = [comp for comp in path.segments if isinstance(comp,FlowOrigin)]
-    
-    print(f'Origins: {origins}')
-    
-    adrses = [name for name in path.addressesAll.keys()]
-    print(f"Available addresses: \n {path.addressesAll}")
+  late ScriptGeneratorWidget scriptGeneratorWidget;
+  late GlobalKey<ScriptGeneratorWidgetState> scriptGeneratorWidgetKey;
 
-    #Some example things:
-    #flowRates=[0,1,2,3,4]
-    flowRates=[0.5,1,2]
-    dispVol=[1]
+  //Map<String, dynamic> currDashboard = {};
+  Map<String, List<Map<String, dynamic>>> currTestScriptBlocks = {};
 
-    # path.currRelOrigin.setFlowrate(3/60)
-    for orig in origins:
-      orig.setFlowrate(2/60)
-        
-    dump_inlet_outlet_sets(path)
-    
-    path.updateFlowrates()
+  ///////////////////////////////////////////////////
+  //Graphs
+  // Variables to hold x-axis time limits
+  double timeBracketMin = 0;
+  double timeBracketMax = 120;
+  //Track which already created
+  Set<String> alreadyGraphed = {};
+  //Eligible for graphing and what to graph
+  Map<String, Map<String, dynamic>> eligibleForGraphing = {
+    "subflow/hotcoil1/tele": {
+      "temp": {
+        "title": "Hotcoil 1 - Temperature",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Deg",
+        "maxDataPoints": 1000,
+        "idStreaming": "hotcoil1_temp",
+      },
+    },
+    "subflow/vapourtecR4P1700/tele": {
+      "pressPumpA": {
+        "title": "R4 - Pump A Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressA",
+      },
+      "pressPumpB": {
+        "title": "R4 - Pump B Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressB",
+      },
+      "pressSystem": {
+        "title": "R4 - System Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressSystem",
+      },
+    },
+  };
 
-    path.setCurrDestination(random.choice(adrses))
-    
-    visualize_flow_path(path)
-    
-    slug=path.currRelOrigin.dispense(1)
-    
-    #Flag variable to indicate whether the thread should continue running?
-    running=True
-    time.sleep(1)
-    
-    firstSet=True
-    
-    def run_code():
-      global running
-      global allSlugs
-      global slug
-      global path
-      global firstSet
-      _i=0
-      while running:
+  //////////////////////////////////////////////////////////////////
+  //Gauges
+  Set<String> alreadyGauged = {};
+  List<GaugeWidget> dynamicGaugeWidgets = [];
+  Map<String, Map<int, Map<String, dynamic>>> eligibleForGauge = {
+    //Topics might have multiple gauges, each topic's gauges have index 0 -> n
+    "subflow/hotcoil1/tele": {
+      0: {
+        "gaugeType": GaugeWithSlider, //Use as pointer?
+        "cmndName": 'temp',
+        "unit": 'deg',
+        "deviceName": 'hotcoil1',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "temp"],
+        "min": 0,
+        "max": 100,
+        "initialValue": 0,
+        "maxValue": 100,
+        "cmndTopic": MqttTopics.getCmndTopic('hotcoil1'),
+        "name": 'Hotcoil 1 Temp',
+        "unitMultiplier": 1
+      },
+    },
+    "subflow/vapourtecR4P1700/tele": {
+      0: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - Pressure A',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressPumpA"],
+        "maxValue": 25,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
+      },
+      1: {
+        "gaugeType": GaugeWithSlider,
+        "name": 'R4 - Pump A Flowrate',
+        "cmndName": 'pafr',
+        "unit": 'mL/min',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "flowRatePumpA"],
+        "min": 0,
+        "max": 6,
+        "initialValue": 0,
+        "maxValue": 6,
+        "cmndTopic": MqttTopics.getCmndTopic('vapourtecR4P1700'),
+        "unitMultiplier": 1,
+      },
+      2: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - Pressure B',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressPumpB"],
+        "maxValue": 25,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
+      },
+      3: {
+        "gaugeType": GaugeWithSlider,
+        "name": 'R4 - Pump B Flowrate',
+        "cmndName": 'pbfr',
+        "unit": 'mL/min',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "flowRatePumpB"],
+        "min": 0,
+        "max": 6,
+        "initialValue": 0,
+        "maxValue": 6,
+        "cmndTopic": MqttTopics.getCmndTopic('vapourtecR4P1700'),
+        "unitMultiplier": 1,
+      },
+      4: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - System Pressure',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressSystem"],
+        "maxValue": 15,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
+      },
+    },
+  };
 
-        if not firstSet:
-          # path.currRelOrigin.setFlowrate(3/60)
-          for orig in origins:
-            orig.setFlowrate(2/60)
-              
-          dump_inlet_outlet_sets(path)
-          
-          path.updateFlowrates()
+  //
 
-          path.setCurrDestination(random.choice(adrses))
-          slug=path.currRelOrigin.dispense(1)
-          allSlugs.slugs.append(slug)
-              
-          dump_inlet_outlet_sets(path)
-        else:
-          firstSet=False
-          
-        _now=time.perf_counter()
-        _nowRefresh=_now
-        _jiggleFlowrate=time.perf_counter() + 5
-        #path.timePrev=time.perf_counter()
-        while not (isinstance(slug.tailHost,FlowTerminus)):
-            path.advanceSlugs()
-            if time.time() - _nowRefresh > 1:
-                _vol=slug.slugVolume()
-                _nowRefresh=time.time()
-                rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL"""
-                print(rep)
-            time.sleep(0.1)
-        print("***************************************")
-        print("Collected slug volumes")
-        for _x in path.collectedSlugs:
-            print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
-            print(f'Slug was collected at terminus "{_x.frontHost.name}"')
-        print("***************************************")
-        _i+=1
-        if _i > 10:
-            exit()
-        time.sleep(10)
+  //Optimization
+  Map<String, dynamic> optimizationDetails = {};
+  ValueNotifier<List<Map<String, Map<String, double>>>> resultHistory =
+      ValueNotifier([]);
+  ValueNotifier<Map<String, double>> recommendedParams = ValueNotifier({});
+  Map<String, double> bestParametres = {};
+  ValueNotifier<double> lastYield = ValueNotifier(0);
+  ValueNotifier<bool> goOptimization = ValueNotifier(false);
+  // List<String> objectiveFunctions = [];
 
-    # Create a thread for running the code
-    thread=threading.Thread(target=run_code)
-    thread.start()
+  // Mock options for optimizer and objective function
+  final List<String> optimizationOptions = ["SUMMIT_SOBO"];
+  final List<String> objectiveFunctions = ["BMC_WJ_IR_ALLYL_BROMIDE"];
 
-    # Wait for the thread to finish
-    thread.join()
-    print("We're done here")
+  //
+  //////////////////////////////////////////////////////////////////////////
+  //Data streams *TODO - generalize
+  ValueNotifier<List<PlotData>> hotcoil1PlotDataNotifier = ValueNotifier([]);
 
-    #######################################################################################
+  Map<String, List<String>> teleToCollect = {};
 
-With additional debug 
-"
-                    if chosenSetName is not None:
-                        # Also record inlet set name from nextComp
-                        # This assumes the inletSet that contains currComp is unique
-                        inletSetName = None
-                        for iSetName, iSetComps in nextComp.inletSets.items():
-                            print(f"Inletset names, components for {currComp}: {[iSetName,iSetComps]}")
-                            if currComp in iSetComps:
-                                inletSetName = iSetName
-                                break
-"
-shows:
+  Map<String, ValueNotifier<List<PlotData>>> teleDataNotifiers = {};
+  Map<String, ValueNotifier<List<List<double>>>> dbStreamDataNotifiers = {};
+  ValueNotifier<List<PlotData>> reactIR702L1PlotDataNotifier =
+      ValueNotifier([]);
+  EpochDelta epochDelta = EpochDelta();
 
-Inletset names, components for <Core.Fluids.FlowPath.Valve object at 0x000001C651791760>: ['DEFAULT', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>]]
-Inletset names, components for <Core.Fluids.FlowPath.Valve object at 0x000001C651791760>: ['DEFAULT', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>]]
+  Map<String, EpochDelta> lastReceivedTime = {};
 
-Available addresses: 
- {'Product': [[<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>, 'WasteOrCollect_22_to_TUBE_12_23', <Core.Fluids.FlowPath.Tubing object at 0x000001C651791790>, 'DEFAULT']], 'Waste': [[<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>, 'WasteOrCollect_22_to_TUBE_13_24', <Core.Fluids.FlowPath.Tubing object at 0x000001C651791820>, 'DEFAULT']]}
+  Map<String, ValueNotifier<Map<String, dynamic>>> backendReturn = {
+    "getAllExpWidgetInfo": ValueNotifier({}),
+    "loadTestrun": ValueNotifier({})
+  };
+  //////////////////////////////////////////////////////////////////////////
 
-[INFO #1] R4 Pump A: Inlet Sets
-  Set 'DEFAULT': ['TUBE_2']
-  Currently selected: None
-[INFO #1] R4 Pump A: Outlet Sets
-  Set 'R4 Pump A_0_to_TUBE_1_1': ['TUBE_1']
-  Currently selected: R4 Pump A_0_to_TUBE_1_1
+  //Authentication
+  Authenticator authenticator = Authenticator();
 
-[INFO #1] TUBE_1: Inlet Sets
-  Set 'DEFAULT': ['R4 Pump A']
-  Currently selected: None
-[INFO #1] TUBE_1: Outlet Sets
-  Set 'TUBE_1_1_to_StaticMixer_16': ['StaticMixer']
-  Currently selected: TUBE_1_1_to_StaticMixer_16
+  bool runTest = false;
+  ValueNotifier<bool> testRunning = ValueNotifier(false);
 
-[INFO #1] SR_A: Inlet Sets
-  Set 'DEFAULT_0': ['TUBE_3'] **Correctly assigns incoming tubes to unique inlet sets
-  Set 'DEFAULT_1': ['TUBE_4']
-  Currently selected: None
-[INFO #1] SR_A: Outlet Sets
-  Set 'SR_A_2_to_TUBE_2_3': ['TUBE_2']
-  Currently selected: SR_A_2_to_TUBE_2_3
+  late GraphWidgets graphWidgets;
 
-[INFO #1] TUBE_2: Inlet Sets
-  Set 'DEFAULT': ['SR_A']
-  Currently selected: None
-[INFO #1] TUBE_2: Outlet Sets
-  Set 'TUBE_2_3_to_R4 Pump A_0': ['R4 Pump A']
-  Currently selected: TUBE_2_3_to_R4 Pump A_0
-[INFO #1] AllylIsoval: Outlet Sets
-  Set 'AllylIsoval_4_to_TUBE_3_5': ['TUBE_3']
-  Currently selected: AllylIsoval_4_to_TUBE_3_5
+  //Construct.
+  MqttService({required this.server}) {
+    try {
+      //print("WJ - Now here");
+      // Other initialization code if any
+    } catch (e) {
+      //print("WJ - Error in constructor: $e");
+    }
+  }
+  //
 
-[INFO #1] TUBE_3: Inlet Sets
-  Set 'DEFAULT': ['AllylIsoval']
-  Currently selected: None
-[INFO #1] TUBE_3: Outlet Sets
-  Set 'TUBE_3_5_to_SR_A_2': ['SR_A']
-  Currently selected: TUBE_3_5_to_SR_A_2
-[INFO #1] PushSolventA: Outlet Sets
-  Set 'PushSolventA_6_to_TUBE_4_7': ['TUBE_4']
-  Currently selected: PushSolventA_6_to_TUBE_4_7
+  Future<void> initializeMQTTClient() async {
+    String identifier = 'flutter_client_${Uuid().v4()}';
+    client = MqttBrowserClient(server, identifier);
+    client.port = 9001;
+    client.logging(on: false);
+    client.keepAlivePeriod = 20;
+    client.onConnected = onConnected;
+    client.onSubscribed = onSubscribed;
+    client.autoReconnect = true;
+    //client.onDisconnected = onDisconnected;
+    client.resubscribeOnAutoReconnect = true;
+    //client.onAutoReconnected = onConnected;
 
-[INFO #1] TUBE_4: Inlet Sets
-  Set 'DEFAULT': ['PushSolventA']
-  Currently selected: None
-[INFO #1] TUBE_4: Outlet Sets
-  Set 'TUBE_4_7_to_SR_A_2': ['SR_A']
-  Currently selected: TUBE_4_7_to_SR_A_2
+    final connMess = MqttConnectMessage()
+        .withClientIdentifier(identifier)
+        .startClean()
+        .withWillQos(MqttQos.atMostOnce);
 
-[INFO #1] SR_B: Inlet Sets
-  Set 'DEFAULT_0': ['TUBE_7']
-  Set 'DEFAULT_1': ['TUBE_8']
-  Currently selected: None
-[INFO #1] SR_B: Outlet Sets
-  Set 'SR_B_8_to_TUBE_5_9': ['TUBE_5']
-  Currently selected: SR_B_8_to_TUBE_5_9
+    client.connectionMessage = connMess;
+  }
 
-[INFO #1] TUBE_5: Inlet Sets
-  Set 'DEFAULT': ['SR_B']
-  Currently selected: None
-[INFO #1] TUBE_5: Outlet Sets
-  Set 'TUBE_5_9_to_R4 Pump B_10': ['R4 Pump B']
-  Currently selected: TUBE_5_9_to_R4 Pump B_10
+  Future<void> connect() async {
+    try {
+      print('WJ - Initializing Mqtt Browser Client');
+      await initializeMQTTClient();
+      print('WJ - Attempting to connect');
+      MqttClientConnectionStatus? status = await client.connect();
+      print('WJ - Connection state $status');
+      if (status != null &&
+          status.state.toString() != 'MqttConnectionState.disconnected') {
+        print(
+            'WJ - MqttClientConnectionStatus returned ${status.state.toString()}!');
+        client.updates!.listen(onMessage);
+      }
+    } catch (e) {
+      print('WJ - Connection failed: $e');
+    }
+  }
 
-[INFO #1] R4 Pump B: Inlet Sets
-  Set 'DEFAULT': ['TUBE_5']
-  Currently selected: None
-[INFO #1] R4 Pump B: Outlet Sets
-  Set 'R4 Pump B_10_to_TUBE_6_11': ['TUBE_6']
-  Currently selected: R4 Pump B_10_to_TUBE_6_11
+  void onSubscribed(String topic) {
+    print('Subscribed to $topic');
+  }
 
-[INFO #1] TUBE_6: Inlet Sets
-  Set 'DEFAULT': ['R4 Pump B']
-  Currently selected: None
-[INFO #1] TUBE_6: Outlet Sets
-  Set 'TUBE_6_11_to_StaticMixer_16': ['StaticMixer']
-  Currently selected: TUBE_6_11_to_StaticMixer_16
-[INFO #1] KOH_sol: Outlet Sets
-  Set 'KOH_sol_12_to_TUBE_7_13': ['TUBE_7']
-  Currently selected: KOH_sol_12_to_TUBE_7_13
+  ////////////////////////////////////////////
+  //Main message processor
+  void onMessage(List<MqttReceivedMessage<MqttMessage>> event) {
+    final MqttPublishMessage recMess = event[0].payload as MqttPublishMessage;
+    final String message =
+        MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
 
-[INFO #1] TUBE_7: Inlet Sets
-  Set 'DEFAULT': ['KOH_sol']
-  Currently selected: None
-[INFO #1] TUBE_7: Outlet Sets
-  Set 'TUBE_7_13_to_SR_B_8': ['SR_B']
-  Currently selected: TUBE_7_13_to_SR_B_8
-[INFO #1] PushSolventB: Outlet Sets
-  Set 'PushSolventB_14_to_TUBE_8_15': ['TUBE_8']
-  Currently selected: PushSolventB_14_to_TUBE_8_15
+    String topic = event[0].topic;
+    Map<String, dynamic> messageMap = jsonDecode(message);
 
-[INFO #1] TUBE_8: Inlet Sets
-  Set 'DEFAULT': ['PushSolventB']
-  Currently selected: None
-[INFO #1] TUBE_8: Outlet Sets
-  Set 'TUBE_8_15_to_SR_B_8': ['SR_B']
-  Currently selected: TUBE_8_15_to_SR_B_8
+    lastMsgFromTopic[topic] = messageMap;
 
-[INFO #1] StaticMixer: Inlet Sets
-  Set 'DEFAULT': ['TUBE_1', 'TUBE_6']
-  Currently selected: None
-[INFO #1] StaticMixer: Outlet Sets
-  Set 'StaticMixer_16_to_TUBE_9_17': ['TUBE_9']
-  Currently selected: StaticMixer_16_to_TUBE_9_17
+    //Graph it?
+    maybeCreateGraphsForTopic(topic, messageMap);
+    maybeCreateGaugesForTopic(topic);
 
-[INFO #1] TUBE_9: Inlet Sets
-  Set 'DEFAULT': ['StaticMixer']
-  Currently selected: None
-[INFO #1] TUBE_9: Outlet Sets
-  Set 'TUBE_9_17_to_Hotcoil_1_18': ['Hotcoil_1']
-  Currently selected: TUBE_9_17_to_Hotcoil_1_18
+    if (!lastReceivedTime.containsKey(topic)) {
+      lastReceivedTime[topic] = EpochDelta();
+    }
 
-[INFO #1] Hotcoil_1: Inlet Sets
-  Set 'DEFAULT': ['TUBE_9']
-  Currently selected: None
-[INFO #1] Hotcoil_1: Outlet Sets
-  Set 'Hotcoil_1_18_to_TUBE_10_19': ['TUBE_10']
-  Currently selected: Hotcoil_1_18_to_TUBE_10_19
+    //Fix hierdie gemors, dis stupid
+    if (messageMap.containsKey("LoginPageWidget")) {
+      if ((messageMap["LoginPageWidget"]).containsKey("authenticated") &&
+          (messageMap["LoginPageWidget"])["authenticated"]) {
+        authenticator.signedIn = true;
+        print('WJ - Sign in successful!');
+        if (authenticator.signInFailed) {
+          authenticator.signInFailed = false;
+        }
+      } else {
+        print('WJ - Sign in failed!');
+        authenticator.signInFailed = true;
+        if (authenticator.signedIn) {
+          authenticator.signedIn = false;
+        }
+      }
+      //
+    } else if (topic == "ui/opt/out") {
+      if (messageMap.containsKey("optInfo")) {
+        if (messageMap["optInfo"].containsKey("eval")) {
+          if (messageMap["optInfo"]["eval"].containsKey("yield")) {
+            lastYield.value = messageMap["optInfo"]["eval"]["yield"];
+          } else if (messageMap["optInfo"]["eval"].containsKey("maxYield")) {
+            lastYield.value = messageMap["optInfo"]["eval"]["maxYield"];
+            goOptimization.value = false;
+          }
+        }
+        if (messageMap["optInfo"].containsKey("recommendedParams")) {
+          print(
+              "WJ - recommendedParams.value: ${messageMap["optInfo"]["recommendedParams"]}");
+          recommendedParams.value = ({
+            "Temperature": messageMap["optInfo"]["recommendedParams"]
+                ["Temperature"],
+            "Flowrate": messageMap["optInfo"]["recommendedParams"]["Flowrate"]
+          });
+        }
+        if (messageMap["optInfo"].containsKey("recommendationResult")) {
+          var result = Map<String, double>.from(
+              messageMap["optInfo"]["recommendationResult"]);
+          double yield = result["yield"] ?? 0;
 
-[INFO #1] TUBE_10: Inlet Sets
-  Set 'DEFAULT': ['Hotcoil_1']
-  Currently selected: None
-[INFO #1] TUBE_10: Outlet Sets
-  Set 'TUBE_10_19_to_ReactIR 702L1_20': ['ReactIR 702L1']
-  Currently selected: TUBE_10_19_to_ReactIR 702L1_20
+          // Update resultHistory
+          resultHistory.value = [
+            ...resultHistory.value,
+            {
+              'recommendation': {
+                'Temperature': result['Temperature'] ?? 0,
+                'Flowrate': result['Flowrate'] ?? 0,
+                'yield': yield
+              }
+            }
+          ];
 
-[INFO #1] ReactIR 702L1: Inlet Sets
-  Set 'DEFAULT': ['TUBE_10']
-  Currently selected: None
-[INFO #1] ReactIR 702L1: Outlet Sets
-  Set 'ReactIR 702L1_20_to_TUBE_11_21': ['TUBE_11']
-  Currently selected: ReactIR 702L1_20_to_TUBE_11_21
+          // Optionally update best yield if you want to keep a separate variable for it
+          if (yield > lastYield.value) {
+            bestParametres = {
+              'Temperature': result['Temperature'] ?? 0,
+              'Flowrate': result['Flowrate'] ?? 0
+            };
+            lastYield.value = yield;
+          }
+        }
+      }
+      if (messageMap.containsKey("goOptimization")) {
+        if (messageMap["goOptimization"]) {
+          lastYield.value = 0;
+          resultHistory.value = [];
+          goOptimization.value = true;
+        }
+      }
+    } else if (messageMap.containsKey("GraphWidgets")) {
+      //TODO - FIX THIS HARDCODED DISASTER
+    } else if (topic == "subflow/flowsynmaxi2/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      if (teleToCollect.containsKey(topic)) {
+        if (teleToCollect[topic]!.isNotEmpty) {
+          for (var x in teleToCollect[topic]!) {
+            String id = "${topic}_$x";
+            teleDataNotifiers[id]!.value = [
+              ...teleDataNotifiers[id]!.value,
+              PlotData(
+                epochDelta.secSinceEpoch().toDouble(),
+                HardcodedTeleKeys.getTeleVal(messageMap, x),
+              ),
+            ];
+          }
+        }
+      }
+      //
+    } else if (topic == "subflow/vapourtecR4P1700/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      if (teleToCollect.containsKey(topic)) {
+        if (teleToCollect[topic]!.isNotEmpty) {
+          for (var x in teleToCollect[topic]!) {
+            String id = "${topic}_$x";
+            teleDataNotifiers[id]!.value = [
+              ...teleDataNotifiers[id]!.value,
+              PlotData(
+                epochDelta.secSinceEpoch().toDouble(),
+                HardcodedTeleKeys.getTeleVal(messageMap, x),
+              ),
+            ];
+          }
+        }
+      }
+      //
+    } else if (topic == "subflow/hotcoil1/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      for (var x in teleToCollect[topic]!) {
+        String id = "${topic}_$x";
+        teleDataNotifiers[id]?.value = [
+          ...teleDataNotifiers[id]!.value,
+          PlotData(
+            epochDelta.secSinceEpoch().toDouble(),
+            HardcodedTeleKeys.getTeleVal(messageMap, x),
+          ),
+        ];
+      }
+      //
+    } else if (topic == "subflow/reactIR702L1/tele" &&
+        lastReceivedTime[topic]!.secSinceEpoch() > minTeleGap) {
+      lastReceivedTime[topic]?.reset();
+      IRPlotData thisData = IRPlotData();
+      List<double> raw = (messageMap["tele"]["state"]["data"]).cast<double>();
+      List<PlotData> gd = thisData.parse(raw);
+      reactIR702L1PlotDataNotifier.value = gd;
+      //
+    } else if (topic == "ui/dbStreaming/out") {
+      messageMap = messageMap['dbStreaming'];
+      String id = messageMap.keys.first;
+      print(
+        'WJ - ${dbStreamDataNotifiers[id]?.value}, keys: ${messageMap.keys}',
+      );
+      if (!dbStreamDataNotifiers.containsKey(id)) {
+        dbStreamDataNotifiers[id] = ValueNotifier([]);
+      }
+      print('WJ - received: ${messageMap[id]}');
+      dbStreamDataNotifiers[id]?.value.addAll(messageMap[id]);
+      //notifyListeners();
+      //Doesn't seem neccessary to notify listeners?!
+    } else if (topic == "ui/dbCmnd/ret") {
+      if (messageMap.containsKey("searchForTest")) {
+        backendReturn["searchForTest"]!.value = messageMap["searchForTest"];
+        //
+      } else if (messageMap.containsKey("getAllExpWidgetInfo")) {
+        backendReturn["getAllExpWidgetInfo"]!.value =
+            messageMap["getAllExpWidgetInfo"];
+        //
+      } else if (messageMap.containsKey("createReplicate")) {
+        backendReturn["getAllExpWidgetInfo"]!.value =
+            messageMap["createReplicate"];
+        //
+      } else if (messageMap.containsKey("loadTestrun")) {
+        //
+      } else if (messageMap.containsKey("handleStreamRequest")) {
+        messageMap = messageMap["handleStreamRequest"];
+        if (messageMap.keys.length == 1) {
+          String id = messageMap.keys.first;
+          if (!dbStreamDataNotifiers.containsKey(id)) {
+            dbStreamDataNotifiers[id] = ValueNotifier([]);
+          }
+          List<List<double>> rawData = (messageMap[id] as List)
+              .map((e) => List<double>.from(e))
+              .toList();
+          /*
+          List<PlotData> plotData =
+              rawData.map((xy) => PlotData(xy[0], xy[1])).toList();
+          */
+          dbStreamDataNotifiers[id]!.value =
+              dbStreamDataNotifiers[id]!.value + rawData;
+          print(
+              'WJ - Received streamed db tele number of: ${dbStreamDataNotifiers[id]!.value.length}');
+          //
+        }
+      } else if (messageMap.containsKey("runTest")) {
+        print("WJ WE HERE");
+        if (messageMap["runTest"]) {
+          epochDelta.reset();
+        }
+        runTest = messageMap["runTest"];
+        testRunning.value = messageMap["runTest"];
+        print('WJ - Setting testRunning to ${messageMap["runTest"]}');
+      }
+    }
+  }
 
-[INFO #1] TUBE_11: Inlet Sets
-  Set 'DEFAULT': ['ReactIR 702L1']
-  Currently selected: None
-[INFO #1] TUBE_11: Outlet Sets
-  Set 'TUBE_11_21_to_WasteOrCollect_22': ['WasteOrCollect']
-  Currently selected: TUBE_11_21_to_WasteOrCollect_22
+  void onConnected() {
+    topicsTele.forEach((key, value) {
+      if (client.getSubscriptionsStatus(value).name == 'doesNotExist') {
+        print('WJ - topic $value is being subscribed to!');
+        client.subscribe(value, MqttQos.atMostOnce);
+      }
+    });
+    topicsUI.forEach((key, value) {
+      //print('WJ - ${client.getSubscriptionsStatus(value).name}');
+      if (client.getSubscriptionsStatus(value).name == 'doesNotExist') {
+        print('WJ - topic $value is being subscribed to!');
+        client.subscribe(value, MqttQos.atMostOnce);
+      }
+    });
+  }
 
-[INFO #1] WasteOrCollect: Inlet Sets
-  Set 'DEFAULT_0': ['TUBE_11']
-  Currently selected: None
-[INFO #1] WasteOrCollect: Outlet Sets
-  Set 'WasteOrCollect_22_to_TUBE_12_23': ['TUBE_12']
-  Set 'WasteOrCollect_22_to_TUBE_13_24': ['TUBE_13']
-  Currently selected: WasteOrCollect_22_to_TUBE_13_24
+  void publish(String topic, String message,
+      {MqttQos qos = MqttQos.exactlyOnce}) {
+    if (client.connectionStatus.toString() == 'disconnected') {
+      //TODO - What then?
+      //connect();
+    }
+    builder.clear();
+    builder.addString(message);
+    // print('WJ - Attempting to publish $message!');
+    client.publishMessage(topic, qos, builder.payload!);
+    // print('WJ - Publish attempt for $message resulted in: $ret!');
+  }
 
-[INFO #1] TUBE_12: Inlet Sets
-  Set 'DEFAULT': ['WasteOrCollect']
-  Currently selected: None
-[INFO #1] TUBE_12: Outlet Sets
-  Set 'TUBE_12_23_to_Product_25': ['Product']
-  Currently selected: TUBE_12_23_to_Product_25
+  //Util methods
+  void maybeCreateGraphsForTopic(
+      String topic, Map<String, dynamic> messageMap) {
+    //TODO - trigger rebuild without having to tab away
+    if (!eligibleForGraphing.containsKey(topic)) return;
 
-[INFO #1] TUBE_13: Inlet Sets
-  Set 'DEFAULT': ['WasteOrCollect']
-  Currently selected: None
-[INFO #1] TUBE_13: Outlet Sets
-  Set 'TUBE_13_24_to_Waste_26': ['Waste']
-  Currently selected: TUBE_13_24_to_Waste_26
+    var teleMap = messageMap["tele"]?["state"];
+    if (teleMap == null) return;
 
-[INFO #1] Product: Inlet Sets
-  Set 'DEFAULT': ['TUBE_12']
-  Currently selected: None
+    eligibleForGraphing[topic]!.forEach((teleKey, config) {
+      if (teleMap.containsKey(teleKey)) {
+        String uniqueGraphID = "${topic}_$teleKey";
+        if (!alreadyGraphed.contains(uniqueGraphID)) {
+          graphWidgets.addUnifiedTimeSeriesWidget(
+            title: config['title'],
+            xAxisTitle: config['xAxisTitle'],
+            yAxisTitle: config['yAxisTitle'],
+            mqttService: this,
+            maxDataPoints: config['maxDataPoints'],
+            teleKey: teleKey,
+            idTele: topic,
+            idStreaming: config['idStreaming'],
+          );
+          alreadyGraphed.add(uniqueGraphID);
+          print("Graph added for $uniqueGraphID");
+        }
+      }
+    });
+  }
 
-[INFO #1] Waste: Inlet Sets
-  Set 'DEFAULT': ['TUBE_13']
-  Currently selected: None
-This segment and inlets: ['R4 Pump A', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517911C0>]]
-This segment and inlets: ['TUBE_1', [<Core.Fluids.FlowPath.Pump object at 0x000001C651791160>]]
-This segment and inlets: ['SR_A', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517912B0>]]
-This segment and inlets: ['TUBE_2', [<Core.Fluids.FlowPath.Valve object at 0x000001C651304980>]]
-This segment and inlets: ['AllylIsoval', []]
-This segment and inlets: ['TUBE_3', [<Core.Fluids.FlowPath.FlowOrigin object at 0x000001C650599130>]]
-This segment and inlets: ['PushSolventA', []]
-This segment and inlets: ['TUBE_4', [<Core.Fluids.FlowPath.FlowOrigin object at 0x000001C651249F70>]]
-This segment and inlets: ['SR_B', [<Core.Fluids.FlowPath.Tubing object at 0x000001C651791550>]]
-This segment and inlets: ['TUBE_5', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791280>]]
-This segment and inlets: ['R4 Pump B', [<Core.Fluids.FlowPath.Tubing object at 0x000001C651791370>]]
-This segment and inlets: ['TUBE_6', [<Core.Fluids.FlowPath.Pump object at 0x000001C650C18EC0>]]
-This segment and inlets: ['KOH_sol', []]
-This segment and inlets: ['TUBE_7', [<Core.Fluids.FlowPath.FlowOrigin object at 0x000001C6511B93D0>]]
-This segment and inlets: ['PushSolventB', []]
-This segment and inlets: ['TUBE_8', [<Core.Fluids.FlowPath.FlowOrigin object at 0x000001C651791490>]]
-This segment and inlets: ['StaticMixer', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517911F0>, <Core.Fluids.FlowPath.Tubing object at 0x000001C651791340>]]
-This segment and inlets: ['TUBE_9', [<Core.Fluids.FlowPath.TPiece object at 0x000001C650BC9070>]]
-This segment and inlets: ['Hotcoil_1', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517915E0>]]
-This segment and inlets: ['TUBE_10', [<Core.Fluids.FlowPath.Coil object at 0x000001C651306FC0>]]
-This segment and inlets: ['ReactIR 702L1', [<Core.Fluids.FlowPath.Tubing object at 0x000001C650612D80>]]
-This segment and inlets: ['TUBE_11', [<Core.Fluids.FlowPath.IR object at 0x000001C651791640>]]
-This segment and inlets: ['WasteOrCollect', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517916D0>]]
-This segment and inlets: ['TUBE_12', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>]]
-This segment and inlets: ['TUBE_13', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>]]
-This segment and inlets: ['Product', [<Core.Fluids.FlowPath.Tubing object at 0x000001C651791790>]]
-This segment and inlets: ['Waste', [<Core.Fluids.FlowPath.Tubing object at 0x000001C651791820>]]
+  //Gauges
+  void maybeCreateGaugesForTopic(String topic) {
+    //TODO - trigger rebuild without having to tab away
+    if (!eligibleForGauge.containsKey(topic)) return;
+
+    eligibleForGauge[topic]!.forEach((index, config) {
+      String uniqueID = "$topic:${config['name']}";
+      if (alreadyGauged.contains(uniqueID)) return;
+
+      Type gaugeType = config["gaugeType"];
+      late GaugeWidget widget;
+
+      if (gaugeType == GaugeWithSlider) {
+        widget = GaugeWithSlider(
+          name: config["name"],
+          unit: config["unit"],
+          deviceName: config["deviceName"],
+          deviceValueName: config["deviceValueName"],
+          mqttService: this,
+          topic: topic,
+          address: List<String>.from(config["address"]),
+          min: config["min"],
+          max: config["max"],
+          initialValue: config["initialValue"],
+          maxValue: config["maxValue"],
+          cmndTopic: config["cmndTopic"],
+          cmndName: config["cmndName"],
+          unitMultiplier: config["unitMultiplier"],
+        );
+      } else if (gaugeType == SemiCircularGauge) {
+        widget = SemiCircularGauge(
+          name: config["name"],
+          unit: config["unit"],
+          deviceName: config["deviceName"],
+          deviceValueName: config["deviceValueName"],
+          mqttService: this,
+          topic: topic,
+          address: List<String>.from(config["address"]),
+          maxValue: config["maxValue"],
+          cmndTopic: config["cmndTopic"],
+          cmndName: config["cmndName"],
+          unitMultiplier: config["unitMultiplier"],
+        );
+      } else {
+        print("Unsupported gauge type for $uniqueID");
+        return;
+      }
+
+      dynamicGaugeWidgets.add(widget);
+      alreadyGauged.add(uniqueID);
+      print("Gauge added: $uniqueID");
+      notifyListeners(); // in case widgets rebuild live
+    });
+  }
+}
+
+plutter.py:

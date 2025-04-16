@@ -1,7 +1,9 @@
+import json
 import random
 import time
 import threading
 import uuid
+from Core.UI.brokers_and_topics import MqttTopics
 from Core.Utils.Utils import Utils
 from collections import defaultdict, deque
 import networkx as nx
@@ -9,131 +11,6 @@ import matplotlib.pyplot as plt
 
 
 FLOW_PATH=None
-def visualize_flow_path(flowpath):
-    import matplotlib.pyplot as plt
-    import networkx as nx
-    from collections import defaultdict
-
-    G = nx.DiGraph()
-    node_labels = {}
-    node_colors = []
-
-    for comp in flowpath.segments:
-        if isinstance(comp, Valve):
-            inlet_label = str([x.name for x in comp.inlets]) if comp.inlets else "None"
-            outlet_label = str([x.name for x in comp.outlets]) if comp.outlets else "None"
-            node_labels[comp] = f"{comp.name}\nIN: {inlet_label} | OUT: {outlet_label}"
-        else:
-            node_labels[comp] = comp.name
-        if isinstance(comp, FlowOrigin):
-            node_colors.append("green")
-        elif isinstance(comp, FlowTerminus):
-            node_colors.append("red")
-        elif isinstance(comp, Valve):
-            node_colors.append("orange")
-        elif isinstance(comp, Pump):
-            node_colors.append("blue")
-        elif isinstance(comp, Tubing):
-            node_colors.append("grey")
-        else:
-            node_colors.append("lightblue")
-
-        for oSet in comp.outletSets.values():
-            for target in oSet:
-                if target:
-                    G.add_edge(comp, target)
-
-    # --- Assign node depth by topological sort ---
-    levels = defaultdict(list)
-    node_depths = {}
-    try:
-        topo_order = list(nx.topological_sort(G))
-        for node in topo_order:
-            preds = list(G.predecessors(node))
-            depth = max([node_depths[p] for p in preds], default=-1) + 1
-            node_depths[node] = depth
-            levels[depth].append(node)
-    except Exception as e:
-        print("Topological sort error:", e)
-        return
-
-    # --- Position layout ---
-    pos = {}
-    for depth, nodes in levels.items():
-        for i, node in enumerate(nodes):
-            pos[node] = (depth * 2.0, -i * 2.0)
-
-    def find_comp_by_name(name):
-        for comp in flowpath.segments:
-            if comp.name == name:
-                return comp
-        return None
-
-    terminus = flowpath.currTerminus
-    if isinstance(terminus, str):
-        terminus = find_comp_by_name(terminus)
-
-    path_edges = []
-
-    # Ensure we have routing info
-    address_info = flowpath.addressesAll.get(terminus.name) if terminus else None
-    if terminus and address_info:
-        # Components with explicitly selected outlet sets in the active path
-        routed_switches = {comp: setName for comp, setName, *_ in address_info}
-        
-        for origin in [node for node in G.nodes if isinstance(node, FlowOrigin)]:
-            
-            try:
-                path_nodes = nx.shortest_path(G, source=origin, target=terminus)
-            except nx.NetworkXNoPath:
-                continue
-
-            # Validate that all switching components along this path match the active address
-            valid = True
-            for i in range(len(path_nodes) - 1):
-                comp = path_nodes[i]
-                nxt = path_nodes[i + 1]
-
-                # This now checks the live outlet routing — not just outletSets definitions
-                if nxt not in comp.outlets or comp not in nxt.inlets:
-                    # print(f"{[x.name for x in comp.outlets]} and {[x.name for x in nxt.inlets]} have no common current connections!")
-                    valid = False
-                    break
-
-            if valid:
-                # print(f"{[x.name for x in comp.outlets]} and {[x.name for x in nxt.inlets]} have valid common current connections!")
-                edges = list(zip(path_nodes[:-1], path_nodes[1:]))
-                path_edges.extend(edges)
-
-    # --- Draw base graph ---
-    fig, ax = plt.subplots(figsize=(14, 8))
-    nx.draw(
-        G, pos, with_labels=False, node_size=1500, node_color=node_colors,
-        edgecolors="black", linewidths=1.2,
-        arrows=True, arrowsize=20, connectionstyle="arc3,rad=0.05", ax=ax
-    )
-
-    for node, (x, y) in pos.items():
-        ax.text(
-            x, y - 0.6, node_labels[node],
-            ha='center', va='top',
-            fontsize=8, fontweight='bold'
-        )
-
-    if path_edges:
-        nx.draw_networkx_edges(
-            G, pos, edgelist=path_edges,
-            edge_color="black", width=3.8,
-            arrows=True, arrowsize=15, connectionstyle="arc3,rad=0.05", ax=ax
-        )
-
-    print(f"WJ - current relative origin: {flowpath.currRelOrigin.name}")
-    
-    ax.set_title("Flow System — Topological Layout", fontsize=14)
-    ax.axis("off")
-    plt.tight_layout()
-    plt.show()
-
 class FlowAddresses:
     def __init__(self,addressBookName) -> None: #inlets
         self.addressBookName=addressBookName
@@ -185,6 +62,8 @@ class VolumeObject:
         #Hashmap id generator
         self.id=VolumeObject.idCounter
         VolumeObject.idCounter+=1
+        
+        self.associatedPath=None
     
     def dispense(self,vol=-1):
         if not (self.dispensing) and FLOW_PATH:
@@ -194,6 +73,7 @@ class VolumeObject:
             FLOW_PATH.slugs.append(_return)
             if vol != -1:
                 self.remainderToDispense=vol
+                
             return _return
 
     @NotImplementedError        
@@ -353,7 +233,13 @@ class FlowPath:
         self.currRelOrigin=None #Relative starting point in flow path that 'dispenses' slugs
         self.terminiMapped=False
         
+        self.publishUI=False
+        
         self.dumpNo=1
+        
+        self.slugCntr=1
+        
+        self.mqttService=None
         
         global FLOW_PATH
         FLOW_PATH=self
@@ -389,6 +275,61 @@ class FlowPath:
 
         # Map possible outlet routing
         self.mapPathTermini()
+
+    def publishSlugTrackingInfo(self, slug, origin, dest):
+        # Slug route: list of segments from origin to terminus
+        print(f"Attempting to find path between {[origin,dest]}")
+        route = self._findPath(origin, dest)
+        if not route:
+            print("No path found")
+            return
+
+        tracking = {}
+        curr_pos = 0
+        flowrate = slug.frontHost.flowrateOut  # mL/s
+
+        for comp in route:
+            if not hasattr(comp, 'volume'):
+                continue  # Skip tubing or unknowns
+
+            comp_id = comp.uid if hasattr(comp, 'uid') else comp.name
+            vol = comp.volume  # mL
+            time_in = vol / flowrate if flowrate > 0 else 0
+            time_start = curr_pos / flowrate if flowrate > 0 else 0
+            time_end = (curr_pos + vol) / flowrate if flowrate > 0 else 0
+
+            tracking[comp_id] = {
+                "componentName": comp.name,
+                "volume": round(vol, 3),
+                "slugFrontArrivesAt": round(time_start, 2),
+                "slugFrontExitsAt": round(time_end, 2),
+                "slugTailArrivesAt": round(time_start + slug.slugVolume() / flowrate, 2),
+                "slugTailExitsAt": round(time_end + slug.slugVolume() / flowrate, 2),
+            }
+
+            curr_pos += vol
+
+        payload = {
+            "slugId": str(slug.slugId),
+            "slugName": self.slugCntr,
+            "slugVolume": slug.slugVolume(),
+            "route": tracking,
+            "timestamp": time.time(),
+        }
+        
+        self.slugCntr+=1
+
+        self.mqttService.publish(MqttTopics.getUiTopic("FlowTrackerOut"), json.dumps(payload))
+
+    def dispense(self,vol=-1,comp=None):
+        if not comp:
+            comp=self.currRelOrigin
+        slug=comp.dispense(vol)
+        slug.targetTerminus=self._findComponentByName(self.currTerminus)
+        print(f"Dispensing slug {[slug,slug.targetTerminus]}")
+        if self.publishUI:
+            self.publishSlugTrackingInfo(slug,comp,slug.targetTerminus)
+        return slug
         
     def pullFromOrigin(self, origin):
         """
@@ -413,6 +354,8 @@ class FlowPath:
 
         # Trace path from origin to terminus using graph traversal
         path = self._findPath(origin, terminus)
+        
+        print(f"Priv func path: {[x.name for x in path]}")
 
         if not path:
             print(f"No valid path from {origin.name} to {terminus.name}")
@@ -439,9 +382,6 @@ class FlowPath:
         print(f"Routing from '{origin.name}' to '{terminus.name}' is now active.")
         
     def visualizeFlowPath(self):
-        import matplotlib.pyplot as plt
-        import networkx as nx
-        from collections import defaultdict
 
         G = nx.DiGraph()
         nodeLabels = {}
@@ -608,6 +548,8 @@ class FlowPath:
             deviceType=deviceType,
             deviceName=deviceName
         )
+        
+        obj.associatedPath=self
 
         self._componentLookup[uid] = obj
         return obj
@@ -1076,8 +1018,12 @@ class SlugNull:
         self.reachedTerminusAt=reachedTerminusAt
         self.collected=collected
         
+        self.targetTerminus=None
+        
         self.totalDispensed=totalDispensed
         self.lastDispenseCycleTime=lastDispenseCycleTime
+        
+        self.slugId=uuid.uuid4()
 
     def branchSlug(self):
         if self.elastic:
