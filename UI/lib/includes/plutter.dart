@@ -12,9 +12,12 @@ import 'package:flutter_flow_chart/ui/script_builder.dart/script_generator.dart'
 import 'package:flutter_flow_chart/utils/timing.dart';
 import 'package:mqtt_client/mqtt_browser_client.dart';
 import 'package:mqtt_client/mqtt_client.dart';
+import 'package:uuid/uuid.dart';
+
+import '../ui/gauges/gauge_widgets.dart';
 
 class MqttService extends ChangeNotifier {
-  late MqttBrowserClient client;
+  late MqttClient client;
   Map<String, String> topicsCmnd = MqttTopics.getCmndTopics();
   Map<String, String> topicsTele = MqttTopics.getTeleTopics();
   Map<String, String> topicsUI = MqttTopics.getUITopics();
@@ -38,47 +41,157 @@ class MqttService extends ChangeNotifier {
   //Map<String, dynamic> currDashboard = {};
   Map<String, List<Map<String, dynamic>>> currTestScriptBlocks = {};
 
+  ///////////////////////////////////////////////////
   //Graphs
   // Variables to hold x-axis time limits
   double timeBracketMin = 0;
   double timeBracketMax = 120;
+  //Track which already created
+  Set<String> alreadyGraphed = {};
+  //Eligible for graphing and what to graph
+  Map<String, Map<String, dynamic>> eligibleForGraphing = {
+    "subflow/hotcoil1/tele": {
+      "temp": {
+        "title": "Hotcoil 1 - Temperature",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Deg",
+        "maxDataPoints": 1000,
+        "idStreaming": "hotcoil1_temp",
+      },
+    },
+    "subflow/vapourtecR4P1700/tele": {
+      "pressPumpA": {
+        "title": "R4 - Pump A Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressA",
+      },
+      "pressPumpB": {
+        "title": "R4 - Pump B Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressB",
+      },
+      "pressSystem": {
+        "title": "R4 - System Pressure",
+        "xAxisTitle": "Time",
+        "yAxisTitle": "Bar",
+        "maxDataPoints": 1000,
+        "idStreaming": "vapourtecR4P1700_pressSystem",
+      },
+    },
+  };
+
+  //////////////////////////////////////////////////////////////////
+  //Gauges
+  Set<String> alreadyGauged = {};
+  List<GaugeWidget> dynamicGaugeWidgets = [];
+  Map<String, Map<int, Map<String, dynamic>>> eligibleForGauge = {
+    //Topics might have multiple gauges, each topic's gauges have index 0 -> n
+    "subflow/hotcoil1/tele": {
+      0: {
+        "gaugeType": GaugeWithSlider, //Use as pointer?
+        "cmndName": 'temp',
+        "unit": 'deg',
+        "deviceName": 'hotcoil1',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "temp"],
+        "min": 0,
+        "max": 100,
+        "initialValue": 0,
+        "maxValue": 100,
+        "cmndTopic": MqttTopics.getCmndTopic('hotcoil1'),
+        "name": 'Hotcoil 1 Temp',
+        "unitMultiplier": 1
+      },
+    },
+    "subflow/vapourtecR4P1700/tele": {
+      0: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - Pressure A',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressPumpA"],
+        "maxValue": 25,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
+      },
+      1: {
+        "gaugeType": GaugeWithSlider,
+        "name": 'R4 - Pump A Flowrate',
+        "cmndName": 'pafr',
+        "unit": 'mL/min',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "flowRatePumpA"],
+        "min": 0,
+        "max": 6,
+        "initialValue": 0,
+        "maxValue": 6,
+        "cmndTopic": MqttTopics.getCmndTopic('vapourtecR4P1700'),
+        "unitMultiplier": 1,
+      },
+      2: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - Pressure B',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressPumpB"],
+        "maxValue": 25,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
+      },
+      3: {
+        "gaugeType": GaugeWithSlider,
+        "name": 'R4 - Pump B Flowrate',
+        "cmndName": 'pbfr',
+        "unit": 'mL/min',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "flowRatePumpB"],
+        "min": 0,
+        "max": 6,
+        "initialValue": 0,
+        "maxValue": 6,
+        "cmndTopic": MqttTopics.getCmndTopic('vapourtecR4P1700'),
+        "unitMultiplier": 1,
+      },
+      4: {
+        "gaugeType": SemiCircularGauge,
+        "name": 'R4 - System Pressure',
+        "unit": 'Bar',
+        "deviceName": 'vapourtecR4P1700',
+        "deviceValueName": '',
+        "address": const ["tele", "state", "pressSystem"],
+        "maxValue": 15,
+        "cmndTopic": '',
+        "cmndName": '',
+        "unitMultiplier": 1,
+      },
+    },
+  };
+
+  //
 
   //Optimization
   Map<String, dynamic> optimizationDetails = {};
-  // List<String> optimizationOptions = [];
+  ValueNotifier<List<Map<String, Map<String, double>>>> resultHistory =
+      ValueNotifier([]);
+  ValueNotifier<Map<String, double>> recommendedParams = ValueNotifier({});
+  Map<String, double> bestParametres = {};
+  ValueNotifier<double> lastYield = ValueNotifier(0);
+  ValueNotifier<bool> goOptimization = ValueNotifier(false);
   // List<String> objectiveFunctions = [];
 
   // Mock options for optimizer and objective function
-  final List<String> optimizationOptions = [
-    "VIDAL_C13_3415",
-    "VIDAL_C13_3465",
-    "ERSILIA_BLANK_TS_54",
-    "WJ_LEAP_2024_01_30_3",
-    "STD_SUMMIT_1"
-  ];
-  final List<String> objectiveFunctions = [
-    "WJ_IR_800_2",
-    "WJ_IR_800_5",
-    "GEN_NMR_IR_13000"
-  ];
-  // Mocking a stream for optimization progress updates
-  Stream<Map<String, dynamic>> get optimizationProgressStream async* {
-    for (int i = 0; i <= 10; i++) {
-      await Future.delayed(Duration(seconds: 1));
-      yield {
-        'optimizer': optimizationDetails['optimizer'] ?? 'N/A',
-        'objectiveFunction': optimizationDetails['objectiveFunction'] ?? 'N/A',
-        'recommendedParams': {
-          'Temperature': '${20 + i}°C',
-          'Flowrate': '${5 + i * 0.5} mL/min'
-        },
-        'bestYield': '${80 + i}%',
-        'finalYield': i == 10 ? '${90 + i}%' : null,
-        'elapsedTime': '$i seconds',
-      };
-    }
-    runTest = false;
-  }
+  final List<String> optimizationOptions = ["SUMMIT_SOBO"];
+  final List<String> objectiveFunctions = ["BMC_WJ_IR_ALLYL_BROMIDE"];
 
   //
   //////////////////////////////////////////////////////////////////////////
@@ -107,6 +220,8 @@ class MqttService extends ChangeNotifier {
   bool runTest = false;
   ValueNotifier<bool> testRunning = ValueNotifier(false);
 
+  late GraphWidgets graphWidgets;
+
   //Construct.
   MqttService({required this.server}) {
     try {
@@ -119,7 +234,8 @@ class MqttService extends ChangeNotifier {
   //
 
   Future<void> initializeMQTTClient() async {
-    client = MqttBrowserClient(server, 'flutter-web-client');
+    String identifier = 'flutter_client_${Uuid().v4()}';
+    client = MqttBrowserClient(server, identifier);
     client.port = 9001;
     client.logging(on: false);
     client.keepAlivePeriod = 20;
@@ -127,11 +243,11 @@ class MqttService extends ChangeNotifier {
     client.onSubscribed = onSubscribed;
     client.autoReconnect = true;
     //client.onDisconnected = onDisconnected;
-    client.resubscribeOnAutoReconnect = false;
+    client.resubscribeOnAutoReconnect = true;
     //client.onAutoReconnected = onConnected;
 
     final connMess = MqttConnectMessage()
-        .withClientIdentifier('flutter-web-client')
+        .withClientIdentifier(identifier)
         .startClean()
         .withWillQos(MqttQos.atMostOnce);
 
@@ -171,6 +287,11 @@ class MqttService extends ChangeNotifier {
     Map<String, dynamic> messageMap = jsonDecode(message);
 
     lastMsgFromTopic[topic] = messageMap;
+
+    //Graph it?
+    maybeCreateGraphsForTopic(topic, messageMap);
+    maybeCreateGaugesForTopic(topic);
+
     if (!lastReceivedTime.containsKey(topic)) {
       lastReceivedTime[topic] = EpochDelta();
     }
@@ -192,6 +313,59 @@ class MqttService extends ChangeNotifier {
         }
       }
       //
+    } else if (topic == "ui/opt/out") {
+      if (messageMap.containsKey("optInfo")) {
+        if (messageMap["optInfo"].containsKey("eval")) {
+          if (messageMap["optInfo"]["eval"].containsKey("yield")) {
+            lastYield.value = messageMap["optInfo"]["eval"]["yield"];
+          } else if (messageMap["optInfo"]["eval"].containsKey("maxYield")) {
+            lastYield.value = messageMap["optInfo"]["eval"]["maxYield"];
+            goOptimization.value = false;
+          }
+        }
+        if (messageMap["optInfo"].containsKey("recommendedParams")) {
+          print(
+              "WJ - recommendedParams.value: ${messageMap["optInfo"]["recommendedParams"]}");
+          recommendedParams.value = ({
+            "Temperature": messageMap["optInfo"]["recommendedParams"]
+                ["Temperature"],
+            "Flowrate": messageMap["optInfo"]["recommendedParams"]["Flowrate"]
+          });
+        }
+        if (messageMap["optInfo"].containsKey("recommendationResult")) {
+          var result = Map<String, double>.from(
+              messageMap["optInfo"]["recommendationResult"]);
+          double yield = result["yield"] ?? 0;
+
+          // Update resultHistory
+          resultHistory.value = [
+            ...resultHistory.value,
+            {
+              'recommendation': {
+                'Temperature': result['Temperature'] ?? 0,
+                'Flowrate': result['Flowrate'] ?? 0,
+                'yield': yield
+              }
+            }
+          ];
+
+          // Optionally update best yield if you want to keep a separate variable for it
+          if (yield > lastYield.value) {
+            bestParametres = {
+              'Temperature': result['Temperature'] ?? 0,
+              'Flowrate': result['Flowrate'] ?? 0
+            };
+            lastYield.value = yield;
+          }
+        }
+      }
+      if (messageMap.containsKey("goOptimization")) {
+        if (messageMap["goOptimization"]) {
+          lastYield.value = 0;
+          resultHistory.value = [];
+          goOptimization.value = true;
+        }
+      }
     } else if (messageMap.containsKey("GraphWidgets")) {
       //TODO - FIX THIS HARDCODED DISASTER
     } else if (topic == "subflow/flowsynmaxi2/tele" &&
@@ -335,8 +509,93 @@ class MqttService extends ChangeNotifier {
     }
     builder.clear();
     builder.addString(message);
-    print('WJ - Attempting to publish $message!');
-    var ret = client.publishMessage(topic, qos, builder.payload!);
-    print('WJ - Publish attempt for $message resulted in: $ret!');
+    // print('WJ - Attempting to publish $message!');
+    client.publishMessage(topic, qos, builder.payload!);
+    // print('WJ - Publish attempt for $message resulted in: $ret!');
+  }
+
+  //Util methods
+  void maybeCreateGraphsForTopic(
+      String topic, Map<String, dynamic> messageMap) {
+    //TODO - trigger rebuild without having to tab away
+    if (!eligibleForGraphing.containsKey(topic)) return;
+
+    var teleMap = messageMap["tele"]?["state"];
+    if (teleMap == null) return;
+
+    eligibleForGraphing[topic]!.forEach((teleKey, config) {
+      if (teleMap.containsKey(teleKey)) {
+        String uniqueGraphID = "${topic}_$teleKey";
+        if (!alreadyGraphed.contains(uniqueGraphID)) {
+          graphWidgets.addUnifiedTimeSeriesWidget(
+            title: config['title'],
+            xAxisTitle: config['xAxisTitle'],
+            yAxisTitle: config['yAxisTitle'],
+            mqttService: this,
+            maxDataPoints: config['maxDataPoints'],
+            teleKey: teleKey,
+            idTele: topic,
+            idStreaming: config['idStreaming'],
+          );
+          alreadyGraphed.add(uniqueGraphID);
+          print("Graph added for $uniqueGraphID");
+        }
+      }
+    });
+  }
+
+  //Gauges
+  void maybeCreateGaugesForTopic(String topic) {
+    //TODO - trigger rebuild without having to tab away
+    if (!eligibleForGauge.containsKey(topic)) return;
+
+    eligibleForGauge[topic]!.forEach((index, config) {
+      String uniqueID = "$topic:${config['name']}";
+      if (alreadyGauged.contains(uniqueID)) return;
+
+      Type gaugeType = config["gaugeType"];
+      late GaugeWidget widget;
+
+      if (gaugeType == GaugeWithSlider) {
+        widget = GaugeWithSlider(
+          name: config["name"],
+          unit: config["unit"],
+          deviceName: config["deviceName"],
+          deviceValueName: config["deviceValueName"],
+          mqttService: this,
+          topic: topic,
+          address: List<String>.from(config["address"]),
+          min: config["min"],
+          max: config["max"],
+          initialValue: config["initialValue"],
+          maxValue: config["maxValue"],
+          cmndTopic: config["cmndTopic"],
+          cmndName: config["cmndName"],
+          unitMultiplier: config["unitMultiplier"],
+        );
+      } else if (gaugeType == SemiCircularGauge) {
+        widget = SemiCircularGauge(
+          name: config["name"],
+          unit: config["unit"],
+          deviceName: config["deviceName"],
+          deviceValueName: config["deviceValueName"],
+          mqttService: this,
+          topic: topic,
+          address: List<String>.from(config["address"]),
+          maxValue: config["maxValue"],
+          cmndTopic: config["cmndTopic"],
+          cmndName: config["cmndName"],
+          unitMultiplier: config["unitMultiplier"],
+        );
+      } else {
+        print("Unsupported gauge type for $uniqueID");
+        return;
+      }
+
+      dynamicGaugeWidgets.add(widget);
+      alreadyGauged.add(uniqueID);
+      print("Gauge added: $uniqueID");
+      notifyListeners(); // in case widgets rebuild live
+    });
   }
 }

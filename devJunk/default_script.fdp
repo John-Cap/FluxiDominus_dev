@@ -1,2 +1,0 @@
-myBlock_1=[{"deviceName":"hotcoil1","inUse":True,"command":"SET","temperatureSet":3.0,"topic":"subflow/hotcoil1/cmnd","client":"client"},{"Delay":{"initTimestamp":None,"sleepTime":34.5}}];
-myBlock_2=[{"deviceName":"sf10vapourtec1","inUse":True,"settings":{"command":"SET","mode":"FLOW","valve":"A","flowrate":3.1},"topic":"subflow/sf10vapourtec1/cmnd","client":"client"}];

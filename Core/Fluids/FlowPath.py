@@ -4,8 +4,135 @@ import threading
 import uuid
 from Core.Utils.Utils import Utils
 from collections import defaultdict, deque
+import networkx as nx
+import matplotlib.pyplot as plt
+
 
 FLOW_PATH=None
+def visualize_flow_path(flowpath):
+    import matplotlib.pyplot as plt
+    import networkx as nx
+    from collections import defaultdict
+
+    G = nx.DiGraph()
+    node_labels = {}
+    node_colors = []
+
+    for comp in flowpath.segments:
+        if isinstance(comp, Valve):
+            inlet_label = str([x.name for x in comp.inlets]) if comp.inlets else "None"
+            outlet_label = str([x.name for x in comp.outlets]) if comp.outlets else "None"
+            node_labels[comp] = f"{comp.name}\nIN: {inlet_label} | OUT: {outlet_label}"
+        else:
+            node_labels[comp] = comp.name
+        if isinstance(comp, FlowOrigin):
+            node_colors.append("green")
+        elif isinstance(comp, FlowTerminus):
+            node_colors.append("red")
+        elif isinstance(comp, Valve):
+            node_colors.append("orange")
+        elif isinstance(comp, Pump):
+            node_colors.append("blue")
+        elif isinstance(comp, Tubing):
+            node_colors.append("grey")
+        else:
+            node_colors.append("lightblue")
+
+        for oSet in comp.outletSets.values():
+            for target in oSet:
+                if target:
+                    G.add_edge(comp, target)
+
+    # --- Assign node depth by topological sort ---
+    levels = defaultdict(list)
+    node_depths = {}
+    try:
+        topo_order = list(nx.topological_sort(G))
+        for node in topo_order:
+            preds = list(G.predecessors(node))
+            depth = max([node_depths[p] for p in preds], default=-1) + 1
+            node_depths[node] = depth
+            levels[depth].append(node)
+    except Exception as e:
+        print("Topological sort error:", e)
+        return
+
+    # --- Position layout ---
+    pos = {}
+    for depth, nodes in levels.items():
+        for i, node in enumerate(nodes):
+            pos[node] = (depth * 2.0, -i * 2.0)
+
+    def find_comp_by_name(name):
+        for comp in flowpath.segments:
+            if comp.name == name:
+                return comp
+        return None
+
+    terminus = flowpath.currTerminus
+    if isinstance(terminus, str):
+        terminus = find_comp_by_name(terminus)
+
+    path_edges = []
+
+    # Ensure we have routing info
+    address_info = flowpath.addressesAll.get(terminus.name) if terminus else None
+    if terminus and address_info:
+        # Components with explicitly selected outlet sets in the active path
+        routed_switches = {comp: setName for comp, setName, *_ in address_info}
+        
+        for origin in [node for node in G.nodes if isinstance(node, FlowOrigin)]:
+            
+            try:
+                path_nodes = nx.shortest_path(G, source=origin, target=terminus)
+            except nx.NetworkXNoPath:
+                continue
+
+            # Validate that all switching components along this path match the active address
+            valid = True
+            for i in range(len(path_nodes) - 1):
+                comp = path_nodes[i]
+                nxt = path_nodes[i + 1]
+
+                # This now checks the live outlet routing — not just outletSets definitions
+                if nxt not in comp.outlets or comp not in nxt.inlets:
+                    # print(f"{[x.name for x in comp.outlets]} and {[x.name for x in nxt.inlets]} have no common current connections!")
+                    valid = False
+                    break
+
+            if valid:
+                # print(f"{[x.name for x in comp.outlets]} and {[x.name for x in nxt.inlets]} have valid common current connections!")
+                edges = list(zip(path_nodes[:-1], path_nodes[1:]))
+                path_edges.extend(edges)
+
+    # --- Draw base graph ---
+    fig, ax = plt.subplots(figsize=(14, 8))
+    nx.draw(
+        G, pos, with_labels=False, node_size=1500, node_color=node_colors,
+        edgecolors="black", linewidths=1.2,
+        arrows=True, arrowsize=20, connectionstyle="arc3,rad=0.05", ax=ax
+    )
+
+    for node, (x, y) in pos.items():
+        ax.text(
+            x, y - 0.6, node_labels[node],
+            ha='center', va='top',
+            fontsize=8, fontweight='bold'
+        )
+
+    if path_edges:
+        nx.draw_networkx_edges(
+            G, pos, edgelist=path_edges,
+            edge_color="black", width=3.8,
+            arrows=True, arrowsize=15, connectionstyle="arc3,rad=0.05", ax=ax
+        )
+
+    print(f"WJ - current relative origin: {flowpath.currRelOrigin.name}")
+    
+    ax.set_title("Flow System — Topological Layout", fontsize=14)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.show()
 
 class FlowAddresses:
     def __init__(self,addressBookName) -> None: #inlets
@@ -32,18 +159,18 @@ class VolumeObject:
         self.volume=volume
         #######################################################################################
         #Inlet/outlet control
-        self.inlets=inlets #Array with currently used inlets (array with any number of flow components)
-        self.outlets=outlets #Array with currently used outlets (array with only one element, an outlet set can have only a single flow component for now)
-        self.inletSets=inletSets #Dict with named sets of 'inlets'. One will be selected to act as self.inlets
-        self.outletSets=outletSets #Dict with named sets of 'outlets'. One will be selected to act as self.outlets
+        self.inlets=inlets if inlets else []
+        self.outlets=outlets if outlets else []
+        self.inletSets=inletSets if inletSets else {}
+        self.outletSets=outletSets if outletSets else {}
         self.currInletSet=None
         self.currOutletSet=None
         #######################################################################################
         self.name=name
         self.deviceName=deviceName
         self.deviceType=deviceType
-        self.flowrateIn=flowrateIn
-        self.flowrateOut=flowrateOut
+        self.flowrateIn=flowrateIn if flowrateIn else 0
+        self.flowrateOut=flowrateOut if flowrateOut else 0
         self.slugs=slugs
         self.lastAdvance=lastAdvance
         self.dispensing=dispensing
@@ -122,11 +249,14 @@ class VolumeObject:
     def flowInto(self,outlet,setNameIn="DEFAULT",setNameOut=""):
         if setNameOut == "":
             setNameOut=f"{self.name}_{self.id}_to_{outlet.name}_{outlet.id}"
+        if isinstance(outlet,Valve): #TODO - Temp fix for switchable valves inlets being lumped into same set
+            setNameIn=setNameIn + "_" + str(outlet.valveCntr)
+            outlet.valveCntr+=1
         self._addOutlet(outlet,setNameOut)
         outlet._addInlet(self,setNameIn)
-        if not len(self.outlets):
+        if not self.currOutletSet:
             self.switchToOutlets(setNameOut)
-        if not len(outlet.inlets):
+        if not outlet.currInletSet:
             outlet.switchToInlets(setNameIn)
         FLOW_PATH.flowrateShifted=True
             
@@ -221,17 +351,266 @@ class FlowPath:
         
         self.currTerminus=None
         self.currRelOrigin=None #Relative starting point in flow path that 'dispenses' slugs
+        self.terminiMapped=False
+        
+        self.dumpNo=1
         
         global FLOW_PATH
         FLOW_PATH=self
+        
+    def parseFlowSketch(self, sketchJson):
+        self.terminiMapped=False
+        """
+        Parse the FlowSketch JSON format from the frontend and build the full flow path,
+        connecting all components and tubing into a usable FlowPath structure.
+        """
+        self.segments = []
+        self._componentLookup = {}
+        self._tubingCounter = 1
 
-    def switchToAddress(self,address):
-        _inlets=address.inletsSett
-        _outlets=address.outletsSett
-        for _x in _inlets:
-            _x[0].switchToInlets(_x[1])
-        for _x in _outlets:
-            _x[0].switchToOutlets(_x[1])            
+        # Create components
+        for uid, entry in sketchJson.items():
+            component = self._createComponent(uid, entry)
+            self.segments.append(component)
+
+        # Wire up connections
+        for uid, entry in sketchJson.items():
+            source = self._componentLookup[uid]
+            for targetUid in entry.get("flowsInto", []):
+                print(f"WJ - Target UUID: {targetUid}")
+                target = self._componentLookup.get(targetUid)
+                if target:
+                    source.flowInto(target)
+
+        # print(f"Segments: {self.segments}")
+
+        # Register path
+        self.addPath(self.segments)
+
+        # Map possible outlet routing
+        self.mapPathTermini()
+        
+    def pullFromOrigin(self, origin):
+        """
+        Given a FlowOrigin component, trace a valid path to the current terminus and
+        update inlets and outlets along that path to activate the route.
+        """
+        if not self.currTerminus:
+            print("No terminus selected — cannot pull from origin.")
+            return
+
+        # Use name strings if necessary
+        if isinstance(origin, str):
+            origin = self._findComponentByName(origin)
+        if isinstance(self.currTerminus, str):
+            terminus = self._findComponentByName(self.currTerminus)
+        else:
+            terminus = self.currTerminus
+
+        if origin is None or terminus is None:
+            print("Could not resolve origin or terminus.")
+            return
+
+        # Trace path from origin to terminus using graph traversal
+        path = self._findPath(origin, terminus)
+
+        if not path:
+            print(f"No valid path from {origin.name} to {terminus.name}")
+            return
+
+        # For each segment in path, set correct outlet/inlet pairs
+        for i in range(len(path) - 1):
+            currComp = path[i]
+            nextComp = path[i + 1]
+
+            # Set outlet
+            for setName, comps in currComp.outletSets.items():
+                if nextComp in comps:
+                    currComp.switchToOutlets(setName)
+                    break
+
+            # Set inlet
+            for setName, comps in nextComp.inletSets.items():
+                if currComp in comps:
+                    nextComp.switchToInlets(setName)
+                    break
+
+        self.currRelOrigin = origin
+        print(f"Routing from '{origin.name}' to '{terminus.name}' is now active.")
+        
+    def visualizeFlowPath(self):
+        import matplotlib.pyplot as plt
+        import networkx as nx
+        from collections import defaultdict
+
+        G = nx.DiGraph()
+        nodeLabels = {}
+        nodeColors = []
+
+        for comp in self.segments:
+            # Enhanced Valve labeling
+            if isinstance(comp, Valve):
+                inletLabel = str([x.name for x in comp.inlets]) if comp.inlets else "None"
+                outletLabel = str([x.name for x in comp.outlets]) if comp.outlets else "None"
+                nodeLabels[comp] = f"{comp.name}\nIN: {inletLabel} | OUT: {outletLabel}"
+            else:
+                nodeLabels[comp] = comp.name
+
+            # Node coloring
+            if isinstance(comp, FlowOrigin):
+                nodeColors.append("green")
+            elif isinstance(comp, FlowTerminus):
+                nodeColors.append("red")
+            elif isinstance(comp, Valve):
+                nodeColors.append("orange")
+            elif isinstance(comp, Pump):
+                nodeColors.append("blue")
+            elif isinstance(comp, Tubing):
+                nodeColors.append("grey")
+            else:
+                nodeColors.append("lightblue")
+
+            for oSet in comp.outletSets.values():
+                for target in oSet:
+                    if target:
+                        G.add_edge(comp, target)
+
+        # --- Assign node depth via topological sort ---
+        levels = defaultdict(list)
+        nodeDepths = {}
+        try:
+            topoOrder = list(nx.topological_sort(G))
+            for node in topoOrder:
+                preds = list(G.predecessors(node))
+                depth = max([nodeDepths[p] for p in preds], default=-1) + 1
+                nodeDepths[node] = depth
+                levels[depth].append(node)
+        except Exception as e:
+            print("Topological sort error:", e)
+            return
+
+        # --- Assign layout positions ---
+        pos = {}
+        for depth, nodes in levels.items():
+            for i, node in enumerate(nodes):
+                pos[node] = (depth * 2.0, -i * 2.0)
+
+        # --- Active routing check ---
+        terminus = self.currTerminus
+        if isinstance(terminus, str):
+            terminus = self._findComponentByName(terminus)
+
+        pathEdges = []
+        addressInfo = self.addressesAll.get(terminus.name) if terminus else None
+
+        if terminus and addressInfo:
+            routedSwitches = {comp: setName for comp, setName, *_ in addressInfo}
+
+            for origin in [node for node in G.nodes if isinstance(node, FlowOrigin)]:
+                try:
+                    pathNodes = nx.shortest_path(G, source=origin, target=terminus)
+                except nx.NetworkXNoPath:
+                    continue
+
+                valid = True
+                for i in range(len(pathNodes) - 1):
+                    comp = pathNodes[i]
+                    nxt = pathNodes[i + 1]
+
+                    if nxt not in comp.outlets or comp not in nxt.inlets:
+                        print(f"{[x.name for x in comp.outlets]} and {[x.name for x in nxt.inlets]} have no common current connections!")
+                        valid = False
+                        break
+
+                if valid:
+                    print(f"{[x.name for x in comp.outlets]} and {[x.name for x in nxt.inlets]} have valid common current connections!")
+                    edges = list(zip(pathNodes[:-1], pathNodes[1:]))
+                    pathEdges.extend(edges)
+
+        # --- Draw the graph ---
+        fig, ax = plt.subplots(figsize=(14, 8))
+        nx.draw(
+            G, pos, with_labels=False, node_size=1500, node_color=nodeColors,
+            edgecolors="black", linewidths=1.2,
+            arrows=True, arrowsize=20, connectionstyle="arc3,rad=0.05", ax=ax
+        )
+
+        for node, (x, y) in pos.items():
+            ax.text(
+                x, y - 0.6, nodeLabels[node],
+                ha='center', va='top',
+                fontsize=8, fontweight='bold'
+            )
+
+        if pathEdges:
+            nx.draw_networkx_edges(
+                G, pos, edgelist=pathEdges,
+                edge_color="black", width=3.8,
+                arrows=True, arrowsize=15, connectionstyle="arc3,rad=0.05", ax=ax
+            )
+
+        print(f"WJ - current relative origin: {self.currRelOrigin.name}")
+        ax.set_title("Flow System — Topological Layout", fontsize=14)
+        ax.axis("off")
+        plt.tight_layout()
+        plt.show()
+        
+    def _findComponentByName(self, name):
+        for comp in self.segments:
+            if comp.name == name:
+                return comp
+        return None
+    
+    def dumpInletOutletSets(self):
+        for seg in self.segments:
+            if seg.inletSets:
+                print(f"\n[INFO #{self.dumpNo}] {seg.name}: Inlet Sets")
+                for name, comps in seg.inletSets.items():
+                    print(f"  Set '{name}': {[x.name for x in comps]}")
+                print(f"  Currently selected: {seg.currInletSet}")
+
+            if seg.outletSets:
+                print(f"[INFO #{self.dumpNo}] {seg.name}: Outlet Sets")
+                for name, comps in seg.outletSets.items():
+                    print(f"  Set '{name}': {[x.name for x in comps]}")
+                print(f"  Currently selected: {seg.currOutletSet}")
+        self.dumpNo+=1
+
+    def _createComponent(self, uid, entry):
+        """
+        Create a component based on its deviceType from the JSON description.
+        """
+        name = entry.get("name", f"Unnamed_{uid}")
+        volume = entry.get("volume", 0)
+        deviceType = entry.get("deviceType", "null")
+        deviceName = entry.get("deviceName", None)
+
+        classMap = {
+            "Pump": Pump,
+            "Valve": Valve,
+            "FlowOrigin": FlowOrigin,
+            "FlowTerminus": FlowTerminus,
+            "TPiece": TPiece,
+            "Tubing": Tubing,
+            "Coil": Coil,
+            "IR": IR
+        }
+
+        componentClass = classMap.get(deviceType, VolObjNull)
+
+        if deviceType == "Tubing":
+            name = f"TUBE_{self._tubingCounter}"
+            self._tubingCounter += 1
+
+        obj = componentClass(
+            volume=volume,
+            name=name,
+            deviceType=deviceType,
+            deviceName=deviceName
+        )
+
+        self._componentLookup[uid] = obj
+        return obj
 
     def pathVolume(self,segmentSet=None):
         if segmentSet is None:
@@ -335,9 +714,19 @@ class FlowPath:
                             chosenSetName = oSetName
                             break
                     if chosenSetName is not None:
-                        addresses.append([currComp, chosenSetName])
-
+                        # Also record inlet set name from nextComp
+                        # This assumes the inletSet that contains currComp is unique
+                        inletSetName = None
+                        for iSetName, iSetComps in nextComp.inletSets.items():
+                            print(f"Inletset names, components for {currComp}: {[iSetName,iSetComps]}")
+                            if currComp in iSetComps:
+                                inletSetName = iSetName
+                                break
+                        addresses.append([currComp, chosenSetName, nextComp, inletSetName])
+                    else:
+                        print(f"ChosenSetName for {[oSetName,oSetComps]} is None")
             self.addressesAll[terminus.name] = addresses
+            self.terminiMapped=True
 
     def setCurrDestination(self, terminus):
         if isinstance(terminus, str):
@@ -351,13 +740,15 @@ class FlowPath:
 
         theseAddresses = self.addressesAll[name]
         # each element in theseAddresses is [component, outletSetName]
-        for comp, outletSetName in theseAddresses:
+        for comp, outletSetName, nextComp, inletSetName in theseAddresses:
             comp.switchToOutlets(outletSetName)
+            if inletSetName:
+                nextComp.switchToInlets(inletSetName)
 
         # Optionally, we can set self.currTerminus to the target terminus
         # if we have a reference to the actual terminus object:
         self.currTerminus = terminus
-        
+
     # Helper function to find a path from start to end
     def _findPath(self,start, end, visited=None):
         if visited is None:
@@ -386,6 +777,7 @@ class FlowPath:
         indegree = defaultdict(int)
 
         for segment in self.segments:
+            print(f"This segment and inlets: {[segment.name,segment.inlets]}")
             for inlet in segment.inlets:
                 graph[inlet].append(segment)
                 indegree[segment] += 1
@@ -415,6 +807,7 @@ class FlowPath:
     def updateSlugs(self):
         for _x in self.segments:
             pass
+        
     def advanceSlugs(self):
         if self.flowrateShifted:
             self.updateFlowrates()
@@ -427,9 +820,19 @@ class FlowPath:
         # Front movement
         for slug in self.slugs:
             _frontHost = slug.frontHost
-
+            
             # If frontHost is None, no advancement
             if _frontHost is None:
+                continue
+            
+            # Check if outlet/inlets match and can actually flow forwards (TODO - Performance!)
+            _nextHosts=_frontHost.outlets
+            pathForward=False
+            for x in _nextHosts:
+                if _frontHost in x.inlets:
+                    pathForward=True
+                    break
+            if not pathForward:
                 continue
 
             # If slug has reached a terminus and is collecting
@@ -633,6 +1036,7 @@ class Coil(FlowComponent):
     def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
         super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
 class Valve(FlowComponent):
+    valveCntr=0
     def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False):
         super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing)
 class Pump(FlowComponent):
@@ -711,195 +1115,82 @@ class SlugNull:
 class Slug(SlugNull):
     def __init__(self, volume=None, location=None, parentSlug=None, childSlug=None, elastic=None, hosts=None, tailHost=None, frontHost=None, tailHostPos=None, frontHostPos=None, stationary=True, collectedVol=0, collecting=False, reachedTerminusAt=0,  collected=False, totalDispensed=None, lastDispenseCycleTime=None):
         super().__init__(volume, location, parentSlug, childSlug, elastic, hosts, tailHost, frontHost, tailHostPos, frontHostPos, stationary, collectedVol, collecting, reachedTerminusAt, collected, totalDispensed=0, lastDispenseCycleTime=0)
+
+class FlowSystem:
+    def __init__(self):
+        self.flowpath=FlowPath()
+        self.allSlugs=Slugs()
+        
 #######################################################################################
 ###Examples
 if __name__ == "__main__":
-    _path=FlowPath()
-    comp=[]
+    from Core.Fluids.FlowPath import FlowPath, Slugs, FlowTerminus, FlowOrigin
+    from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
     
-    #Stocks
-    _redStock=FlowOrigin(volume=0,name="RED_STOCK")
-    comp.append(_redStock)
-    _blueStock=FlowOrigin(volume=0,name="BLUE_STOCK")
-    comp.append(_blueStock)
-    _pinkStock=FlowOrigin(volume=0,name="PINK_STOCK")
-    comp.append(_pinkStock)
-    _purpleStock=FlowOrigin(volume=0,name="PURPLE_STOCK")
-    #comp.append(_purpleStock)
+    updater = MqttService(broker_address="172.30.243.138")
+    updater.connectDb=False
+    updater.start()
     
-    #Pump lines
-    _pump_1=Pump(volume=1.5,name="PUMP_1")
-    comp.append(_pump_1)
-    _pump_2=Pump(volume=1.5,name="PUMP_2")
-    comp.append(_pump_2)
-    _pump_3=Pump(volume=1.5,name="PUMP_3")
-    comp.append(_pump_3)
-    _pump_4=Pump(volume=1.5,name="PUMP_4")
-    #comp.append(_pump_4)
-    #Valves
-    _3wayValve=Valve(volume=0.05)
-    _cwValve=Valve(volume=0.05,name="CW_VALVE")
-    comp.append(_cwValve)
-    _valve_1=Valve(volume=0.05,name="DIVERT_VALVE")
-    comp.append(_valve_1)
-    _flushCoilValve=Valve(volume=0.05,name="FLUSH_VALVE")
-    comp.append(_flushCoilValve)
-    #IR
-    _IR=(IR(volume=0.5,name="IR"))
-    comp.append(_IR)
-    #Coil
-    _coil=(Coil(volume=5,name="COIL"))
-    comp.append(_coil)
-    #Termini
-    _waste=FlowTerminus(volume=0,name="WASTE")
-    comp.append(_waste)
-    _collect=FlowTerminus(volume=0,name="COLLECT")
-    comp.append(_collect)
-    _terminus_3=FlowTerminus(volume=0,name="TERMINUS_3")
-    comp.append(_terminus_3)
-    _terminus_4=FlowTerminus(volume=0,name="TERMINUS_4")
-    comp.append(_terminus_4)
-    
-    _tPiece_1=TPiece(volume=0.05,name="TPIECE_1")
-    comp.append(_tPiece_1)
-    _tPiece_2=TPiece(volume=0.05,name="TPIECE_2")
-    comp.append(_tPiece_2)
-    
-    _tubing_1=Tubing(volume=0.5,name="TUBE_1")
-    comp.append(_tubing_1)
-    _tubing_2=Tubing(volume=1,name="TUBE_2")
-    comp.append(_tubing_2)
-    _tubing_3=Tubing(volume=0.5,name="TUBE_3")
-    comp.append(_tubing_3)
-    _tubing_4=Tubing(volume=1,name="TUBE_4")
-    comp.append(_tubing_4)
-    ###################
-    #Connect components
+    while not updater.flowSystem.flowpath.terminiMapped:
+      time.sleep(1)
+      
+    path = updater.flowSystem.flowpath
 
-    #Stock solutions
-    _redStock.flowInto(_pump_1)
-    _blueStock.flowInto(_pump_2)
-    _pinkStock.flowInto(_pump_3)
-    #Pumplines 1/2
-    _pump_1.flowInto(_tPiece_1)
-    _pump_2.flowInto(_tPiece_1)
-    #Divert valve
-    _tPiece_1.flowInto(_tubing_1)
-    _tubing_1.flowInto(_valve_1)
-    _valve_1.flowInto(_coil)
-    _valve_1.flowInto(_tubing_2)
-    #Flush coil valve
-    _tubing_2.flowInto(_flushCoilValve)
-    _flushCoilValve.flowInto(_terminus_3)
-    _flushCoilValve.flowInto(_terminus_4)
-    #Coil
-    _coil.flowInto(_tPiece_2)
-    _pump_3.flowInto(_tPiece_2)
-    _tPiece_2.flowInto(_tubing_3)
-    _tubing_3.flowInto(_IR)
-    _IR.flowInto(_tubing_4)
-    _tubing_4.flowInto(_cwValve)
-    _cwValve.flowInto(_waste)
-    _cwValve.flowInto(_collect)
-    #select one of the termini
-    '''
-    #Create path
-    '''
-    _path.addPath(comp)
+    allSlugs = updater.flowSystem.allSlugs
 
-    #TODO - Manually assign starting point for now
-    _path.mapPathTermini()
-    adrses=[str(key) for key in _path.addressesAll.keys()]
+    #Find component references from names
+    origins = [comp for comp in path.segments if isinstance(comp,FlowOrigin)]
     
-    print("*********************Segment details*********************")
-    for _x in _path.segments:
-        print(f"Comp name: {_x.name}")
-        print(f" Inlet sets: {_x.inletSets}")
-        print(f" Outlet sets: {_x.outletSets}")
-        print(f" Curr inlets: {_x.inlets}")   
-        print(f" Curr outlets: {_x.outlets}")
-        print("--")
-        
-    print("************************Addresses*************************")
-    for _x, _y in _path.addressesAll.items():
-        print(f"Address for {_x}:")
-        for x in _y:
-            print(f" Comp: {x[0].name}")
-            print(f"  Inlet set: UNDEFINED")
-            print(f"  Outlet set: {x[1]}")
-        print("--")
+    print(f'Origins: {origins}')
+    
+    adrses = [name for name in path.addressesAll.keys()]
+
     #Some example things:
-    flowRates=[0,1,2,3,4]
-    dispVol=[1,2,3,4,5]
+    #flowRates=[0,1,2,3,4]
+    flowRates=[0.5,1,2]
+    dispVol=[1]
     
-    # Flag variable to indicate whether the thread should continue running?
+    #Flag variable to indicate whether the thread should continue running?
     running=True
-    allSlugs=Slugs()
+    time.sleep(1)
     def run_code():
-        global running
-        global allSlugs
-        global _path
-        _i=0
-        while running:
-            '''
-            _flow_1=eval(input("Pump 1 flowrate: "))
-            _flow_2=eval(input("Pump 2 flowrate: "))
-            _flow_3=eval(input("Pump 3 flowrate: "))
-            _slugVol=eval(input("Vol to dispense: "))
-            '''
-            _flow_1=random.choice(flowRates)
-            _flow_2=random.choice(flowRates)
-            _flow_3=random.choice(flowRates)
-            _slugVol=random.choice(dispVol)
-            
-            _redStock.setFlowrate(_flow_1/60)
-            _blueStock.setFlowrate(_flow_2/60)
-            _pinkStock.setFlowrate(_flow_3/60)
+      global running
+      global allSlugs
+      global path
+      _i=0
+      while running:
 
-            _path.updateFlowrates()
+        for orig in origins:
+          orig.setFlowrate((random.choice(flowRates)/60))
 
-            _path.setCurrDestination(random.choice(adrses))
-            _slug=_path.currRelOrigin.dispense(_slugVol)
-            allSlugs.slugs.append(_slug)
+        path.updateFlowrates()
 
-            _now=time.perf_counter()
-            _nowRefresh=_now
-            _jiggleFlowrate=time.perf_counter() + 5
-            #_path.timePrev=time.perf_counter()
-            while not (isinstance(_slug.tailHost,FlowTerminus)):
-                if time.time() - _jiggleFlowrate > 30:
-                    _flow_1=random.choice(flowRates)
-                    if _flow_1 == 0:
-                        _flow_1=1
-                    _flow_2=random.choice(flowRates)
-                    _flow_3=random.choice(flowRates)
-                    print("--")
-                    print(f"New flowrates: {_flow_1}, {_flow_2}, {_flow_3}")
-                    print("--")
-                                        
-                    _redStock.setFlowrate(_flow_1/60)
-                    _blueStock.setFlowrate(_flow_2/60)
-                    _pinkStock.setFlowrate(_flow_3/60)
-                    
-                    _jiggleFlowrate=time.time()
+        path.setCurrDestination(random.choice(adrses))
+        _slug=path.currRelOrigin.dispense(1)
+        allSlugs.slugs.append(_slug)
 
-                _path.advanceSlugs()
-                if time.time() - _nowRefresh > 1:
-                    _vol=_slug.slugVolume()
-                    _nowRefresh=time.time()
-                    rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[_flow_1,_flow_2,_flow_3]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
-                    print(rep)
-                time.sleep(0.1)
-            print("***************************************")
-            print("Collected slug volumes")
-            for _x in _path.collectedSlugs:
-                print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
-                print(f'Slug was collected at terminus "{_x.frontHost.name}"')
-            print("***************************************")
-            _i+=1
-            if _i > 10:
-                exit()
-            time.sleep(10)
+        _now=time.perf_counter()
+        _nowRefresh=_now
+        _jiggleFlowrate=time.perf_counter() + 5
+        #path.timePrev=time.perf_counter()
+        while not (isinstance(_slug.tailHost,FlowTerminus)):
+            path.advanceSlugs()
+            if time.time() - _nowRefresh > 1:
+                _vol=_slug.slugVolume()
+                _nowRefresh=time.time()
+                rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut for orig in origins]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
+                print(rep)
+            time.sleep(0.1)
+        print("***************************************")
+        print("Collected slug volumes")
+        for _x in path.collectedSlugs:
+            print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
+            print(f'Slug was collected at terminus "{_x.frontHost.name}"')
+        print("***************************************")
+        _i+=1
+        if _i > 10:
+            exit()
+        time.sleep(10)
 
     # Create a thread for running the code
     thread=threading.Thread(target=run_code)

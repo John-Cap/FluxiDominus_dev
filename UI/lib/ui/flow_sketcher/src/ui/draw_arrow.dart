@@ -389,6 +389,7 @@ class ArrowPainter extends CustomPainter {
   }
 
   /// Compute shortest distance from a point to a line segment
+  /*
   double _distanceFromLineSegment(Offset p, Offset v, Offset w) {
     double l2 = (w - v).distanceSquared; // Segment length squared
     if (l2 == 0) return (p - v).distance; // Case when v == w
@@ -403,4 +404,5 @@ class ArrowPainter extends CustomPainter {
 
     return (p - projection).distance;
   }
+  */
 }

@@ -8,6 +8,7 @@ import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.da
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/flow_chart.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/draw_arrow.dart';
 import 'package:star_menu/star_menu.dart';
+import '../../config/UI/brokers_and_topics.dart';
 import 'src/ui/element_settings_menu.dart';
 import 'src/ui/text_menu.dart';
 
@@ -21,6 +22,7 @@ class FlowSketcher extends StatefulWidget {
   });
   final MqttService mqttService;
   final String topic;
+  Map<String, Map<String, dynamic>> updatedReport = {};
   Dashboard dashboard;
 
   @override
@@ -264,7 +266,7 @@ class FlowSketcherState extends State<FlowSketcher>
         "volume": element.volume
       };
       print('WJ connections of dash -> ${jsonEncode(mqttReport.report)}');
-      widget.mqttService.currFlowScript = mqttReport.report;
+      widget.mqttService.currFlowScript = {"FlowSketcher": mqttReport.report};
     }
     //print("WJ - $availableDevices");
   }
@@ -600,7 +602,7 @@ class FlowSketcherState extends State<FlowSketcher>
                 },
               ),
               ActionChip(
-                label: const Text('Add Vapourtec R4 (HPLC)'),
+                label: const Text('Add Vapourtec R4 (HPLC) Pump'),
                 onPressed: () {
                   widget.dashboard.addElement(Component(
                     position: position,
@@ -613,7 +615,7 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.leftCenter,
                       Handler.rightCenter,
                     ],
-                    deviceType: 'vapourtecR4',
+                    deviceType: 'Pump',
                     volume: 5,
                   ));
                   _updateConnections();
@@ -719,26 +721,39 @@ class FlowSketcherState extends State<FlowSketcher>
                   _updateConnections();
                 },
               ),
-              /*
               ActionChip(
-                label: const Text('Set'),
+                label: const Text('Add T-Piece'),
                 onPressed: () {
-                  print('WJ - Attempting to publish');
+                  widget.dashboard.addElement(Component(
+                    position: position,
+                    size: const Size(100, 50),
+                    text: 'T-Piece',
+                    deviceName: "null",
+                    handlerSize: 15,
+                    kind: ElementKind.rectangle,
+                    handlers: [
+                      Handler.leftCenter,
+                      Handler.rightCenter,
+                    ],
+                    deviceType: 'TPiece',
+                    volume: 0.05,
+                  ));
                   _updateConnections();
-                  _buildMqttReport();
-                  //_publishMqttReport();
                 },
               ),
-              */
               ActionChip(
                 label: const Text('Save'),
                 onPressed: () {
                   print('WJ - Attempting to publish');
                   _updateConnections();
                   _buildMqttReport();
-                  widget.mqttService.currDashboardJson =
+                  _mergeTubingIntoMqttReport(); //setState(() {});
+                  widget.mqttService
+                          .currDashboardJson = //Necessary for db operations?
                       widget.dashboard.saveDashboard();
-                  //setState(() {});
+                  widget.mqttService.publish(
+                      MqttTopics.getUITopic("FlowSketcher"),
+                      mqttReport.toJsonString());
                 },
               ),
               ActionChip(
@@ -756,6 +771,86 @@ class FlowSketcherState extends State<FlowSketcher>
     );
   }
 
+  void _mergeTubingIntoMqttReport() {
+    widget.updatedReport = {};
+    int tubingCounter = 1;
+
+    for (final element in widget.dashboard.elements) {
+      final fromId = element.id;
+      final flowsIntoList = <String>[];
+
+      for (final connection in element.next) {
+        final tubingId =
+            "tubing_${tubingCounter}_${fromId}_${connection.destElementId}";
+
+        flowsIntoList.add(tubingId); // Correctly named and ordered here
+
+        widget.updatedReport[tubingId] = {
+          "name": "Tubing",
+          "flowsInto": [connection.destElementId],
+          "deviceName": "tubing${connection.tubingType}",
+          "deviceType": "Tubing",
+          "volume": connection.tubingVolume,
+        };
+
+        tubingCounter++; // Increment after use
+      }
+
+      widget.updatedReport[fromId] = {
+        "name": element.text,
+        "flowsInto": flowsIntoList,
+        "deviceName": element.deviceName,
+        "deviceType": element.deviceType,
+        "volume": element.volume,
+      };
+    }
+
+    mqttReport.report = widget.updatedReport;
+    widget.mqttService.currFlowScript = widget.updatedReport;
+    debugPrint("Merged report with tubing: ${mqttReport.toJsonString()}");
+  }
+
+/*
+  void _mergeTubingIntoMqttReport() {
+    final updatedReport = <String, Map<String, dynamic>>{};
+    int tubingCounter = 1;
+
+    for (final element in widget.dashboard.elements) {
+      final fromId = element.id;
+
+      // Include original element as-is
+      updatedReport[fromId] = {
+        "name": element.text,
+        "flowsInto": element.next
+            .map((conn) =>
+                "tubing_${tubingCounter}_${fromId}_${conn.destElementId}")
+            .toList(),
+        "deviceName": element.deviceName,
+        "deviceType": element.deviceType,
+        "volume": element.volume,
+      };
+
+      for (final connection in element.next) {
+        final tubingId =
+            "tubing_${tubingCounter}_${fromId}_${connection.destElementId}";
+
+        updatedReport[tubingId] = {
+          "name": "Tubing",
+          "flowsInto": [connection.destElementId],
+          "deviceName": "tubing${connection.tubingType}",
+          "deviceType": "Tubing",
+          "volume": connection.tubingVolume,
+        };
+
+        tubingCounter++;
+      }
+    }
+
+    mqttReport.report = updatedReport;
+    widget.mqttService.currFlowScript = updatedReport;
+    debugPrint("Merged report with tubing: ${mqttReport.toJsonString()}");
+  }
+*/
   void updateConnections() {
     widget.dashboard =
         widget.dashboard.loadDashboard(widget.mqttService.currDashboardJson);
@@ -827,6 +922,11 @@ class FlowSketcherState extends State<FlowSketcher>
 class ConnectionMqttReport {
   Map<String, Map<String, dynamic>> report = {};
   String toJsonString() {
-    return jsonEncode(report);
+    Map<String, dynamic> pub = {
+      "reqUI": {
+        "FlowSketcher": {"parseFlowsketch": report}
+      }
+    };
+    return jsonEncode(pub);
   }
 }

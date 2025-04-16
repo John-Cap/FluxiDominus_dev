@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
 
@@ -20,19 +22,32 @@ class _OptimizationTabState extends State<OptimizationTab>
 
   bool isRunning = false;
   Map<String, dynamic> optimizationProgress = {};
+  Map<String, List<double>> tempBounds = {
+    "Temperature": [1, 100],
+    "Flowrate": [0.15, 3],
+    "Residence Time": [5, 30]
+  };
 
   @override
   bool get wantKeepAlive => true; // Enable automatic keep-alive
 
   void startOptimization() {
+    Map<String, List<double>> paramWithBounds = {};
+    for (var value in selectedParameters) {
+      paramWithBounds[value] = tempBounds[value]!;
+    }
     final optimizationDetails = {
       'optimizer': selectedOptimizer,
       'objectiveFunction': selectedObjectiveFunction,
-      'selectedParameters': selectedParameters,
+      'selectedParameters': paramWithBounds,
     };
 
     widget.mqttService.optimizationDetails = optimizationDetails;
     widget.mqttService.runTest = true;
+
+    //Signal backend
+    widget.mqttService.publish(
+        "ui/opt/in", jsonEncode({"optInstructUI": optimizationDetails}));
 
     setState(() {
       isRunning = true;
@@ -42,16 +57,19 @@ class _OptimizationTabState extends State<OptimizationTab>
   }
 
   void listenForProgressUpdates() {
-    widget.mqttService.optimizationProgressStream.listen((progress) {
-      if (mounted) {
+    widget.mqttService.goOptimization.addListener(() {
+      if (widget.mqttService.goOptimization.value) {
         setState(() {
-          optimizationProgress = progress;
+          isRunning = true;
         });
+      } else {
+        if (isRunning) {
+          print("WJ - Optimization stopping.");
+          setState(() {
+            isRunning = false;
+          });
+        }
       }
-    }, onDone: () {
-      setState(() {
-        isRunning = false;
-      });
     });
   }
 
@@ -176,28 +194,71 @@ class _OptimizationTabState extends State<OptimizationTab>
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-
-                  // Display Progress Updates
                   Text(
-                      'Selected Optimizer: ${optimizationProgress['optimizer'] ?? 'N/A'}'),
+                      'Selected Optimizer: ${widget.mqttService.optimizationDetails['optimizer'] ?? 'N/A'}'),
                   Text(
-                      'Objective Evaluator: ${optimizationProgress['objectiveFunction'] ?? 'N/A'}'),
-                  Text(
-                      'Current Recommended Params: ${optimizationProgress['recommendedParams'] ?? 'N/A'}'),
-                  Text(
-                      'Best Yield: ${optimizationProgress['bestYield'] ?? 'N/A'}'),
-
+                      'Objective Evaluator: ${widget.mqttService.optimizationDetails['objectiveFunction'] ?? 'N/A'}'),
+                  ValueListenableBuilder(
+                    valueListenable: widget.mqttService.recommendedParams,
+                    builder: (_, value, __) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('___________________'),
+                        Text('Current Parametres:'),
+                        Text(
+                            '     Temperature: ${((value as Map<String, double>)["Temperature"])?.toStringAsFixed(1) ?? "N/A"} deg'),
+                        Text(
+                            '     Flowrate: ${((value)["Flowrate"])?.toStringAsFixed(3) ?? "N/A"} mL/min'),
+                      ],
+                    ),
+                  ),
+                  ValueListenableBuilder(
+                    valueListenable: widget.mqttService.lastYield,
+                    builder: (_, value, __) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('________________'),
+                        Text('Best Parametres:'),
+                        Text(
+                            '     Temperature: ${widget.mqttService.bestParametres["Temperature"]?.toStringAsFixed(1) ?? "N/A"} deg'),
+                        Text(
+                            '     Flowrate: ${widget.mqttService.bestParametres["Flowrate"]?.toStringAsFixed(3) ?? "N/A"} mL/min'),
+                        Text(
+                            '     Yield: ${((value as double) * 100).toStringAsFixed(1)}%'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('History:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: ValueListenableBuilder(
+                      valueListenable: widget.mqttService.resultHistory,
+                      builder: (_, List<dynamic> resultList, __) {
+                        List<dynamic> safeResultList = resultList;
+                        return ListView.builder(
+                          itemCount: safeResultList.length,
+                          itemBuilder: (context, index) {
+                            final entry =
+                                safeResultList[index]['recommendation'] ?? {};
+                            return ListTile(
+                              title: Text(
+                                  '${index + 1}. T: ${(entry['Temperature']).toStringAsFixed(1) ?? 'N/A'}°C, F: ${(entry['Flowrate'].toStringAsFixed(2)) ?? 'N/A'} mL/min'),
+                              subtitle: Text(
+                                  ' Yield: ${(entry['yield'] * 100).toStringAsFixed(0) ?? 'N/A'}%'),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
                   const Spacer(),
-
-                  // Timer & Final Details
                   if (!isRunning)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                            'Final Yield: ${optimizationProgress['finalYield'] ?? 'N/A'}'),
-                        Text(
-                            'Elapsed Time: ${optimizationProgress['elapsedTime'] ?? 'N/A'}'),
+                            'Final Yield: ${(widget.mqttService.lastYield.value * 100).toStringAsFixed(1)}%'),
                       ],
                     ),
                 ],
@@ -209,7 +270,6 @@ class _OptimizationTabState extends State<OptimizationTab>
     );
   }
 }
-
 
 // void main() {
 //   runApp(MyApp());

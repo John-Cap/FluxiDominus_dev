@@ -7,6 +7,10 @@ SET		["settings": {"command":"SET","temp":0.0}]
 REMOTEDIS		["settings": {"command":"REMOTEDIS"}]
 
 subflow/hotcoil1/cmnd
+#Init
+
+	{"deviceName":"hotcoil1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.213", "port": 80}}, "settings": {"command":"REMOTEEN"}}
+
 	{"deviceName":"hotcoil1","inUse":true, "connDetails":{"ipCom" : {"addr": "192.168.1.213", "port": 80}}, "settings": {"command":"SET","temp":0.1}}
 
 subflow/hotcoil1/tele

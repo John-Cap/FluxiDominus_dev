@@ -1,3 +1,5 @@
+#Note - topics in/out are relative to backend
+
 class MqttTopics:
     topicsCnmd = {
         #"sf10vapourtec1": "subflow/sf10vapourtec1/cmnd",
@@ -22,13 +24,17 @@ class MqttTopics:
     }
 
     topicsUI = {
-        #"FlowSketcher": "chemistry/cmnd",
+        "optOut":"ui/opt/out",
+        "optIn":"ui/opt/in",
+        "FlowSketcher": "ui/FlowSketcher",
         "ScriptGeneratorWidget": "chemistry/cmnd",
         #"TestListWidget":"ui/TestListWidget",
         "FormPanelWidget":"ui/FormPanelWidget",
         "LoginPageWidget": "ui/LoginPageWidget",
         #"dbStreamingOut":"ui/dbStreaming/out",
-        "dbCmndIn":"ui/dbCmnd/in" #Ui posts here
+        "dbCmndIn":"ui/dbCmnd/in", #Ui posts here
+        "uiInfoOut":"ui/info/out",
+        "uiInfoIn":"ui/info/in"
     }
 
     topicsOptimization = {

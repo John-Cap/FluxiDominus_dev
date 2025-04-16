@@ -1,71 +1,225 @@
+import ast
 import json
 import os
-import random
-from time import sleep
 import time
+import random
 import numpy as np
 import pandas as pd
-
 import paho.mqtt.client as mqtt
 
-# Define the folder containing the CSV files
-folder_path = ""  # Change if needed
 
-# List of CSV files to load
-csv_files = [
-    "ir_yield_no_resample_averages.csv",
-    "ir_yield_no_resample_unaveraged.csv",
-    "ir_yield_no_resample_unmasked.csv",
-    "ir_yield_training_data.csv",
-]
+class FakeReactor:
+    def __init__(self, mqtt_host="localhost", data_folder=""):
+        # MQTT setup
+        self.mqtt_client = mqtt.Client()
+        self.mqtt_client.on_connect = self.onConnect
+        self.mqtt_client.on_message = self.onMessage
+        self.mqtt_client.connect(host=mqtt_host)
+        self.mqtt_client.loop_start()
 
-# Dictionary to store the data from each file
-data_dict = {}
+        # Internal states
+        self.hotcoil_temp = 25
+        self.target_temp = 5
+        self.temp_rate = 0.05
+        self.flow_rate = 1.0
+        self.flow_range = (0.2, 5.0)
+        self.pressure_noise = 0.05
+        self.pumpAbase=1.2
+        self.pumpBbase=0.9
 
-for file in csv_files:
-    file_path = os.path.join(folder_path, file)
-    
-    # Load the CSV while skipping the first row (header)
-    df = pd.read_csv(file_path)
-    
-    # Remove the last column
-    df = df.iloc[:, :-1]
-    
-    # Convert to list of arrays (one per line)
-    data_dict[file] = [row.values for _, row in df.iterrows()]
+        # Timing
+        self.last_temp_switch = time.time()
+        self.temp_switch_interval = 120
+        self.last_flow_switch = time.time()
+        self.flow_switch_interval = 60
 
-mqttClient=mqtt.Client()
-mqttClient.connect(host="localhost")
-mqttClient.loop_start()
+        self.publish_interval = {
+            "hotcoil1": 1,
+            "vapourtecR4P1700": 1,
+            "reactIR702L1": 6
+        }
 
-# Example access to data
-allData=[]
-for file, data in data_dict.items():
-    allData = allData + data
-    print(f"{file}: Loaded {len(data)} rows.")
+        self.last_publish_time = {
+            k: time.time() for k in self.publish_interval
+        }
 
-"""
-{"deviceName": "reactIR702L1", "deviceType": "IR", "inUse": true, "remoteEnabled": true, "ipAddr": "192.168.1.50", "port": 62552, "tele": {"cmnd": "POLL", "settings": {}, "state": {"data": "[-0.02064050707891766,...,1]"}, "timestamp": ""}}
-"""
-now=time.time() + 60
-evaluate=False
-temp=0
-tempPerSec=2
-while True:
-    _rand=random.choice(allData)
-    '''
-    if now - time.time() < 0:
-        if not evaluate:
-            evaluate=True
+        # Load IR data
+        self.ir_data = self.load_ir_data(data_folder)
+        
+        self.debugTemp=False
+        self.debugFlowrate=False
+
+    def load_ir_data(self, folder_path):
+        csv_files = [
+            "ir_yield_no_resample_averages.csv",
+            "ir_yield_no_resample_unaveraged.csv",
+            "ir_yield_no_resample_unmasked.csv",
+            "ir_yield_training_data.csv",
+        ]
+        all_data = []
+        for file in csv_files:
+            file_path = os.path.join(folder_path, file)
+            if os.path.exists(file_path):
+                df = pd.read_csv(file_path)
+                df = df.iloc[:, :-1]  # Remove last column
+                rows = [row.values.tolist() for _, row in df.iterrows()]
+                all_data.extend(rows)
+                print(f"{file}: Loaded {len(rows)} rows.")
+            else:
+                print(f"Warning: {file} not found in {folder_path}")
+        return all_data
+
+    def onConnect(self, client, userdata, flags, rc):
+        #if self.connected:
+            #return
+        if rc == 0:
+            self.mqtt_client.subscribe(topic="debug/temp")
+            self.mqtt_client.subscribe(topic="debug/fr")
+            time.sleep(1)
+            print(f"WJ - Connected with rc {rc}!")
+            self.connected=True
+                
+    def onMessage(self, client, userdata, msg):
+        topic=msg.topic
+        msg = msg.payload.decode()
+        msg = msg.replace("true", "True").replace("false", "False")
+        msg = msg.replace("null","None")
+        msg = ast.literal_eval(msg)
+        
+        if "debugTemp" in msg:
+            self.target_temp=msg["debugTemp"]
+            print(f"Received target temperature: {self.target_temp}")
+            self.debugTemp=True        
+        if "debugFlowrate" in msg:
+            self.flow_rate=(msg["debugFlowrate"])/2
+            print(f"Received target flowrate: {self.flow_rate}")
+            self.debugFlowrate=True
+
+    def update_temperature(self):
+        now = time.time()
+        if now - self.last_temp_switch >= self.temp_switch_interval and not self.debugTemp:
+            self.target_temp = random.uniform(25, 120)
+            self.last_temp_switch = now
+
+        if abs(self.hotcoil_temp - self.target_temp) > self.temp_rate:
+            self.hotcoil_temp += (self.temp_rate + random.uniform(-0.05, 0.05)) if self.hotcoil_temp < self.target_temp else -(self.temp_rate + random.uniform(-0.05, 0.05))
         else:
-            evaluate=False
-        now=time.time() + 60
-            
-    if evaluate:
-        publishThis=json.dumps({"goEvaluator":True,"scan":list(_rand)})
-    else:
-        publishThis=json.dumps({"goEvaluator":False,"scan":list(_rand)})
-    '''
-    payload={"deviceName": "reactIR702L1", "deviceType": "IR", "inUse": True, "remoteEnabled": True, "ipAddr": "192.168.1.50", "port": 62552, "tele": {"cmnd": "POLL", "settings": {}, "state": {"data": list(_rand)}, "timestamp": ""}}
-    mqttClient.publish(topic="subflow/reactIR702L1/tele",payload=json.dumps(payload))
-    sleep(6)
+            self.hotcoil_temp = (self.target_temp + random.uniform(-0.05, 0.05))
+
+        if self.debugTemp:
+            self.last_temp_switch = now
+
+    def update_flowrate(self):
+        now = time.time()
+        if self.debugFlowrate:
+            self.last_flow_switch = now
+            return
+        if now - self.last_flow_switch >= self.flow_switch_interval:
+            self.flow_rate = random.uniform(*self.flow_range)
+            self.last_flow_switch = now
+
+    def calculate_pressure(self):
+        base_pressure = 1 + 0.07 * self.hotcoil_temp + 1.75 * self.flow_rate
+        noise = random.uniform(-self.pressure_noise, self.pressure_noise)
+        return base_pressure + noise
+
+    def publish_hotcoil(self):
+        payload = {
+            "deviceName": "hotcoil1",
+            "deviceType": "Hotchip",
+            "inUse": True,
+            "remoteEnabled": True,
+            "ipAddr": "192.168.1.213",
+            "port": 81,
+            "tele": {
+                "cmnd": "POLL",
+                "settings": {"temp": self.hotcoil_temp},
+                "state": {"temp": self.hotcoil_temp, "state": "ON"},
+                "timestamp": time.time()
+            }
+        }
+        self.mqtt_client.publish("subflow/hotcoil1/tele", json.dumps(payload))
+
+    def publish_flow_and_pressure(self):
+        system_pressure = self.calculate_pressure()
+        pump_offset = 0.2 + random.uniform(-0.05, 0.05)
+        press_pump_a = 2*((self.pumpAbase + random.uniform(-0.05, 0.05)) + system_pressure + pump_offset)
+        press_pump_b = 2*((self.pumpBbase + random.uniform(-0.05, 0.05)) + system_pressure + pump_offset)
+
+        tele = {
+            "cmnd": "",
+            "cmndResp": "",
+            "settings": {
+                "flowRatePumpA": self.flow_rate,
+                "flowRatePumpB": self.flow_rate,
+                "pressSystem": system_pressure,
+                "pressPumpA": press_pump_a,
+                "pressPumpB": press_pump_b,
+                "tempReactor1": self.hotcoil_temp
+            },
+            "state": {
+                "flowRatePumpA": self.flow_rate,
+                "flowRatePumpB": self.flow_rate,
+                "pressSystem": system_pressure,
+                "pressPumpA": press_pump_a,
+                "pressPumpB": press_pump_b,
+                "tempReactor1": self.hotcoil_temp
+            },
+            "timestamp": time.time()
+        }
+
+        msg = {
+            "deviceName": "vapourtecR4P1700",
+            "deviceType": "Hotchip",
+            "inUse": True,
+            "remoteEnabled": True,
+            "ipAddr": "192.168.1.53",
+            "port": 81,
+            "tele": tele
+        }
+
+        self.mqtt_client.publish("subflow/vapourtecR4P1700/tele", json.dumps(msg))
+
+    def publish_ir_data(self):
+        sample = np.random.uniform(size=599)
+        payload = {
+            "deviceName": "reactIR702L1",
+            "deviceType": "IR",
+            "inUse": True,
+            "remoteEnabled": True,
+            "ipAddr": "192.168.1.50",
+            "port": 62552,
+            "tele": {
+                "cmnd": "POLL",
+                "settings": {},
+                "state": {"data": list(sample)},
+                "timestamp": time.time()
+            }
+        }
+        self.mqtt_client.publish("subflow/reactIR702L1/tele", json.dumps(payload))
+
+    def run(self):
+        while True:
+            now = time.time()
+            self.update_temperature()
+            self.update_flowrate()
+
+            if now - self.last_publish_time["hotcoil1"] >= self.publish_interval["hotcoil1"]:
+                self.publish_hotcoil()
+                self.last_publish_time["hotcoil1"] = now
+
+            if now - self.last_publish_time["vapourtecR4P1700"] >= self.publish_interval["vapourtecR4P1700"]:
+                self.publish_flow_and_pressure()
+                self.last_publish_time["vapourtecR4P1700"] = now
+
+            if now - self.last_publish_time["reactIR702L1"] >= self.publish_interval["reactIR702L1"]:
+                self.publish_ir_data()
+                self.last_publish_time["reactIR702L1"] = now
+
+            time.sleep(0.1)
+
+
+if __name__ == "__main__":
+    # Replace with the actual path to your CSVs
+    reactor = FakeReactor(mqtt_host="172.30.243.138", data_folder="")
+    reactor.run()

@@ -10,6 +10,7 @@ from Core.Communication.ParseFluxidominusProcedure import FdpDecoder
 from Core.Control.ScriptGenerator import FlowChemAutomation
 from Core.Data.data import DataPointFDE, DataSetFDD
 from Core.Data.database import DatabaseStreamer, MySQLDatabase, TimeSeriesDatabaseMongo
+from Core.Fluids.FlowPath import FlowSystem
 from Core.UI.brokers_and_topics import MqttTopics
 from Core.authentication.authenticator import Authenticator
 
@@ -63,6 +64,7 @@ class MqttService:
         self.zeroTime=None
         
         self.databaseOperations=None
+        self.connectDb=True
         
         #TODO - random test related var
         self.runTest=False
@@ -81,7 +83,19 @@ class MqttService:
         
         self.irAvailable=False
         
+        self.optimizationReqSettings={}
+        self.reqOptimization=False
+        self.flowSystem=FlowSystem()
+        
+        self.reqUIhandlers={
+            "FlowSketcher":{
+                "parseFlowsketch":self.flowSystem.flowpath.parseFlowSketch
+            }
+        }
+        
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
+        
+        self.connected=False
 
     def onSubscribe(self, client, userdata, mid, granted_qos):
         if mid in self.topicIDs:
@@ -110,6 +124,7 @@ class MqttService:
             self.connected=True
         else:
             print("Connection failed with error code " + str(rc))
+            self.connected=False
         # print(self.topicIDs)
     
     def onConnectTele(self, client, userdata, flags, rc):
@@ -137,82 +152,83 @@ class MqttService:
             print("Connection failed with error code " + str(rc))
 
     def onMessage(self, client, userdata, msg):
-        _msgContents = msg.payload.decode()
-        topic=msg.topic
-        _msgContents = _msgContents.replace("true", "True").replace("false", "False")
-        _msgContents=_msgContents.replace("null","None")
-        _msgContents = ast.literal_eval(_msgContents)
-        self.lastMsgFromTopic[topic]=_msgContents
+        '''
+        TODO - To be refactored with "request" format - self.requestHandlers={} will have pointers to functions handling incoming messages
+        eg. {"deviceName":...} becomes {"req":{"deviceAdj":{"deviceName":...}}} with self.requestHandlers={"deviceAdj":_funcPointer}
+        '''
+        msgContents, topic = self._receive(msg)
         ##
-        if "deviceName" in _msgContents:
-            if _msgContents["deviceName"] == "reactIR702L1":
-                self.IR = _msgContents["tele"]["state"]["data"]
+        if "reqUI" in msgContents:
+            self._routeMsg(msgContents["reqUI"])
+        ##
+        if "deviceName" in msgContents:
+            if msgContents["deviceName"] == "reactIR702L1":
+                self.IR = msgContents["tele"]["state"]["data"]
                 self.irAvailable=True
             #Add to db streaming queue? Minimum wait passed?
             if self.runTest:
                 if (self.currTestlistId != None  and self.currTestrunId != None and self.logData):
-                    if "tele" in _msgContents:
-                        if not _msgContents["deviceName"] in self.lastReceivedTime:
-                            self.lastReceivedTime[_msgContents["deviceName"]]=time.perf_counter()
+                    if "tele" in msgContents:
+                        if not msgContents["deviceName"] in self.lastReceivedTime:
+                            self.lastReceivedTime[msgContents["deviceName"]]=time.perf_counter()
                         else:
-                            if time.perf_counter() - self.lastReceivedTime[_msgContents["deviceName"]] < self.minTeleInterval:
+                            if time.perf_counter() - self.lastReceivedTime[msgContents["deviceName"]] < self.minTeleInterval:
                                 return #TODO - make sure it's fine to jump ship here
                             else:
-                                if not _msgContents["deviceName"] in self.registeredTeleDevices:
-                                    self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
-                                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                                    print('WJ - Adding tele source "' + _msgContents["deviceName"] + '"!')
-                                #print(f'Adding tele datapoint for {_msgContents["deviceName"]}!')
+                                if not msgContents["deviceName"] in self.registeredTeleDevices:
+                                    self.registeredTeleDevices[msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[msgContents["deviceName"]]
+                                    self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=msgContents["deviceName"],setting=self.registeredTeleDevices[msgContents["deviceName"]])
+                                    print('WJ - Adding tele source "' + msgContents["deviceName"] + '"!')
+                                #print(f'Adding tele datapoint for {msgContents["deviceName"]}!')
                                 self.dataQueue.addDataPoint(
                                     DataPointFDE(
                                         testlistId=self.currTestlistId,
                                         testrunId=self.currTestrunId,
-                                        data=_msgContents,
+                                        data=msgContents,
                                         timestamp=datetime.now(utc)
                                     )
                                 )
                     else:
-                        if not _msgContents["deviceName"] in self.registeredTeleDevices:
-                            self.registeredTeleDevices[_msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[_msgContents["deviceName"]]
-                            self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=_msgContents["deviceName"],setting=self.registeredTeleDevices[_msgContents["deviceName"]])
-                        #print(f'Adding command datapoint for {_msgContents["deviceName"]}!')
+                        if not msgContents["deviceName"] in self.registeredTeleDevices:
+                            self.registeredTeleDevices[msgContents["deviceName"]]=HardcodedTeleKeys.devicesAndTheirTele[msgContents["deviceName"]]
+                            self.databaseOperations.registerAvailableTele(testrunId=self.currTestrunId,device=msgContents["deviceName"],setting=self.registeredTeleDevices[msgContents["deviceName"]])
+                        #print(f'Adding command datapoint for {msgContents["deviceName"]}!')
                         self.dataQueue.addDataPoint(
                             DataPointFDE(
                                 testlistId=self.currTestlistId,
                                 testrunId=self.currTestrunId,
-                                data=_msgContents,
+                                data=msgContents,
                                 timestamp=datetime.now(utc)
                             )
                         )                    
                         
-        elif "script" in _msgContents:
-            _msgContents=_msgContents["script"]
-            print('############')
-            print('############')
-            print("WJ - Script message contents: "+str(_msgContents))
-            print('############')
-            self.script=self.automation.parsePlutterIn(_msgContents)
-            print("WJ - Parsed script: "+str(self.script))
-            print('############')
-            print('############')
+        elif "script" in msgContents:
+            print("Plutter received script.")
+            msgContents=msgContents["script"]
+            self.script=self.automation.parsePlutterIn(msgContents)
         ##
-        elif "FormPanelWidget" in _msgContents:
-            _msgContents=_msgContents["FormPanelWidget"]
-            self.formPanelData=_msgContents
-            print(f"WJ - Received FormPanelData: {_msgContents}")
+        elif "FormPanelWidget" in msgContents:
+            msgContents=msgContents["FormPanelWidget"]
+            self.formPanelData=msgContents
+            print(f"WJ - Received FormPanelData: {msgContents}")
         ##
-        elif "LoginPageWidget" in _msgContents:
-            _msgContents=_msgContents["LoginPageWidget"]
-            if ("password" in _msgContents):
-                print(f'WJ - Login page details: {_msgContents}')
-                self.authenticator.signIn(orgId=_msgContents["orgId"],password=_msgContents["password"])
+        elif "FormPanelWidget" in msgContents:
+            msgContents=msgContents["FormPanelWidget"]
+            self.formPanelData=msgContents
+            print(f"WJ - Received FormPanelData: {msgContents}")
+        ##
+        elif "LoginPageWidget" in msgContents:
+            msgContents=msgContents["LoginPageWidget"]
+            if ("password" in msgContents):
+                print(f'WJ - Login page details: {msgContents}')
+                self.authenticator.signIn(orgId=msgContents["orgId"],password=msgContents["password"])
             else:
-                print(_msgContents)
+                print(msgContents)
         ##
         elif topic=="ui/dbCmnd/in":
-            _msgContents=_msgContents["instructions"]
-            _func=_msgContents["function"]
-            _params=_msgContents["params"]
+            msgContents=msgContents["instructions"]
+            _func=msgContents["function"]
+            _params=msgContents["params"]
 
             if (_func=="getAllExpWidgetInfo"):
                 self.client.publish(
@@ -256,6 +272,8 @@ class MqttService:
                 print(f'WJ - Streaming to db disabled')
             elif (_func=="abort"):
                 self.databaseOperations.mongoDb.currZeroTime=None
+                if not self.reqOptimization:
+                    self.reqOptimization=False
                 if not self.abort:
                     self.abort=True
                     print(f'WJ - Aborting run!')
@@ -264,16 +282,16 @@ class MqttService:
                     self.abort=False
                 self.runTest=True
                 print("WJ - Let's go!")
-        elif topic=="ui/parseFlowpath/in":
-            pass
-        elif topic=="":
-            pass
+        elif topic==MqttTopics.getUiTopic("optIn"):
+            self.optimizationReqSettings=msgContents["optInstructUI"]
+            self.reqOptimization=True
         
     def start(self):
         self.authenticator.initPlutter(mqttService=self)
         self.client.connect(self.broker_address, self.port)
-        self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
-        self.databaseOperations.connect()
+        if self.connectDb:
+            self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
+            self.databaseOperations.connect()
         thread = threading.Thread(target=self._run)
         thread.start()
         return thread
@@ -288,7 +306,28 @@ class MqttService:
 
     def _run(self):
         self.client.loop_start()
-        
+    
+    def _receive(self,msg):
+        topic=msg.topic
+        msg=msg.payload.decode()
+        msg = msg.replace("true", "True").replace("false", "False")
+        msg=msg.replace("null","None")
+        msg = ast.literal_eval(msg)
+        self.lastMsgFromTopic[topic]=msg
+        return msg, topic
+    
+    def _routeMsg(self,msg):
+        key=list(msg.keys())
+        if len(key) != 1:
+            return None
+        key=key[0]
+        action=list(msg[key].keys())
+        if len(action) != 1:
+            return None
+        action=action[0]
+        func=self.reqUIhandlers[key][action]
+        return func(msg[key][action])
+
     def publish(self,topic,payload):
         if not self.armed:
             pass

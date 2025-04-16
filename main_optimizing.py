@@ -10,13 +10,15 @@ from Config.Data.hardcoded_tele_templates import HardcodedTeleKeys
 from Core.Communication.ParseFluxidominusProcedure import FdpDecoder, ScriptParser
 from Core.Control.Commands import Delay
 from Core.Control.ScriptGenerator import FlowChemAutomation
-from Core.Optimization.optimization_rig import OptimizationRig
+from Core.Optimization.optimization_rig_FAKE import OptimizationRig
+from Core.Utils.subprocessing import FdSubprocess
 from Core.parametres.reaction_parametres import Flowrate, Temp
 from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
 
 # Create an instance of MQTTTemperatureUpdater#
-# updater = MqttService(broker_address="localhost")
-updater = MqttService(broker_address="146.64.91.174")
+updater = MqttService(broker_address="172.30.243.138")
+updater.connectDb=False
+# updater = MqttService(broker_address="146.64.91.174")
 thread = updater.start()
 time.sleep(2)
 
@@ -58,7 +60,28 @@ noTestDetails=True
 
 ########################################################################
 #Optimizer rig
-rig=OptimizationRig(updater,host="146.64.91.174")
+#rig=OptimizationRig(updater,host="146.64.91.174")
+rig=OptimizationRig(updater,host="172.30.243.138")
+rig.initRig()
+while not rig.client.is_connected():
+    time.sleep(1)
+
+fdSubprocess = FdSubprocess()
+baseDir = os.path.dirname(os.path.abspath(__file__))
+evaluatorDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Evaluator')
+optimizerDir = os.path.join(baseDir, 'OPTIMIZATION_TEMP', 'Summit')
+
+# pid = fdSubprocess.spawnExternalMain(evaluatorDir)
+# pid = fdSubprocess.spawnExternalMain(optimizerDir)
+
+#Wait until both evaluator and optimizer initialized:
+print('Waiting for optimizers to initialize')
+while not (rig.evaluatorInit and rig.optimizerInit):
+    if not rig.evaluatorInit:
+        rig.pingEvaluator()
+    if not rig.optimizerInit:
+        rig.pingOptimizer()
+    time.sleep(5)
 
 # Define devices
 device1 = "hotcoil1"
@@ -81,7 +104,6 @@ rig.registerTweakableParam(device2, flowrateParam2)
 for _x in rig.reactionParametres.getAllTweakables():
     print([_x.name,_x.getRanges()[0]])
 
-rig.optimise(objTarget=0.8)
 ########################################################################
 
 #TODO - Smarter way to manage this:
@@ -95,6 +117,7 @@ updater.abort=False
 # updater.databaseOperations.mongoDb.currZeroTime=None
 
 # Main loop!
+rig.optimise(objTarget=0.8)
 goTime=time.time()
 while True:
 
@@ -104,14 +127,15 @@ while True:
     
     while updater.script=="" and not rig.terminate:
         # dbConnection ping
-        if time.time() - lstPngTime > mySqlPngDelay:
-            if updater.databaseOperations.mySqlDb.connection.is_connected():
-                lstPngTime=time.time();
-                #print('mySQL db pinged!');
-            else:
-                print('mySQL db ping not answered!');
-                updater.databaseOperations.mySqlDb.connect();
-                time.sleep(0.5);
+        if updater.connectDb:
+            if time.time() - lstPngTime > mySqlPngDelay:
+                if updater.databaseOperations.mySqlDb.connection.is_connected():
+                    lstPngTime=time.time();
+                    #print('mySQL db pinged!');
+                else:
+                    print('mySQL db ping not answered!');
+                    updater.databaseOperations.mySqlDb.connect();
+                    time.sleep(0.5);
         #
         time.sleep(0.1)
     
@@ -132,7 +156,7 @@ while True:
         procedure = parser.createProcedure(updater.fdpDecoder)
 
         print('#######')
-        print('WJ - Parsed script is: '+updater.script)
+        print('WJ - Script parsed successfully.')
         print('#######')
         
         updater.script=""
@@ -187,15 +211,16 @@ while True:
         #Recommendation phase
         
         #dbConnection ping
-        if time.time() - lstPngTime > mySqlPngDelay:
-            pass
-            if updater.databaseOperations.mySqlDb.connection.is_connected():
-                lstPngTime=time.time();
-                #print('mySQL db pinged!');
-            else:
-                print('mySQL db ping not answered!');
-                updater.databaseOperations.mySqlDb.connect();
-                time.sleep(0.5);
+        if updater.connectDb:
+            if time.time() - lstPngTime > mySqlPngDelay:
+                if updater.databaseOperations.mySqlDb.connection.is_connected():
+                    lstPngTime=time.time();
+                    #print('mySQL db pinged!');
+                else:
+                    print('mySQL db ping not answered!');
+                    updater.databaseOperations.mySqlDb.connect();
+                    time.sleep(0.5);
+                    
         if not procedure.currConfig is None:
             if len(procedure.currConfig.commands) == 0:
                 procedure.next()
@@ -239,12 +264,13 @@ while True:
                     )
                 )
                     
-            
-        if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
-            if len(updater.dataQueue.dataPoints) != 0:
-                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-                updater.dataQueue.dataPoints=[]
-            _reportDelay=Delay(_reportSleep)
+        
+        if updater.connectDb:
+            if (_reportDelay.elapsed() and updater.logData) and not noTestDetails:
+                if len(updater.dataQueue.dataPoints) != 0:
+                    updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+                    updater.dataQueue.dataPoints=[]
+                _reportDelay=Delay(_reportSleep)
 
         time.sleep(0.15)
 
@@ -252,8 +278,10 @@ while True:
         #Evaluation phase
                 
     # #TODO - in own thread
-    if updater.logData and not noTestDetails:
-        if len(updater.dataQueue.dataPoints) != 0:
-            updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
-            updater.dataQueue.dataPoints=[]
-        updater.databaseOperations.setStopTime(updater.currTestrunId)
+    
+    if updater.connectDb:
+        if updater.logData and not noTestDetails:
+            if len(updater.dataQueue.dataPoints) != 0:
+                updater.databaseOperations.mongoDb.insertDataPoints(updater.dataQueue.toDict())
+                updater.dataQueue.dataPoints=[]
+            updater.databaseOperations.setStopTime(updater.currTestrunId)

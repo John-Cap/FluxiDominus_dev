@@ -1,344 +1,133 @@
+Problem:
 
-{"9d84f9a9-8665-4883-a506-4aa07cee48ab":{"name":"Flowsyn Maxi 2","flowsInto":["7b51af7b-ccec-4a47-a13c-ba16eb65b973"],"deviceName":"flowsynmaxi1","deviceType":"FlowsynMaxi","volume":5},"6892d932-90df-447b-b1f8-77020f8ef4f5":{"name":"R4 (Peristaltic)","flowsInto":["7b51af7b-ccec-4a47-a13c-ba16eb65b973"],"deviceName":"vapourtecR4P1700","deviceType":"vapourtecR4","volume":5},"07e4e67d-88a5-486b-9919-83f41aadb926":{"name":"Valve","flowsInto":["6892d932-90df-447b-b1f8-77020f8ef4f5"],"deviceName":"null","deviceType":"Valve","volume":0.25},"86f76937-a5a4-4821-947c-f3686d0593f8":{"name":"Push","flowsInto":["07e4e67d-88a5-486b-9919-83f41aadb926"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"2a3dbe75-f252-4d84-a5bd-46abdac44883":{"name":"Stock","flowsInto":["07e4e67d-88a5-486b-9919-83f41aadb926"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"701867bb-daa6-48e6-94b4-c52a11eb6626":{"name":"Stock","flowsInto":["9d84f9a9-8665-4883-a506-4aa07cee48ab"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"7b51af7b-ccec-4a47-a13c-ba16eb65b973":{"name":"Hotcoil (10 mL)","flowsInto":["1b28500a-8bf6-4c89-8e09-2416f3e1cc5a"],"deviceName":"hotcoil1","deviceType":"Coil","volume":10},"1b28500a-8bf6-4c89-8e09-2416f3e1cc5a":{"name":"ReactIR 702L1","flowsInto":["96f1d6fd-1304-4e72-a124-8c31dd082e57"],"deviceName":"reactIR702L1","deviceType":"IR","volume":0.25},"96f1d6fd-1304-4e72-a124-8c31dd082e57":{"name":"BPR (8 Bar)","flowsInto":["d2222e10-c5e6-4cd7-add6-21da90dd72ae"],"deviceName":"null","deviceType":"BPR","volume":0.1},"d2222e10-c5e6-4cd7-add6-21da90dd72ae":{"name":"Valve","flowsInto":["51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f","242b2435-c911-42d0-bfaf-a2e34d554edf"],"deviceName":"null","deviceType":"Valve","volume":0.25},"242b2435-c911-42d0-bfaf-a2e34d554edf":{"name":"Collection point","flowsInto":null,"deviceName":"null","deviceType":"FlowTerminus","volume":0},"51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f":{"name":"Collection point","flowsInto":null,"deviceName":"null","deviceType":"FlowTerminus","volume":0}}
+The debug
 
+from Core.Fluids.FlowPath import FlowOrigin, FlowTerminus, visualize_flow_path
 
-A json describing connections between components is received via MQTT:
+dumpNo=1
+def dump_inlet_outlet_sets(path):
+  global dumpNo
+  for seg in path.segments:
+      if seg.inletSets:
+          print(f"\n[INFO #{dumpNo}] {seg.name}: Inlet Sets")
+          for name, comps in seg.inletSets.items():
+              print(f"  Set '{name}': {[x.name for x in comps]}")
+          print(f"  Currently selected: {seg.currInletSet}")
 
-jsonStringFromFlutter="""
-{
-  "9d84f9a9-8665-4883-a506-4aa07cee48ab": {
-    "name": "Flowsyn Maxi 2",
-    "flowsInto": [
-      "7b51af7b-ccec-4a47-a13c-ba16eb65b973"
-    ],
-    "deviceName": "flowsynmaxi1",
-    "deviceType": "FlowsynMaxi",
-    "volume": 5
-  },
-  "6892d932-90df-447b-b1f8-77020f8ef4f5": {
-    "name": "R4 (Peristaltic)",
-    "flowsInto": [
-      "7b51af7b-ccec-4a47-a13c-ba16eb65b973"
-    ],
-    "deviceName": "vapourtecR4P1700",
-    "deviceType": "vapourtecR4",
-    "volume": 5
-  },
-  "07e4e67d-88a5-486b-9919-83f41aadb926": {
-    "name": "Valve",
-    "flowsInto": [
-      "6892d932-90df-447b-b1f8-77020f8ef4f5"
-    ],
-    "deviceName": "null",
-    "deviceType": "Valve",
-    "volume": 0.25
-  },
-  "86f76937-a5a4-4821-947c-f3686d0593f8": {
-    "name": "Push",
-    "flowsInto": [
-      "07e4e67d-88a5-486b-9919-83f41aadb926"
-    ],
-    "deviceName": "null",
-    "deviceType": "FlowOrigin",
-    "volume": 0
-  },
-  "2a3dbe75-f252-4d84-a5bd-46abdac44883": {
-    "name": "Stock",
-    "flowsInto": [
-      "07e4e67d-88a5-486b-9919-83f41aadb926"
-    ],
-    "deviceName": "null",
-    "deviceType": "FlowOrigin",
-    "volume": 0
-  },
-  "701867bb-daa6-48e6-94b4-c52a11eb6626": {
-    "name": "Stock",
-    "flowsInto": [
-      "9d84f9a9-8665-4883-a506-4aa07cee48ab"
-    ],
-    "deviceName": "null",
-    "deviceType": "FlowOrigin",
-    "volume": 0
-  },
-  "7b51af7b-ccec-4a47-a13c-ba16eb65b973": {
-    "name": "Hotcoil (10 mL)",
-    "flowsInto": [
-      "1b28500a-8bf6-4c89-8e09-2416f3e1cc5a"
-    ],
-    "deviceName": "hotcoil1",
-    "deviceType": "Coil",
-    "volume": 10
-  },
-  "1b28500a-8bf6-4c89-8e09-2416f3e1cc5a": {
-    "name": "ReactIR 702L1",
-    "flowsInto": [
-      "96f1d6fd-1304-4e72-a124-8c31dd082e57"
-    ],
-    "deviceName": "reactIR702L1",
-    "deviceType": "IR",
-    "volume": 0.25
-  },
-  "96f1d6fd-1304-4e72-a124-8c31dd082e57": {
-    "name": "BPR (8 Bar)",
-    "flowsInto": [
-      "d2222e10-c5e6-4cd7-add6-21da90dd72ae"
-    ],
-    "deviceName": "null",
-    "deviceType": "BPR",
-    "volume": 0.1
-  },
-  "d2222e10-c5e6-4cd7-add6-21da90dd72ae": {
-    "name": "Valve",
-    "flowsInto": [
-      "51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f",
-      "242b2435-c911-42d0-bfaf-a2e34d554edf"
-    ],
-    "deviceName": "null",
-    "deviceType": "Valve",
-    "volume": 0.25
-  },
-  "242b2435-c911-42d0-bfaf-a2e34d554edf": {
-    "name": "Collection point",
-    "flowsInto": null,
-    "deviceName": "null",
-    "deviceType": "FlowTerminus",
-    "volume": 0
-  },
-  "51dfd5fe-fa37-4dd3-8b26-a3ccb63a8a6f": {
-    "name": "Collection point",
-    "flowsInto": null,
-    "deviceName": "null",
-    "deviceType": "FlowTerminus",
-    "volume": 0
-  }
-}
-"""
-'deviceType' refers to the component class to be instantiate from StandardConfigurationDevices:
+      if seg.outletSets:
+          print(f"[INFO #{dumpNo}] {seg.name}: Outlet Sets")
+          for name, comps in seg.outletSets.items():
+              print(f"  Set '{name}': {[x.name for x in comps]}")
+          print(f"  Currently selected: {seg.currOutletSet}")
+  dumpNo+=1
 
-class StandardConfiguratedDevices:
-    deviceClasses={
-        "FlowsynMaxi":FlowsynMaxi,
-        "VapourtecR4":VapourtecR4,
-        "ReactIR702L1":ReactIR702L1,
-        "UniqsisHotcoil":UniqsisHotcoil,
-        "UniqsisHotchip":UniqsisHotchip,
-        
-        #Generalized
-        "Tubing":Tubing,
-        "TPiece":TPiece,
-        "Coil":Coil,
-        "Valve":Valve,
-        "FlowOrigin":FlowOrigin,
-        "FlowTerminus":FlowTerminus,
-        "IR":IR,
-        "Chip":Chip,
-        "Pump":Pump
-    }
-
-    @staticmethod
-    def initializeComponent(component,params):
-        return (StandardConfiguratedDevices.deviceClasses[component](params))
-
-This info must be taken and the flow path be set up similarily to unrelated example below:
+in example
 
 if __name__ == "__main__":
-    #instantiate flowpath
-    _path=FlowPath()
-    comp=[]
+    from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
     
-    #Instantiate individual components:
-    #Stocks
-
-    _redStock=FlowOrigin( #Class to be instantiated, 'deviceType' key, fetched from StandardConfiguratedDevices.initializeComponent(deviceType,params).
-        volume=0, #'volume' key
-        name="RED_STOCK" #'name' key
-    )
-    comp.append(_redStock)
-
-    _blueStock=FlowOrigin(volume=0,name="BLUE_STOCK")
-    comp.append(_blueStock)
-    _pinkStock=FlowOrigin(volume=0,name="PINK_STOCK")
-    comp.append(_pinkStock)
-    _purpleStock=FlowOrigin(volume=0,name="PURPLE_STOCK")
-    #comp.append(_purpleStock)
+    updater = MqttService(broker_address="172.30.243.138")
+    updater.connectDb=False
+    updater.arm()
+    updater.start()
     
-    #Pump lines
-    _pump_1=Pump(volume=1.5,name="PUMP_1")
-    comp.append(_pump_1)
-    _pump_2=Pump(volume=1.5,name="PUMP_2")
-    comp.append(_pump_2)
-    _pump_3=Pump(volume=1.5,name="PUMP_3")
-    comp.append(_pump_3)
-    _pump_4=Pump(volume=1.5,name="PUMP_4")
-    #comp.append(_pump_4)
-    #Valves
-    _3wayValve=Valve(volume=0.05)
-    _cwValve=Valve(volume=0.05,name="CW_VALVE")
-    comp.append(_cwValve)
-    _valve_1=Valve(volume=0.05,name="DIVERT_VALVE")
-    comp.append(_valve_1)
-    _flushCoilValve=Valve(volume=0.05,name="FLUSH_VALVE")
-    comp.append(_flushCoilValve)
-    #IR
-    _IR=(IR(volume=0.5,name="IR"))
-    comp.append(_IR)
-    #Coil
-    _coil=(Coil(volume=5,name="COIL"))
-    comp.append(_coil)
-    #Termini
-    _waste=FlowTerminus(volume=0,name="WASTE")
-    comp.append(_waste)
-    _collect=FlowTerminus(volume=0,name="COLLECT")
-    comp.append(_collect)
-    _terminus_3=FlowTerminus(volume=0,name="TERMINUS_3")
-    comp.append(_terminus_3)
-    _terminus_4=FlowTerminus(volume=0,name="TERMINUS_4")
-    comp.append(_terminus_4)
+    print("Waiting for connection")
     
-    _tPiece_1=TPiece(volume=0.05,name="TPIECE_1")
-    comp.append(_tPiece_1)
-    _tPiece_2=TPiece(volume=0.05,name="TPIECE_2")
-    comp.append(_tPiece_2)
+    while not updater.connected:
+      time.sleep(0.5)
     
-    _tubing_1=Tubing(volume=0.5,name="TUBE_1")
-    comp.append(_tubing_1)
-    _tubing_2=Tubing(volume=1,name="TUBE_2")
-    comp.append(_tubing_2)
-    _tubing_3=Tubing(volume=0.5,name="TUBE_3")
-    comp.append(_tubing_3)
-    _tubing_4=Tubing(volume=1,name="TUBE_4")
-    comp.append(_tubing_4)
-    ###################
-    #Connect components
-
-    #The connections are described in the JSON. Each main key (UUID) denotes a component, and its "flowsInto" key describes which of the other
-    #components it flows into:
-
-    #Stock solutions
-    _redStock.flowInto(_pump_1)
-    _blueStock.flowInto(_pump_2)
-    _pinkStock.flowInto(_pump_3)
-    #Pumplines 1/2
-    _pump_1.flowInto(_tPiece_1)
-    _pump_2.flowInto(_tPiece_1)
-    #Divert valve
-    _tPiece_1.flowInto(_tubing_1)
-    _tubing_1.flowInto(_valve_1)
-    _valve_1.flowInto(_coil)
-    _valve_1.flowInto(_tubing_2)
-    #Flush coil valve
-    _tubing_2.flowInto(_flushCoilValve)
-    _flushCoilValve.flowInto(_terminus_3)
-    _flushCoilValve.flowInto(_terminus_4)
-    #Coil
-    _coil.flowInto(_tPiece_2)
-    _pump_3.flowInto(_tPiece_2)
-    _tPiece_2.flowInto(_tubing_3)
-    _tubing_3.flowInto(_IR)
-    _IR.flowInto(_tubing_4)
-    _tubing_4.flowInto(_cwValve)
-    _cwValve.flowInto(_waste)
-    _cwValve.flowInto(_collect)
-    #select one of the termini
-    '''
-    #Create path
-    '''
-    _path.addPath(comp)
-
-    #Now the paths are mapped
-    _path.mapPathTermini()
-    adrses=[str(key) for key in _path.addressesAll.keys()]
+    updater.publish("ui/FlowSketcher",json.dumps(example))
     
-    print("*********************Segment details*********************")
-    for _x in _path.segments:
-        print(f"Comp name: {_x.name}")
-        print(f" Inlet sets: {_x.inletSets}")
-        print(f" Outlet sets: {_x.outletSets}")
-        print(f" Curr inlets: {_x.inlets}")   
-        print(f" Curr outlets: {_x.outlets}")
-        print("--")
-        
-    print("************************Addresses*************************")
-    for _x, _y in _path.addressesAll.items():
-        print(f"Address for {_x}:")
-        for x in _y:
-            print(f" Comp: {x[0].name}")
-            print(f"  Inlet set: UNDEFINED")
-            print(f"  Outlet set: {x[1]}")
-        print("--")
+    print("Waiting for termini mapping")
+    
+    while not updater.flowSystem.flowpath.terminiMapped:
+      time.sleep(1)
+      
+    path = updater.flowSystem.flowpath
+
+    allSlugs = updater.flowSystem.allSlugs
+
+    #Find component references from names
+    origins = [comp for comp in path.segments if isinstance(comp,FlowOrigin)]
+    
+    print(f'Origins: {origins}')
+    
+    adrses = [name for name in path.addressesAll.keys()]
+    print(f"Available addresses: \n {path.addressesAll}")
 
     #Some example things:
-    flowRates=[0,1.3,2.6,3.75,4.13]
-    dispVol=[1,2,3,4,5]
+    #flowRates=[0,1,2,3,4]
+    flowRates=[0.5,1,2]
+    dispVol=[1]
+
+    # path.currRelOrigin.setFlowrate(3/60)
+    for orig in origins:
+      orig.setFlowrate(2/60)
+        
+    dump_inlet_outlet_sets(path)
     
-    # Flag variable to indicate whether the thread should continue running?
+    path.updateFlowrates()
+
+    path.setCurrDestination(random.choice(adrses))
+    
+    visualize_flow_path(path)
+    
+    slug=path.currRelOrigin.dispense(1)
+    
+    #Flag variable to indicate whether the thread should continue running?
     running=True
-    allSlugs=Slugs()
+    time.sleep(1)
+    
+    firstSet=True
+    
     def run_code():
-        global running
-        global allSlugs
-        global _path
-        _i=0
-        while running:
-            '''
-            _flow_1=eval(input("Pump 1 flowrate: "))
-            _flow_2=eval(input("Pump 2 flowrate: "))
-            _flow_3=eval(input("Pump 3 flowrate: "))
-            _slugVol=eval(input("Vol to dispense: "))
-            '''
-            _flow_1=random.choice(flowRates)
-            _flow_2=random.choice(flowRates)
-            _flow_3=random.choice(flowRates)
-            _slugVol=random.choice(dispVol)
-            
-            _redStock.setFlowrate(_flow_1/60)
-            _blueStock.setFlowrate(_flow_2/60)
-            _pinkStock.setFlowrate(_flow_3/60)
+      global running
+      global allSlugs
+      global slug
+      global path
+      global firstSet
+      _i=0
+      while running:
 
-            _path.updateFlowrates()
+        if not firstSet:
+          # path.currRelOrigin.setFlowrate(3/60)
+          for orig in origins:
+            orig.setFlowrate(2/60)
+              
+          dump_inlet_outlet_sets(path)
+          
+          path.updateFlowrates()
 
-            _path.setCurrDestination(random.choice(adrses))
-            _slug=_path.currRelOrigin.dispense(_slugVol)
-            allSlugs.slugs.append(_slug)
-
-            _now=time.perf_counter()
-            _nowRefresh=_now
-            _jiggleFlowrate=time.perf_counter() + 5
-            #_path.timePrev=time.perf_counter()
-            while not (isinstance(_slug.tailHost,FlowTerminus)):
-                if time.time() - _jiggleFlowrate > 30:
-                    _flow_1=random.choice(flowRates)
-                    if _flow_1 == 0:
-                        _flow_1=1
-                    _flow_2=random.choice(flowRates)
-                    _flow_3=random.choice(flowRates)
-                    print("--")
-                    print(f"New flowrates: {_flow_1}, {_flow_2}, {_flow_3}")
-                    print("--")
-                                        
-                    _redStock.setFlowrate(_flow_1/60)
-                    _blueStock.setFlowrate(_flow_2/60)
-                    _pinkStock.setFlowrate(_flow_3/60)
-                    
-                    _jiggleFlowrate=time.time()
-
-                _path.advanceSlugs()
-                if time.time() - _nowRefresh > 1:
-                    _vol=_slug.slugVolume()
-                    _nowRefresh=time.time()
-                    rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[_flow_1,_flow_2,_flow_3]}\nFront in: {_slug.frontHost.name},\n {round(_slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.frontHostPos, 2)}/{_slug.frontHost.volume} mL\nTail in: {_slug.tailHost.name},\n {round(_slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(_slug.tailHostPos, 2)}/{_slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(_slug.collectedVol, 2))} mL"""
-                    print(rep)
-                time.sleep(0.1)
-            print("***************************************")
-            print("Collected slug volumes")
-            for _x in _path.collectedSlugs:
-                print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
-                print(f'Slug was collected at terminus "{_x.frontHost.name}"')
-            print("***************************************")
-            _i+=1
-            if _i > 10:
-                exit()
-            time.sleep(10)
+          path.setCurrDestination(random.choice(adrses))
+          slug=path.currRelOrigin.dispense(1)
+          allSlugs.slugs.append(slug)
+              
+          dump_inlet_outlet_sets(path)
+        else:
+          firstSet=False
+          
+        _now=time.perf_counter()
+        _nowRefresh=_now
+        _jiggleFlowrate=time.perf_counter() + 5
+        #path.timePrev=time.perf_counter()
+        while not (isinstance(slug.tailHost,FlowTerminus)):
+            path.advanceSlugs()
+            if time.time() - _nowRefresh > 1:
+                _vol=slug.slugVolume()
+                _nowRefresh=time.time()
+                rep=f"""--------------------------------------------------\nTime: {round(time.perf_counter() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL"""
+                print(rep)
+            time.sleep(0.1)
+        print("***************************************")
+        print("Collected slug volumes")
+        for _x in path.collectedSlugs:
+            print(f'Slug {_x} dispensed as {_x.totalDispensed} mL from origin and collected as {_x.collectedVol} mL')
+            print(f'Slug was collected at terminus "{_x.frontHost.name}"')
+        print("***************************************")
+        _i+=1
+        if _i > 10:
+            exit()
+        time.sleep(10)
 
     # Create a thread for running the code
     thread=threading.Thread(target=run_code)
@@ -350,28 +139,219 @@ if __name__ == "__main__":
 
     #######################################################################################
 
-class StandardConfiguratedDevices:
-    deviceClasses={
-        "FlowsynMaxi":FlowsynMaxi,
-        "VapourtecR4":VapourtecR4,
-        "ReactIR702L1":ReactIR702L1,
-        "UniqsisHotcoil":UniqsisHotcoil,
-        "UniqsisHotchip":UniqsisHotchip,
-        
-        #Generalized
-        "Tubing":Tubing,
-        "TPiece":TPiece,
-        "Coil":Coil,
-        "Valve":Valve,
-        "FlowOrigin":FlowOrigin,
-        "FlowTerminus":FlowTerminus,
-        "IR":IR,
-        "Chip":Chip,
-        "Pump":Pump
-    }
+With additional debug 
+"
+                    if chosenSetName is not None:
+                        # Also record inlet set name from nextComp
+                        # This assumes the inletSet that contains currComp is unique
+                        inletSetName = None
+                        for iSetName, iSetComps in nextComp.inletSets.items():
+                            print(f"Inletset names, components for {currComp}: {[iSetName,iSetComps]}")
+                            if currComp in iSetComps:
+                                inletSetName = iSetName
+                                break
+"
+shows:
 
-    @staticmethod
-    def initializeComponent(component,params):
-        return (StandardConfiguratedDevices.deviceClasses[component](params))
+Inletset names, components for <Core.Fluids.FlowPath.Valve object at 0x000001C651791760>: ['DEFAULT', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>]]
+Inletset names, components for <Core.Fluids.FlowPath.Valve object at 0x000001C651791760>: ['DEFAULT', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>]]
 
-Write class ParseFlowpath with method 'parse' that takes in that JSON and creates this flowpath.
+Available addresses: 
+ {'Product': [[<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>, 'WasteOrCollect_22_to_TUBE_12_23', <Core.Fluids.FlowPath.Tubing object at 0x000001C651791790>, 'DEFAULT']], 'Waste': [[<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>, 'WasteOrCollect_22_to_TUBE_13_24', <Core.Fluids.FlowPath.Tubing object at 0x000001C651791820>, 'DEFAULT']]}
+
+[INFO #1] R4 Pump A: Inlet Sets
+  Set 'DEFAULT': ['TUBE_2']
+  Currently selected: None
+[INFO #1] R4 Pump A: Outlet Sets
+  Set 'R4 Pump A_0_to_TUBE_1_1': ['TUBE_1']
+  Currently selected: R4 Pump A_0_to_TUBE_1_1
+
+[INFO #1] TUBE_1: Inlet Sets
+  Set 'DEFAULT': ['R4 Pump A']
+  Currently selected: None
+[INFO #1] TUBE_1: Outlet Sets
+  Set 'TUBE_1_1_to_StaticMixer_16': ['StaticMixer']
+  Currently selected: TUBE_1_1_to_StaticMixer_16
+
+[INFO #1] SR_A: Inlet Sets
+  Set 'DEFAULT_0': ['TUBE_3'] **Correctly assigns incoming tubes to unique inlet sets
+  Set 'DEFAULT_1': ['TUBE_4']
+  Currently selected: None
+[INFO #1] SR_A: Outlet Sets
+  Set 'SR_A_2_to_TUBE_2_3': ['TUBE_2']
+  Currently selected: SR_A_2_to_TUBE_2_3
+
+[INFO #1] TUBE_2: Inlet Sets
+  Set 'DEFAULT': ['SR_A']
+  Currently selected: None
+[INFO #1] TUBE_2: Outlet Sets
+  Set 'TUBE_2_3_to_R4 Pump A_0': ['R4 Pump A']
+  Currently selected: TUBE_2_3_to_R4 Pump A_0
+[INFO #1] AllylIsoval: Outlet Sets
+  Set 'AllylIsoval_4_to_TUBE_3_5': ['TUBE_3']
+  Currently selected: AllylIsoval_4_to_TUBE_3_5
+
+[INFO #1] TUBE_3: Inlet Sets
+  Set 'DEFAULT': ['AllylIsoval']
+  Currently selected: None
+[INFO #1] TUBE_3: Outlet Sets
+  Set 'TUBE_3_5_to_SR_A_2': ['SR_A']
+  Currently selected: TUBE_3_5_to_SR_A_2
+[INFO #1] PushSolventA: Outlet Sets
+  Set 'PushSolventA_6_to_TUBE_4_7': ['TUBE_4']
+  Currently selected: PushSolventA_6_to_TUBE_4_7
+
+[INFO #1] TUBE_4: Inlet Sets
+  Set 'DEFAULT': ['PushSolventA']
+  Currently selected: None
+[INFO #1] TUBE_4: Outlet Sets
+  Set 'TUBE_4_7_to_SR_A_2': ['SR_A']
+  Currently selected: TUBE_4_7_to_SR_A_2
+
+[INFO #1] SR_B: Inlet Sets
+  Set 'DEFAULT_0': ['TUBE_7']
+  Set 'DEFAULT_1': ['TUBE_8']
+  Currently selected: None
+[INFO #1] SR_B: Outlet Sets
+  Set 'SR_B_8_to_TUBE_5_9': ['TUBE_5']
+  Currently selected: SR_B_8_to_TUBE_5_9
+
+[INFO #1] TUBE_5: Inlet Sets
+  Set 'DEFAULT': ['SR_B']
+  Currently selected: None
+[INFO #1] TUBE_5: Outlet Sets
+  Set 'TUBE_5_9_to_R4 Pump B_10': ['R4 Pump B']
+  Currently selected: TUBE_5_9_to_R4 Pump B_10
+
+[INFO #1] R4 Pump B: Inlet Sets
+  Set 'DEFAULT': ['TUBE_5']
+  Currently selected: None
+[INFO #1] R4 Pump B: Outlet Sets
+  Set 'R4 Pump B_10_to_TUBE_6_11': ['TUBE_6']
+  Currently selected: R4 Pump B_10_to_TUBE_6_11
+
+[INFO #1] TUBE_6: Inlet Sets
+  Set 'DEFAULT': ['R4 Pump B']
+  Currently selected: None
+[INFO #1] TUBE_6: Outlet Sets
+  Set 'TUBE_6_11_to_StaticMixer_16': ['StaticMixer']
+  Currently selected: TUBE_6_11_to_StaticMixer_16
+[INFO #1] KOH_sol: Outlet Sets
+  Set 'KOH_sol_12_to_TUBE_7_13': ['TUBE_7']
+  Currently selected: KOH_sol_12_to_TUBE_7_13
+
+[INFO #1] TUBE_7: Inlet Sets
+  Set 'DEFAULT': ['KOH_sol']
+  Currently selected: None
+[INFO #1] TUBE_7: Outlet Sets
+  Set 'TUBE_7_13_to_SR_B_8': ['SR_B']
+  Currently selected: TUBE_7_13_to_SR_B_8
+[INFO #1] PushSolventB: Outlet Sets
+  Set 'PushSolventB_14_to_TUBE_8_15': ['TUBE_8']
+  Currently selected: PushSolventB_14_to_TUBE_8_15
+
+[INFO #1] TUBE_8: Inlet Sets
+  Set 'DEFAULT': ['PushSolventB']
+  Currently selected: None
+[INFO #1] TUBE_8: Outlet Sets
+  Set 'TUBE_8_15_to_SR_B_8': ['SR_B']
+  Currently selected: TUBE_8_15_to_SR_B_8
+
+[INFO #1] StaticMixer: Inlet Sets
+  Set 'DEFAULT': ['TUBE_1', 'TUBE_6']
+  Currently selected: None
+[INFO #1] StaticMixer: Outlet Sets
+  Set 'StaticMixer_16_to_TUBE_9_17': ['TUBE_9']
+  Currently selected: StaticMixer_16_to_TUBE_9_17
+
+[INFO #1] TUBE_9: Inlet Sets
+  Set 'DEFAULT': ['StaticMixer']
+  Currently selected: None
+[INFO #1] TUBE_9: Outlet Sets
+  Set 'TUBE_9_17_to_Hotcoil_1_18': ['Hotcoil_1']
+  Currently selected: TUBE_9_17_to_Hotcoil_1_18
+
+[INFO #1] Hotcoil_1: Inlet Sets
+  Set 'DEFAULT': ['TUBE_9']
+  Currently selected: None
+[INFO #1] Hotcoil_1: Outlet Sets
+  Set 'Hotcoil_1_18_to_TUBE_10_19': ['TUBE_10']
+  Currently selected: Hotcoil_1_18_to_TUBE_10_19
+
+[INFO #1] TUBE_10: Inlet Sets
+  Set 'DEFAULT': ['Hotcoil_1']
+  Currently selected: None
+[INFO #1] TUBE_10: Outlet Sets
+  Set 'TUBE_10_19_to_ReactIR 702L1_20': ['ReactIR 702L1']
+  Currently selected: TUBE_10_19_to_ReactIR 702L1_20
+
+[INFO #1] ReactIR 702L1: Inlet Sets
+  Set 'DEFAULT': ['TUBE_10']
+  Currently selected: None
+[INFO #1] ReactIR 702L1: Outlet Sets
+  Set 'ReactIR 702L1_20_to_TUBE_11_21': ['TUBE_11']
+  Currently selected: ReactIR 702L1_20_to_TUBE_11_21
+
+[INFO #1] TUBE_11: Inlet Sets
+  Set 'DEFAULT': ['ReactIR 702L1']
+  Currently selected: None
+[INFO #1] TUBE_11: Outlet Sets
+  Set 'TUBE_11_21_to_WasteOrCollect_22': ['WasteOrCollect']
+  Currently selected: TUBE_11_21_to_WasteOrCollect_22
+
+[INFO #1] WasteOrCollect: Inlet Sets
+  Set 'DEFAULT_0': ['TUBE_11']
+  Currently selected: None
+[INFO #1] WasteOrCollect: Outlet Sets
+  Set 'WasteOrCollect_22_to_TUBE_12_23': ['TUBE_12']
+  Set 'WasteOrCollect_22_to_TUBE_13_24': ['TUBE_13']
+  Currently selected: WasteOrCollect_22_to_TUBE_13_24
+
+[INFO #1] TUBE_12: Inlet Sets
+  Set 'DEFAULT': ['WasteOrCollect']
+  Currently selected: None
+[INFO #1] TUBE_12: Outlet Sets
+  Set 'TUBE_12_23_to_Product_25': ['Product']
+  Currently selected: TUBE_12_23_to_Product_25
+
+[INFO #1] TUBE_13: Inlet Sets
+  Set 'DEFAULT': ['WasteOrCollect']
+  Currently selected: None
+[INFO #1] TUBE_13: Outlet Sets
+  Set 'TUBE_13_24_to_Waste_26': ['Waste']
+  Currently selected: TUBE_13_24_to_Waste_26
+
+[INFO #1] Product: Inlet Sets
+  Set 'DEFAULT': ['TUBE_12']
+  Currently selected: None
+
+[INFO #1] Waste: Inlet Sets
+  Set 'DEFAULT': ['TUBE_13']
+  Currently selected: None
+This segment and inlets: ['R4 Pump A', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517911C0>]]
+This segment and inlets: ['TUBE_1', [<Core.Fluids.FlowPath.Pump object at 0x000001C651791160>]]
+This segment and inlets: ['SR_A', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517912B0>]]
+This segment and inlets: ['TUBE_2', [<Core.Fluids.FlowPath.Valve object at 0x000001C651304980>]]
+This segment and inlets: ['AllylIsoval', []]
+This segment and inlets: ['TUBE_3', [<Core.Fluids.FlowPath.FlowOrigin object at 0x000001C650599130>]]
+This segment and inlets: ['PushSolventA', []]
+This segment and inlets: ['TUBE_4', [<Core.Fluids.FlowPath.FlowOrigin object at 0x000001C651249F70>]]
+This segment and inlets: ['SR_B', [<Core.Fluids.FlowPath.Tubing object at 0x000001C651791550>]]
+This segment and inlets: ['TUBE_5', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791280>]]
+This segment and inlets: ['R4 Pump B', [<Core.Fluids.FlowPath.Tubing object at 0x000001C651791370>]]
+This segment and inlets: ['TUBE_6', [<Core.Fluids.FlowPath.Pump object at 0x000001C650C18EC0>]]
+This segment and inlets: ['KOH_sol', []]
+This segment and inlets: ['TUBE_7', [<Core.Fluids.FlowPath.FlowOrigin object at 0x000001C6511B93D0>]]
+This segment and inlets: ['PushSolventB', []]
+This segment and inlets: ['TUBE_8', [<Core.Fluids.FlowPath.FlowOrigin object at 0x000001C651791490>]]
+This segment and inlets: ['StaticMixer', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517911F0>, <Core.Fluids.FlowPath.Tubing object at 0x000001C651791340>]]
+This segment and inlets: ['TUBE_9', [<Core.Fluids.FlowPath.TPiece object at 0x000001C650BC9070>]]
+This segment and inlets: ['Hotcoil_1', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517915E0>]]
+This segment and inlets: ['TUBE_10', [<Core.Fluids.FlowPath.Coil object at 0x000001C651306FC0>]]
+This segment and inlets: ['ReactIR 702L1', [<Core.Fluids.FlowPath.Tubing object at 0x000001C650612D80>]]
+This segment and inlets: ['TUBE_11', [<Core.Fluids.FlowPath.IR object at 0x000001C651791640>]]
+This segment and inlets: ['WasteOrCollect', [<Core.Fluids.FlowPath.Tubing object at 0x000001C6517916D0>]]
+This segment and inlets: ['TUBE_12', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>]]
+This segment and inlets: ['TUBE_13', [<Core.Fluids.FlowPath.Valve object at 0x000001C651791760>]]
+This segment and inlets: ['Product', [<Core.Fluids.FlowPath.Tubing object at 0x000001C651791790>]]
+This segment and inlets: ['Waste', [<Core.Fluids.FlowPath.Tubing object at 0x000001C651791820>]]

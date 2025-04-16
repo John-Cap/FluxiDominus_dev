@@ -175,13 +175,13 @@ class Configuration:
         self.commands = commands
         self.setMessage = setMessage
 
-    def sendMQTT(self, waitForDelivery=False):
+    def sendMQTT(self, waitForDelivery=False,debugDelaySkip=False):
         if (len(self.commands)) == 0:
             print("No commands left!")
             return
         _currentCommand = (self.commands[0])
         if "Delay" in _currentCommand:
-            if _currentCommand["Delay"].elapsed():
+            if _currentCommand["Delay"].elapsed() or debugDelaySkip:
                 del self.commands[0]
                 print("Delay elapsed!")
                 return

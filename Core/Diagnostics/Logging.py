@@ -1,4 +1,7 @@
 
+from Core.UI.brokers_and_topics import MqttTopics
+
+
 class LoggingBase:
     def __init__(self) -> None:
         self.destination = r"Debug\General_Log.txt"
@@ -17,3 +20,7 @@ class Diag_log(Logging):
 
     def toLogIP(): #log elke ip as 'n 'object'
         pass
+
+class UiInform:
+    def __init__(self):
+        self.uiInfoOut=MqttTopics.getUiTopic("uiInfoOut")
