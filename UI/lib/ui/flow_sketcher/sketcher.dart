@@ -113,6 +113,7 @@ class FlowSketcherState extends State<FlowSketcher>
           onLineTapped: (context, position, srcElement, destElement) {
             _showTubingSettings(context, srcElement, destElement);
           },
+          mqttService: widget.mqttService,
         ),
       ),
       floatingActionButton: FloatingActionButton(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_flow_chart/includes/plutter.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/draw_arrow.dart';
@@ -106,6 +107,7 @@ class FlowChart extends StatefulWidget {
 
   /// main dashboard to use
   final Dashboard dashboard;
+  final MqttService mqttService;
 
   final void Function(double scale)? onScaleUpdate;
 
@@ -129,6 +131,7 @@ class FlowChart extends StatefulWidget {
     this.onLineSecondaryLongTapped,
     this.onScaleUpdate,
     required this.dashboard,
+    required this.mqttService,
   });
 
   @override
@@ -307,6 +310,7 @@ class _FlowChartState extends State<FlowChart> {
                       : (context, position, handler, element) =>
                           widget.onHandlerSecondaryLongTapped!(
                               context, position, handler, element),
+              mqttService: widget.mqttService,
             ),
           // Draw arrows
           for (int i = 0; i < widget.dashboard.elements.length; i++)

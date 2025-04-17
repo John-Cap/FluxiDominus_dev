@@ -34,6 +34,7 @@ class MqttService extends ChangeNotifier {
 
   late FlowSketcher flowSketcher;
   late GlobalKey<FlowSketcherState> flowSketcherKey;
+  final flowtracking = ValueNotifier<Map<String, dynamic>>({});
 
   late ScriptGeneratorWidget scriptGeneratorWidget;
   late GlobalKey<ScriptGeneratorWidgetState> scriptGeneratorWidgetKey;
@@ -313,6 +314,9 @@ class MqttService extends ChangeNotifier {
         }
       }
       //
+    } else if (topic == MqttTopics.getUITopic("FlowTrackerIn")) {
+      final data = jsonDecode(message);
+      flowtracking.value = data;
     } else if (topic == "ui/opt/out") {
       if (messageMap.containsKey("optInfo")) {
         if (messageMap["optInfo"].containsKey("eval")) {

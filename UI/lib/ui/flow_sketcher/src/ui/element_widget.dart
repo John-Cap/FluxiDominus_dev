@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_flow_chart/includes/plutter.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/objects/diamond_widget.dart';
@@ -13,6 +14,7 @@ import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/resize_widget.dart';
 /// Widget that use [element] properties to display it on the dashboard scene
 class ElementWidget extends StatefulWidget {
   final Dashboard dashboard;
+  final MqttService mqttService;
   final FlowElement element;
   final Function(BuildContext context, Offset position)? onElementPressed;
   final Function(BuildContext context, Offset position)?
@@ -57,6 +59,7 @@ class ElementWidget extends StatefulWidget {
     this.onHandlerSecondaryTapped,
     this.onHandlerLongPressed,
     this.onHandlerSecondaryLongTapped,
+    required this.mqttService,
   });
 
   @override
@@ -166,15 +169,53 @@ class _ElementWidgetState extends State<ElementWidget> {
               color: Colors.transparent,
               child: element,
             ),
-            child: ElementHandlers(
-              dashboard: widget.dashboard,
-              element: widget.element,
-              handlerSize: widget.element.handlerSize,
-              onHandlerPressed: widget.onHandlerPressed,
-              onHandlerSecondaryTapped: widget.onHandlerSecondaryTapped,
-              onHandlerLongPressed: widget.onHandlerLongPressed,
-              onHandlerSecondaryLongTapped: widget.onHandlerSecondaryLongTapped,
-              child: element,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ElementHandlers(
+                  dashboard: widget.dashboard,
+                  element: widget.element,
+                  handlerSize: widget.element.handlerSize,
+                  onHandlerPressed: widget.onHandlerPressed,
+                  onHandlerSecondaryTapped: widget.onHandlerSecondaryTapped,
+                  onHandlerLongPressed: widget.onHandlerLongPressed,
+                  onHandlerSecondaryLongTapped:
+                      widget.onHandlerSecondaryLongTapped,
+                  child: element,
+                ),
+                Positioned(
+                  top: -18,
+                  left: 4,
+                  child: ValueListenableBuilder<Map<String, dynamic>>(
+                    valueListenable: widget.mqttService.flowtracking,
+                    builder: (context, flowData, _) {
+                      final route = flowData["route"] ?? {};
+                      final thisId = widget.element.id;
+
+                      if (route.containsKey(thisId)) {
+                        final info = route[thisId];
+                        print("Info for slug routing: $info");
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Front: ${info["slugFrontArrivesAt"]}–${info["slugFrontExitsAt"]} s",
+                              style: const TextStyle(
+                                  color: Colors.green, fontSize: 10),
+                            ),
+                            Text(
+                              "Tail: ${info["slugTailArrivesAt"]}–${info["slugTailExitsAt"]} s",
+                              style: const TextStyle(
+                                  color: Colors.blue, fontSize: 10),
+                            ),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ],
             ),
             onDragUpdate: (details) {
               widget.element.changePosition(details.globalPosition -
