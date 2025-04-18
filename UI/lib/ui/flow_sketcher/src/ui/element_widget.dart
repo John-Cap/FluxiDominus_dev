@@ -184,7 +184,7 @@ class _ElementWidgetState extends State<ElementWidget> {
                   child: element,
                 ),
                 Positioned(
-                  top: -18,
+                  top: -25,
                   left: 4,
                   child: ValueListenableBuilder<Map<String, dynamic>>(
                     valueListenable: widget.mqttService.flowtracking,
@@ -194,7 +194,6 @@ class _ElementWidgetState extends State<ElementWidget> {
 
                       if (route.containsKey(thisId)) {
                         final info = route[thisId];
-                        print("Info for slug routing: $info");
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

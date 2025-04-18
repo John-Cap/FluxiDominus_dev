@@ -52,16 +52,20 @@ class VolumeObject:
         self.lastAdvance=lastAdvance
         self.dispensing=dispensing
         self.remainderToDispense=None
-        #FLOW_PATH=FLOW_PATH
         self.remainder=remainder
         #Boolean flags
         #Settings and commands
+        self.reservoirVolume=0 #Volume depletes as contents are dispensed
+        self.isReservoir=False
+        
         self.settings=settings
         self.state=state
         self.availableCommands=availableCommands
         #Hashmap id generator
         self.id=VolumeObject.idCounter
         VolumeObject.idCounter+=1
+        
+        self.residenceTime=None
         
         #UIid
         self.uiId=uiId
@@ -129,6 +133,11 @@ class VolumeObject:
             if not comp in outletSet:
                 outletSet.append(comp)
 
+    def setReservoirVol(self,vol):
+        if not self.isReservoir:
+            print(f"{self} is not a reservoir object!")
+        self.reservoirVolume=vol
+
     def flowInto(self,outlet,setNameIn="DEFAULT",setNameOut=""):
         if setNameOut == "":
             setNameOut=f"{self.name}_{self.id}_to_{outlet.name}_{outlet.id}"
@@ -182,13 +191,13 @@ class VolumeObject:
         if not self.inlets:
             self.inlets = []
 
-        # If no inputs, propagate flowrateOut directly from flowrateIn
+        #If no inputs, propagate flowrateOut directly from flowrateIn
         if len(self.inlets) == 0:
             self.flowrateOut = self.flowrateIn
             FLOW_PATH.flowrateShifted=True
             return
 
-        # Calculate flowrate from all resolved inlets
+        #Calculate flowrate from all resolved inlets
         _flowrate = 0
         unresolved = False
 
@@ -198,10 +207,12 @@ class VolumeObject:
             else:
                 unresolved = True
 
-        # Update flowrate if all inputs are resolved
+        #Update flowrate if all inputs are resolved
         if not unresolved:
             self.flowrateIn = _flowrate
-            self.flowrateOut = _flowrate  # Assume a single outlet for now
+            self.flowrateOut = _flowrate  #Assume a single outlet for now
+            if _flowrate != 0:
+                self.residenceTime = (self.volume/_flowrate) #Residence time in min
             if not FLOW_PATH.flowrateShifted:
                 FLOW_PATH.flowrateShifted=True
         else:
@@ -244,6 +255,12 @@ class FlowPath:
         
         self.mqttService=None
         
+        self.initialized=False
+        
+        self.active=False
+        
+        self.flowLoopThread=None
+        
         global FLOW_PATH
         FLOW_PATH=self
         
@@ -257,12 +274,12 @@ class FlowPath:
         self._componentLookup = {}
         self._tubingCounter = 1
 
-        # Create components
+        #Create components
         for uid, entry in sketchJson.items():
             component = self._createComponent(uid, entry)
             self.segments.append(component)
 
-        # Wire up connections
+        #Wire up connections
         for uid, entry in sketchJson.items():
             source = self._componentLookup[uid]
             for targetUid in entry.get("flowsInto", []):
@@ -271,46 +288,89 @@ class FlowPath:
                 if target:
                     source.flowInto(target)
 
-        # print(f"Segments: {self.segments}")
-
-        # Register path
+        #Register path
         self.addPath(self.segments)
 
-        # Map possible outlet routing
+        #Map possible outlet routing
         self.mapPathTermini()
 
-    def publishSlugTrackingInfo(self, slug, origin, dest):
-        # Slug route: list of segments from origin to terminus
+    def publishSlugTrackingInfo(self, slug, origin=None, dest=None):
+        if not origin:
+            origin=slug.tailHost
+        if not dest:
+            dest=self.currTerminus
+        #Slug route: list of segments from origin to terminus
         print(f"Attempting to find path between {[origin,dest]}")
-        route = self._findPath(origin, dest)
+        route = self._findPath(origin, dest) #TODO - 'origin' is whichever component tail/head are in
         if not route:
             print("No path found")
             return
 
-        tracking = {}
-        curr_pos = 0
-        flowrate = slug.frontHost.flowrateOut  # mL/s
-
+        currCompFront = slug.frontHost
+        currCompTail = None
+        if slug.dispensed: #Is the tail moving yet?
+            currCompTail = slug.tailHost
+            
+        tracking={}
+        
+        timeStartFront=-1
+        timeEndFront=-1
+        timeStartTail=-1
+        timeEndTail=-1
+        
+        #Have the current positions been reached in loop?
+        tailHit=False if currCompTail else True
+        frontHit=False
+        
+        #0 if component already passed or NA
         for comp in route:
-            if not hasattr(comp, 'volume'):
-                continue  # Skip tubing or unknowns
 
-            comp_id = comp.uid if hasattr(comp, 'uid') else comp.name
-            vol = comp.volume  # mL
-            time_in = vol / flowrate if flowrate > 0 else 0 #TODO - Seems important, why not used?
-            time_start = curr_pos / flowrate if flowrate > 0 else 0
-            time_end = (curr_pos + vol) / flowrate if flowrate > 0 else 0
+            vol = comp.volume  #mL
+                            
+            if not tailHit:
+                if comp is currCompTail:
+                    tailHit=True
+                else:
+                    tracking[comp.uiId] = {
+                        "componentName": comp.name,
+                        "volume": vol,
+                        "slugFrontArrivesAt": timeStartFront,
+                        "slugFrontExitsAt": timeEndFront,
+                        "slugTailArrivesAt": timeStartTail,
+                        "slugTailExitsAt": timeEndTail,
+                    }
+                    continue #No point checking headHit
+                
+            if not frontHit:
+                if comp is currCompFront:
+                    frontHit=True
+            
+            if tailHit:
 
+                if slug.dispensed:
+                    if comp is currCompTail:
+                        timeEndTail = ((comp.residenceTime)*(1 - slug.tailHostPos/vol)) if vol != 0 else 0
+                    else:
+                        timeStartTail=timeEndTail
+                        timeEndTail=timeEndTail + comp.residenceTime
+                    
+                if frontHit:
+                    if comp is currCompFront:
+                        timeStartFront = -1
+                        timeEndFront  = ((comp.residenceTime)*(1 - slug.frontHostPos/vol)) if vol != 0 else 0
+                    else:
+                        timeStartFront = timeEndFront
+                        timeEndFront = timeEndFront + comp.residenceTime
+                
             tracking[comp.uiId] = {
                 "componentName": comp.name,
                 "volume": vol,
-                "slugFrontArrivesAt": time_start,
-                "slugFrontExitsAt": time_end,
-                "slugTailArrivesAt": (time_start + (slug.slugVolume() / flowrate)),
-                "slugTailExitsAt": (time_end + (slug.slugVolume() / flowrate)),
+                "flowrate":comp.flowrateOut,
+                "slugFrontArrivesAt": timeStartFront,
+                "slugFrontExitsAt": timeEndFront,
+                "slugTailArrivesAt": timeStartTail,
+                "slugTailExitsAt": timeEndTail,
             }
-
-            curr_pos += vol
 
         payload = {
             "slugId": str(slug.slugId),
@@ -327,11 +387,12 @@ class FlowPath:
     def dispense(self,vol=-1,comp=None):
         if not comp:
             comp=self.currRelOrigin
+        self.pullFromOrigin(comp)
         slug=comp.dispense(vol)
-        slug.targetTerminus=self._findComponentByName(self.currTerminus)
-        print(f"Dispensing slug {[slug,slug.targetTerminus]}")
+        slug.targetTerminus=self.currTerminus
+        print(f"Dispensing slug, from, to {[slug,comp,slug.targetTerminus.name]}")
         if self.publishUI:
-            self.publishSlugTrackingInfo(slug,comp,slug.targetTerminus)
+            self.publishSlugTrackingInfo(slug,comp.name,slug.targetTerminus.name)
         return slug
         
     def pullFromOrigin(self, origin):
@@ -343,7 +404,7 @@ class FlowPath:
             print("No terminus selected — cannot pull from origin.")
             return
 
-        # Use name strings if necessary
+        #Use name strings if necessary
         if isinstance(origin, str):
             origin = self._findComponentByName(origin)
         if isinstance(self.currTerminus, str):
@@ -355,7 +416,7 @@ class FlowPath:
             print("Could not resolve origin or terminus.")
             return
 
-        # Trace path from origin to terminus using graph traversal
+        #Trace path from origin to terminus using graph traversal
         path = self._findPath(origin, terminus)
         
         print(f"Priv func path: {[x.name for x in path]}")
@@ -364,18 +425,18 @@ class FlowPath:
             print(f"No valid path from {origin.name} to {terminus.name}")
             return
 
-        # For each segment in path, set correct outlet/inlet pairs
+        #For each segment in path, set correct outlet/inlet pairs
         for i in range(len(path) - 1):
             currComp = path[i]
             nextComp = path[i + 1]
 
-            # Set outlet
+            #Set outlet
             for setName, comps in currComp.outletSets.items():
                 if nextComp in comps:
                     currComp.switchToOutlets(setName)
                     break
 
-            # Set inlet
+            #Set inlet
             for setName, comps in nextComp.inletSets.items():
                 if currComp in comps:
                     nextComp.switchToInlets(setName)
@@ -391,7 +452,7 @@ class FlowPath:
         nodeColors = []
 
         for comp in self.segments:
-            # Enhanced Valve labeling
+            #Enhanced Valve labeling
             if isinstance(comp, Valve):
                 inletLabel = str([x.name for x in comp.inlets]) if comp.inlets else "None"
                 outletLabel = str([x.name for x in comp.outlets]) if comp.outlets else "None"
@@ -399,7 +460,7 @@ class FlowPath:
             else:
                 nodeLabels[comp] = comp.name
 
-            # Node coloring
+            #Node coloring
             if isinstance(comp, FlowOrigin):
                 nodeColors.append("green")
             elif isinstance(comp, FlowTerminus):
@@ -418,7 +479,7 @@ class FlowPath:
                     if target:
                         G.add_edge(comp, target)
 
-        # --- Assign node depth via topological sort ---
+        #--- Assign node depth via topological sort ---
         levels = defaultdict(list)
         nodeDepths = {}
         try:
@@ -432,13 +493,13 @@ class FlowPath:
             print("Topological sort error:", e)
             return
 
-        # --- Assign layout positions ---
+        #--- Assign layout positions ---
         pos = {}
         for depth, nodes in levels.items():
             for i, node in enumerate(nodes):
                 pos[node] = (depth * 2.0, -i * 2.0)
 
-        # --- Active routing check ---
+        #--- Active routing check ---
         terminus = self.currTerminus
         if isinstance(terminus, str):
             terminus = self._findComponentByName(terminus)
@@ -470,7 +531,7 @@ class FlowPath:
                     edges = list(zip(pathNodes[:-1], pathNodes[1:]))
                     pathEdges.extend(edges)
 
-        # --- Draw the graph ---
+        #--- Draw the graph ---
         fig, ax = plt.subplots(figsize=(14, 8))
         nx.draw(
             G, pos, with_labels=False, node_size=1500, node_color=nodeColors,
@@ -573,55 +634,55 @@ class FlowPath:
                 if not self.currRelOrigin and isinstance(x,FlowOrigin):
                     self.currRelOrigin=x
 
-    # def selectPath(self,pathName="DEFAULT"):
-    #     self.segments=self.segmentSets[pathName]
-    #     for _x in self.segments:
-    #         _x.associatedFlowPath=self
-    #         if not self.currRelOrigin and isinstance(_x,FlowOrigin):
-    #             self.currRelOrigin=_x
-    #     return self.segments
+    #def selectPath(self,pathName="DEFAULT"):
+    #    self.segments=self.segmentSets[pathName]
+    #    for _x in self.segments:
+    #        _x.associatedFlowPath=self
+    #        if not self.currRelOrigin and isinstance(_x,FlowOrigin):
+    #            self.currRelOrigin=_x
+    #    return self.segments
 
     def mapPathTermini(self):
-        # Identify all FlowTerminus objects
+        #Identify all FlowTerminus objects
         termini = [seg for seg in self.segments if isinstance(seg, FlowTerminus)]
 
         if not termini:
-            # Nothing to map
+            #Nothing to map
             return
 
-        # Identify the origin component from which we should map paths.
-        # If currRelOrigin is defined, use that. Otherwise, try to find a FlowOrigin or a node with no inlets.
+        #Identify the origin component from which we should map paths.
+        #If currRelOrigin is defined, use that. Otherwise, try to find a FlowOrigin or a node with no inlets.
         if self.currRelOrigin:
             start = self.currRelOrigin
         else:
-            # Try to find a FlowOrigin
+            #Try to find a FlowOrigin
             origins = [seg for seg in self.segments if isinstance(seg, FlowOrigin)]
             if origins:
                 start = origins[0]
             else:
-                # If no FlowOrigin, pick a segment with no inlets as start
-                # (i.e., a node that doesn't receive flow from any other node)
+                #If no FlowOrigin, pick a segment with no inlets as start
+                #(i.e., a node that doesn't receive flow from any other node)
                 candidates = []
                 for seg in self.segments:
-                    # If no inlets or inlets empty, it's a potential start
+                    #If no inlets or inlets empty, it's a potential start
                     if not seg.inlets or len(seg.inlets) == 0:
                         candidates.append(seg)
                 if candidates:
                     start = candidates[0]
                 else:
-                    # If no clear start found, just pick the first segment as start (fallback)
+                    #If no clear start found, just pick the first segment as start (fallback)
                     start = self.segments[0]
 
-        # Build a graph from segments: component -> list of downstream components
-        # Note: we consider the currently active outlets. If multiple outlet sets exist,
-        # we still have them stored in outletSets, but for pathfinding we just need the structure.
+        #Build a graph from segments: component -> list of downstream components
+        #Note: we consider the currently active outlets. If multiple outlet sets exist,
+        #we still have them stored in outletSets, but for pathfinding we just need the structure.
         self.graph = {}
         for seg in self.segments:
-            # Combine all possible outlet sets to know the potential downstream connections
-            # For mapping, we just want to know topologically who can be reached from who.
-            # We'll store the union of all outlets in current sets for pathfinding.
-            # If a component can switch outlets, they must appear in some outletSet.
-            # We'll union all sets to find possible paths.
+            #Combine all possible outlet sets to know the potential downstream connections
+            #For mapping, we just want to know topologically who can be reached from who.
+            #We'll store the union of all outlets in current sets for pathfinding.
+            #If a component can switch outlets, they must appear in some outletSet.
+            #We'll union all sets to find possible paths.
             
             downstream_nodes = set()
             if seg.outletSets:
@@ -632,36 +693,36 @@ class FlowPath:
 
             self.graph[seg] = list(downstream_nodes)
 
-        # Now for each terminus, find a path and record the necessary outlet sets
+        #Now for each terminus, find a path and record the necessary outlet sets
         self.addressesAll = {}
         for terminus in termini:
             path = self._findPath(start, terminus)
             if path is None:
-                # No path found to this terminus
+                #No path found to this terminus
                 continue
 
-            # path is a list of components from start to terminus
-            # We want to record the outlet sets chosen at branching components
-            # The address form: TerminusName: [ [ValveX, "A"], [ValveY, "B"] ... ]
+            #path is a list of components from start to terminus
+            #We want to record the outlet sets chosen at branching components
+            #The address form: TerminusName: [ [ValveX, "A"], [ValveY, "B"] ... ]
             addresses = []
 
-            # Iterate through path components and figure out which outletSet leads to the next node in the path
-            # We look at pairs (currentComp, nextComp)
+            #Iterate through path components and figure out which outletSet leads to the next node in the path
+            #We look at pairs (currentComp, nextComp)
             for i in range(len(path)-1):
                 currComp = path[i]
                 nextComp = path[i+1]
 
-                # Check if currComp has multiple outlet sets
+                #Check if currComp has multiple outlet sets
                 if currComp.outletSets and len(currComp.outletSets.keys()) > 1:
-                    # Find the outletSet that contains nextComp
+                    #Find the outletSet that contains nextComp
                     chosenSetName = None
                     for oSetName, oSetComps in currComp.outletSets.items():
                         if nextComp in oSetComps:
                             chosenSetName = oSetName
                             break
                     if chosenSetName is not None:
-                        # Also record inlet set name from nextComp
-                        # This assumes the inletSet that contains currComp is unique
+                        #Also record inlet set name from nextComp
+                        #This assumes the inletSet that contains currComp is unique
                         inletSetName = None
                         for iSetName, iSetComps in nextComp.inletSets.items():
                             print(f"Inletset names, components for {currComp}: {[iSetName,iSetComps]}")
@@ -685,17 +746,18 @@ class FlowPath:
             return
 
         theseAddresses = self.addressesAll[name]
-        # each element in theseAddresses is [component, outletSetName]
+        #each element in theseAddresses is [component, outletSetName]
         for comp, outletSetName, nextComp, inletSetName in theseAddresses:
             comp.switchToOutlets(outletSetName)
             if inletSetName:
                 nextComp.switchToInlets(inletSetName)
 
-        # Optionally, we can set self.currTerminus to the target terminus
-        # if we have a reference to the actual terminus object:
-        self.currTerminus = terminus
+        #Optionally, we can set self.currTerminus to the target terminus
+        #if we have a reference to the actual terminus object:
+        if not isinstance(terminus, str):
+            self.currTerminus = terminus
 
-    # Helper function to find a path from start to end
+    #Helper function to find a path from start to end
     def _findPath(self,start, end, visited=None):
         if visited is None:
             visited = set()
@@ -718,7 +780,7 @@ class FlowPath:
         
     def updateFlowrates(self):
 
-        # Build a dependency graph and calculate indegrees
+        #Build a dependency graph and calculate indegrees
         graph = defaultdict(list)
         indegree = defaultdict(int)
 
@@ -728,7 +790,7 @@ class FlowPath:
                 graph[inlet].append(segment)
                 indegree[segment] += 1
 
-        # Initialize queue with segments that have no unresolved dependencies (indegree == 0)
+        #Initialize queue with segments that have no unresolved dependencies (indegree == 0)
         queue = deque(segment for segment in self.segments if indegree[segment] == 0)
 
         resolved = set()
@@ -736,16 +798,16 @@ class FlowPath:
             current = queue.popleft()
             resolved.add(current)
 
-            # Update flowrates for the current segment
+            #Update flowrates for the current segment
             current.cumulativeFlowrates()
 
-            # Process downstream segments
+            #Process downstream segments
             for downstream in graph[current]:
                 indegree[downstream] -= 1
                 if indegree[downstream] == 0:
                     queue.append(downstream)
 
-        # Check if all segments were resolved
+        #Check if all segments were resolved
         if len(resolved) < len(self.segments):
             unresolved = [segment for segment in self.segments if segment not in resolved]
             raise ValueError(f"Unresolved dependencies in flow path: {unresolved}")
@@ -753,6 +815,12 @@ class FlowPath:
     def updateSlugs(self):
         for _x in self.segments:
             pass
+        
+    def allOrigins(self):
+        return [x for x in self.segments if isinstance(x,FlowOrigin)]
+    
+    def allTermini(self):
+        return [x for x in self.segments if isinstance(x,FlowTerminus)]
         
     def advanceSlugs(self):
         if self.flowrateShifted:
@@ -763,15 +831,21 @@ class FlowPath:
         _dT = _nowTime - self.timePrev
         self.timePrev = _nowTime
 
-        # Front movement
+        if _dT <= 0:
+            return
+
+        if len(self.slugs) == 0: #Flowpath is homogenous
+            return
+        
+        #Front movement
         for slug in self.slugs:
             _frontHost = slug.frontHost
             
-            # If frontHost is None, no advancement
+            #If frontHost is None, no advancement
             if _frontHost is None:
                 continue
             
-            # Check if outlet/inlets match and can actually flow forwards (TODO - Performance!)
+            #Check if outlet/inlets match and can actually flow forwards (TODO - Performance!)
             _nextHosts=_frontHost.outlets
             pathForward=False
             for x in _nextHosts:
@@ -781,73 +855,73 @@ class FlowPath:
             if not pathForward:
                 continue
 
-            # If slug has reached a terminus and is collecting
+            #If slug has reached a terminus and is collecting
             if isinstance(_frontHost, FlowTerminus):
                 if not slug.collected:
-                    # Increase collected volume by input flow * dT
+                    #Increase collected volume by input flow * dT
                     slug.collectedVol += _frontHost.flowrateIn * _dT
                     if slug.reachedTerminusAt == 0:
                         slug.reachedTerminusAt = _nowTime
-                # No further advancement needed for a terminus
+                #No further advancement needed for a terminus
                 continue
 
-            # Calculate displacement volume for this timestep
+            #Calculate displacement volume for this timestep
             _dV = _frontHost.flowrateOut * _dT
             _newVol = slug.frontHostPos + _dV
 
-            # Check if slug surpasses the current frontHost volume
+            #Check if slug surpasses the current frontHost volume
             if _newVol > _frontHost.volume:
-                # We have leftover volume after filling this component
+                #We have leftover volume after filling this component
                 _remainder = _newVol - _frontHost.volume
 
-                # Move to next host(s)
-                # Compute initial leftover time at the moment slug left _frontHost
+                #Move to next host(s)
+                #Compute initial leftover time at the moment slug left _frontHost
                 _currHostLeftToFill = (_frontHost.volume - slug.frontHostPos)
                 _frontHostFillTime = _currHostLeftToFill / _frontHost.flowrateOut
                 _dTRemainder = _dT - _frontHostFillTime
 
-                # Identify the next host
+                #Identify the next host
                 if len(_frontHost.outlets) == 0:
-                    # No next host, slug stops here
+                    #No next host, slug stops here
                     slug.frontHostPos = _frontHost.volume
                     continue
 
                 _nextHost = _frontHost.outlets[0]
 
-                # If flowrates differ between hosts, adjust volume based on the nextHost’s flowrate
+                #If flowrates differ between hosts, adjust volume based on the nextHost’s flowrate
                 if isinstance(_nextHost, FlowTerminus):
-                    # If next host is a terminus, slug enters and is collected
+                    #If next host is a terminus, slug enters and is collected
                     slug.frontHost = _nextHost
-                    # Adjust collectedVol by remainder
+                    #Adjust collectedVol by remainder
                     slug.collectedVol += _remainder
                     slug.frontHostPos = 0
                     slug.collecting = True
                 else:
-                    # If next host has a different flowrate
+                    #If next host has a different flowrate
                     if _nextHost.flowrateOut != _frontHost.flowrateOut:
                         _volumeAdd = _dTRemainder * _nextHost.flowrateOut
                     else:
                         _volumeAdd = _remainder
 
-                    # Now, potentially continue through multiple hosts
+                    #Now, potentially continue through multiple hosts
                     slug.frontHost = _nextHost
-                    # Use a loop to handle multiple jumps
+                    #Use a loop to handle multiple jumps
                     _stillToFill = _volumeAdd
 
                     while _stillToFill > _nextHost.volume:
-                        # Surpass this host entirely
+                        #Surpass this host entirely
                         _stillToFill -= _nextHost.volume
 
-                        # Move to the next outlet
+                        #Move to the next outlet
                         if len(_nextHost.outlets) == 0:
-                            # No further hosts, slug ends here
+                            #No further hosts, slug ends here
                             slug.frontHostPos = _nextHost.volume
                             break
 
                         _nextHost = _nextHost.outlets[0]
 
                         if isinstance(_nextHost, FlowTerminus):
-                            # Slug enters terminus and is collected
+                            #Slug enters terminus and is collected
                             slug.frontHost = _nextHost
                             slug.collectedVol += _stillToFill
                             slug.frontHostPos = 0
@@ -855,24 +929,24 @@ class FlowPath:
                             _stillToFill = 0
                             break
 
-                        # If next host differs in flowrate, we’d need additional logic here
-                        # But for now we assume the computed _stillToFill works directly
+                        #If next host differs in flowrate, we’d need additional logic here
+                        #But for now we assume the computed _stillToFill works directly
                         slug.frontHost = _nextHost
 
-                    # If we still have leftover that doesn't surpass the new host fully
+                    #If we still have leftover that doesn't surpass the new host fully
                     if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
                         slug.frontHostPos = _stillToFill
 
             else:
-                # Slug remains within the same host
+                #Slug remains within the same host
                 slug.frontHostPos = _newVol
 
-        # Tail movement
-        # Similar logic applies for the tail. We allow multiple host jumps if needed.
-        for slug in self.slugs[:]:  # copy list since we may remove slugs
+        #Tail movement
+        #Similar logic applies for the tail. We allow multiple host jumps if needed.
+        for slug in self.slugs[:]:  #copy list since we may remove slugs
             _tailHost = slug.tailHost
 
-            # If tail is in a terminus, slug is collected
+            #If tail is in a terminus, slug is collected
             if isinstance(_tailHost, FlowTerminus):
                 if not slug.collected:
                     slug.collected = True
@@ -881,10 +955,10 @@ class FlowPath:
             _dV = _tailHost.flowrateOut * _dT
             
             if _tailHost.dispensing:
-                # Only dispense up to the remainder
+                #Only dispense up to the remainder
                 if _tailHost.remainderToDispense is not None:
                     if _dV > _tailHost.remainderToDispense:
-                        # Cap _dV so we don't overshoot
+                        #Cap _dV so we don't overshoot
                         _dV = _tailHost.remainderToDispense
                 
                 slug.totalDispensed += _dV
@@ -893,32 +967,33 @@ class FlowPath:
                     _tailHost.remainderToDispense -= _dV
                     if _tailHost.remainderToDispense <= 0:
                         _tailHost.dispensing = False
+                        slug.dispensed=True
                         _tailHost.remainderToDispense = 0
                 continue
 
             _tailHostPos = slug.tailHostPos
             _newVol = _tailHostPos + _dV
 
-            # Check if we surpass the tailHost's volume
+            #Check if we surpass the tailHost's volume
             if _newVol > _tailHost.volume:
                 _remainder = _newVol - _tailHost.volume
 
-                # Move on to next host
+                #Move on to next host
                 if len(_tailHost.outlets) == 0:
-                    # No further hosts, so slug remains here
+                    #No further hosts, so slug remains here
                     slug.tailHostPos = _tailHost.volume
                     continue
 
                 _nextHost = _tailHost.outlets[0]
 
                 if isinstance(_nextHost, FlowTerminus):
-                    # Slug tail enters terminus - slug is collected
+                    #Slug tail enters terminus - slug is collected
                     slug.tailHost = _nextHost
                     slug.tailHostPos = 0
                     self.collectedSlugs.append(slug)
                     self.slugs.remove(slug)
                 else:
-                    # Handle multiple jumps for the tail
+                    #Handle multiple jumps for the tail
                     _currHostLeftToFill = (_tailHost.volume - _tailHostPos)
                     _tailHostFillTime = _currHostLeftToFill / (_tailHost.flowrateOut)
                     _dTRemainder = _dT - _tailHostFillTime
@@ -934,14 +1009,14 @@ class FlowPath:
                     while _stillToFill > _nextHost.volume:
                         _stillToFill -= _nextHost.volume
                         if len(_nextHost.outlets) == 0:
-                            # No further hosts for the tail
+                            #No further hosts for the tail
                             slug.tailHostPos = _nextHost.volume
                             break
 
                         _nextHost = _nextHost.outlets[0]
 
                         if isinstance(_nextHost, FlowTerminus):
-                            # Slug tail enters terminus
+                            #Slug tail enters terminus
                             slug.tailHost = _nextHost
                             slug.tailHostPos = 0
                             self.collectedSlugs.append(slug)
@@ -955,7 +1030,7 @@ class FlowPath:
                     if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
                         slug.tailHostPos = _stillToFill
             else:
-                # Tail remains within the same host
+                #Tail remains within the same host
                 slug.tailHostPos = _newVol
 
 class FlowComponent(VolumeObject):
@@ -1023,6 +1098,8 @@ class SlugNull:
         self.collected=collected
         
         self.targetTerminus=None
+        
+        self.dispensed=False #Done dispensing?
         
         self.totalDispensed=totalDispensed
         self.lastDispenseCycleTime=lastDispenseCycleTime
@@ -1142,11 +1219,11 @@ if __name__ == "__main__":
             exit()
         time.sleep(10)
 
-    # Create a thread for running the code
+    #Create a thread for running the code
     thread=threading.Thread(target=run_code)
     thread.start()
 
-    # Wait for the thread to finish
+    #Wait for the thread to finish
     thread.join()
     print("We're done here")
 

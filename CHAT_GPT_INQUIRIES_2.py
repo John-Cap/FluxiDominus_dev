@@ -1,4 +1,3 @@
-'''
 example={
   "reqUI": {
     "FlowSketcher": {
@@ -247,8 +246,8 @@ example={
     }
   }
 }
-'''
-example={"reqUI":{"FlowSketcher":{"parseFlowsketch":{"tubing_1_4a889913-c698-41c3-93f3-bf860593df09_69bc0196-6af1-4a55-bd13-d4da334fceaa":{"name":"Tubing","flowsInto":["69bc0196-6af1-4a55-bd13-d4da334fceaa"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"4a889913-c698-41c3-93f3-bf860593df09":{"name":"R4 (HPLC)","flowsInto":["tubing_1_4a889913-c698-41c3-93f3-bf860593df09_69bc0196-6af1-4a55-bd13-d4da334fceaa"],"deviceName":"vapourtecR4P1700","deviceType":"Pump","volume":5},"tubing_2_e7893729-adb2-45cf-9df0-cc676a173cdd_69bc0196-6af1-4a55-bd13-d4da334fceaa":{"name":"Tubing","flowsInto":["69bc0196-6af1-4a55-bd13-d4da334fceaa"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"e7893729-adb2-45cf-9df0-cc676a173cdd":{"name":"R4 (Peristaltic)","flowsInto":["tubing_2_e7893729-adb2-45cf-9df0-cc676a173cdd_69bc0196-6af1-4a55-bd13-d4da334fceaa"],"deviceName":"vapourtecR4P1700","deviceType":"vapourtecR4","volume":5},"tubing_3_94c0be2a-e39f-4ce2-8f31-33f564e0a798_4a889913-c698-41c3-93f3-bf860593df09":{"name":"Tubing","flowsInto":["4a889913-c698-41c3-93f3-bf860593df09"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"94c0be2a-e39f-4ce2-8f31-33f564e0a798":{"name":"Push","flowsInto":["tubing_3_94c0be2a-e39f-4ce2-8f31-33f564e0a798_4a889913-c698-41c3-93f3-bf860593df09"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"tubing_4_e0397260-6ca1-49fd-9534-0dec7e3acd22_e7893729-adb2-45cf-9df0-cc676a173cdd":{"name":"Tubing","flowsInto":["e7893729-adb2-45cf-9df0-cc676a173cdd"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"e0397260-6ca1-49fd-9534-0dec7e3acd22":{"name":"Stock","flowsInto":["tubing_4_e0397260-6ca1-49fd-9534-0dec7e3acd22_e7893729-adb2-45cf-9df0-cc676a173cdd"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"tubing_5_69bc0196-6af1-4a55-bd13-d4da334fceaa_bd3cb4c8-3974-40cd-9f80-12938588fc7d":{"name":"Tubing","flowsInto":["bd3cb4c8-3974-40cd-9f80-12938588fc7d"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"69bc0196-6af1-4a55-bd13-d4da334fceaa":{"name":"T-Piece","flowsInto":["tubing_5_69bc0196-6af1-4a55-bd13-d4da334fceaa_bd3cb4c8-3974-40cd-9f80-12938588fc7d"],"deviceName":"null","deviceType":"TPiece","volume":0.05},"tubing_6_bd3cb4c8-3974-40cd-9f80-12938588fc7d_ade611a3-3bc5-4421-9cf3-0ab9d37167d0":{"name":"Tubing","flowsInto":["ade611a3-3bc5-4421-9cf3-0ab9d37167d0"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"bd3cb4c8-3974-40cd-9f80-12938588fc7d":{"name":"Hotcoil (10 mL)","flowsInto":["tubing_6_bd3cb4c8-3974-40cd-9f80-12938588fc7d_ade611a3-3bc5-4421-9cf3-0ab9d37167d0"],"deviceName":"hotcoil1","deviceType":"Coil","volume":10},"tubing_7_ade611a3-3bc5-4421-9cf3-0ab9d37167d0_8605683b-4691-4a22-8307-ebdaac749462":{"name":"Tubing","flowsInto":["8605683b-4691-4a22-8307-ebdaac749462"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"ade611a3-3bc5-4421-9cf3-0ab9d37167d0":{"name":"BPR (5 Bar)","flowsInto":["tubing_7_ade611a3-3bc5-4421-9cf3-0ab9d37167d0_8605683b-4691-4a22-8307-ebdaac749462"],"deviceName":"null","deviceType":"BPR","volume":0.1},"8605683b-4691-4a22-8307-ebdaac749462":{"name":"Collection point","flowsInto":[],"deviceName":"null","deviceType":"FlowTerminus","volume":0}}}}}
+
+# example={"reqUI":{"FlowSketcher":{"parseFlowsketch":{"tubing_1_4a889913-c698-41c3-93f3-bf860593df09_69bc0196-6af1-4a55-bd13-d4da334fceaa":{"name":"Tubing","flowsInto":["69bc0196-6af1-4a55-bd13-d4da334fceaa"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"4a889913-c698-41c3-93f3-bf860593df09":{"name":"R4 (HPLC)","flowsInto":["tubing_1_4a889913-c698-41c3-93f3-bf860593df09_69bc0196-6af1-4a55-bd13-d4da334fceaa"],"deviceName":"vapourtecR4P1700","deviceType":"Pump","volume":5},"tubing_2_e7893729-adb2-45cf-9df0-cc676a173cdd_69bc0196-6af1-4a55-bd13-d4da334fceaa":{"name":"Tubing","flowsInto":["69bc0196-6af1-4a55-bd13-d4da334fceaa"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"e7893729-adb2-45cf-9df0-cc676a173cdd":{"name":"R4 (Peristaltic)","flowsInto":["tubing_2_e7893729-adb2-45cf-9df0-cc676a173cdd_69bc0196-6af1-4a55-bd13-d4da334fceaa"],"deviceName":"vapourtecR4P1700","deviceType":"vapourtecR4","volume":5},"tubing_3_94c0be2a-e39f-4ce2-8f31-33f564e0a798_4a889913-c698-41c3-93f3-bf860593df09":{"name":"Tubing","flowsInto":["4a889913-c698-41c3-93f3-bf860593df09"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"94c0be2a-e39f-4ce2-8f31-33f564e0a798":{"name":"Push","flowsInto":["tubing_3_94c0be2a-e39f-4ce2-8f31-33f564e0a798_4a889913-c698-41c3-93f3-bf860593df09"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"tubing_4_e0397260-6ca1-49fd-9534-0dec7e3acd22_e7893729-adb2-45cf-9df0-cc676a173cdd":{"name":"Tubing","flowsInto":["e7893729-adb2-45cf-9df0-cc676a173cdd"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"e0397260-6ca1-49fd-9534-0dec7e3acd22":{"name":"Stock","flowsInto":["tubing_4_e0397260-6ca1-49fd-9534-0dec7e3acd22_e7893729-adb2-45cf-9df0-cc676a173cdd"],"deviceName":"null","deviceType":"FlowOrigin","volume":0},"tubing_5_69bc0196-6af1-4a55-bd13-d4da334fceaa_bd3cb4c8-3974-40cd-9f80-12938588fc7d":{"name":"Tubing","flowsInto":["bd3cb4c8-3974-40cd-9f80-12938588fc7d"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"69bc0196-6af1-4a55-bd13-d4da334fceaa":{"name":"T-Piece","flowsInto":["tubing_5_69bc0196-6af1-4a55-bd13-d4da334fceaa_bd3cb4c8-3974-40cd-9f80-12938588fc7d"],"deviceName":"null","deviceType":"TPiece","volume":0.05},"tubing_6_bd3cb4c8-3974-40cd-9f80-12938588fc7d_ade611a3-3bc5-4421-9cf3-0ab9d37167d0":{"name":"Tubing","flowsInto":["ade611a3-3bc5-4421-9cf3-0ab9d37167d0"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"bd3cb4c8-3974-40cd-9f80-12938588fc7d":{"name":"Hotcoil (10 mL)","flowsInto":["tubing_6_bd3cb4c8-3974-40cd-9f80-12938588fc7d_ade611a3-3bc5-4421-9cf3-0ab9d37167d0"],"deviceName":"hotcoil1","deviceType":"Coil","volume":10},"tubing_7_ade611a3-3bc5-4421-9cf3-0ab9d37167d0_8605683b-4691-4a22-8307-ebdaac749462":{"name":"Tubing","flowsInto":["8605683b-4691-4a22-8307-ebdaac749462"],"deviceName":"tubingStandard","deviceType":"Tubing","volume":1},"ade611a3-3bc5-4421-9cf3-0ab9d37167d0":{"name":"BPR (5 Bar)","flowsInto":["tubing_7_ade611a3-3bc5-4421-9cf3-0ab9d37167d0_8605683b-4691-4a22-8307-ebdaac749462"],"deviceName":"null","deviceType":"BPR","volume":0.1},"8605683b-4691-4a22-8307-ebdaac749462":{"name":"Collection point","flowsInto":[],"deviceName":"null","deviceType":"FlowTerminus","volume":0}}}}}
 #######################################################################################
 ###Examples
 import json
@@ -260,7 +259,7 @@ from Core.Fluids.FlowPath import FlowOrigin, FlowTerminus, Valve
 
 if __name__ == "__main__":
     from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
-    
+
     updater = MqttService(broker_address="172.30.243.138")
     updater.connectDb=False
     updater.arm()
@@ -271,7 +270,7 @@ if __name__ == "__main__":
     while not updater.connected:
       time.sleep(0.5)
     
-    # updater.publish("ui/FlowSketcher",json.dumps(example))
+    updater.publish("ui/FlowSketcher",json.dumps(example))
     
     print("Waiting for termini mapping")
     
@@ -307,7 +306,8 @@ if __name__ == "__main__":
 
     # path.pullFromOrigin(path.currRelOrigin)
     print(f"ID example: {path.currRelOrigin.id}")
-    path.visualizeFlowPath()
+    # time.sleep(2)
+    # path.visualizeFlowPath()
     # print(f"Path name conf. : {[[path.currRelOrigin.name],[path._findComponentByName(path.currTerminus).name,path._findComponentByName('Waste').name]]}")
     # route=path._findPath(path.currRelOrigin,path._findComponentByName('Waste'))
     # print(f"The route: {[x.name for x in route]}")
@@ -315,24 +315,24 @@ if __name__ == "__main__":
 
     
     path.publishUI=True
-    slug=path.dispense(1)
-    
-    exit()
     
     #Flag variable to indicate whether the thread should continue running?
     running=True
-    time.sleep(1)
     
     firstSet=True
-    
+
     def run_code():
       global running
       global allSlugs
       global slug
       global path
       global firstSet
+      global terminusS
+      global originS
       _i=0
       while running:
+        
+        # time.sleep(1)
 
         if not firstSet:
           # path.currRelOrigin.setFlowrate(3/60)
@@ -348,15 +348,29 @@ if __name__ == "__main__":
           allSlugs.slugs.append(slug)
         else:
           firstSet=False
+          print(f"Curr rel origin, terminus: {path.currRelOrigin.name,path.currTerminus.name}")
+          slug=path.dispense(1,path.currRelOrigin)
+          originS=slug.tailHost
+          terminusS=(path._findComponentByName(path.currTerminus))
 
         # path.visualizeFlowPath()
                   
         _now=time.perf_counter()
+        _nowSlug=_now
         _nowRefresh=_now
         _jiggleFlowrate=time.perf_counter() + 5
-        #path.timePrev=time.perf_counter()
+        updated=False
         while not (isinstance(slug.tailHost,FlowTerminus)):
             path.advanceSlugs()
+            
+            #Test publishing of slug tracking infor
+            if not updated:
+              if slug.dispensed:
+                if time.perf_counter() - _nowSlug > 25:
+                  path.publishSlugTrackingInfo(slug,originS,terminusS)
+                  updated=True
+              else:
+                _nowSlug=time.perf_counter()
             if time.time() - _nowRefresh > 1:
                 _vol=slug.slugVolume()
                 _nowRefresh=time.time()
