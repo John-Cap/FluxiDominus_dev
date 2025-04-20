@@ -821,7 +821,7 @@ class FlowPath:
     
     def allTermini(self):
         return [x for x in self.segments if isinstance(x,FlowTerminus)]
-        
+
     def advanceSlugs(self):
         if self.flowrateShifted:
             self.updateFlowrates()
@@ -845,6 +845,7 @@ class FlowPath:
             if _frontHost is None:
                 continue
 
+            
             #If slug has reached a terminus and is collecting
             if isinstance(_frontHost, FlowTerminus):
                 if not slug.collected:
@@ -893,7 +894,7 @@ class FlowPath:
                     #If next host is a terminus, slug enters and is collected
                     slug.frontHost = _nextHost
                     #Adjust collectedVol by remainder
-                    slug.collectedVol += _remainder
+                    # slug.collectedVol += _remainder
                     slug.frontHostPos = 0
                     slug.collecting = True
                 else:
@@ -923,7 +924,7 @@ class FlowPath:
                         if isinstance(_nextHost, FlowTerminus):
                             #Slug enters terminus and is collected
                             slug.frontHost = _nextHost
-                            slug.collectedVol += _stillToFill
+                            # slug.collectedVol += _stillToFill
                             slug.frontHostPos = 0
                             slug.collecting = True
                             _stillToFill = 0
@@ -934,7 +935,7 @@ class FlowPath:
                         slug.frontHost = _nextHost
 
                     #If we still have leftover that doesn't surpass the new host fully
-                    if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
+                    if 0 < _stillToFill <= _nextHost.volume:
                         slug.frontHostPos = _stillToFill
 
             else:
@@ -950,7 +951,9 @@ class FlowPath:
             if isinstance(_tailHost, FlowTerminus):
                 if not slug.collected:
                     slug.collected = True
-                # continue
+                    self.collectedSlugs.append(slug)
+                    self.slugs.remove(slug)
+                continue
 
             _dV = _tailHost.flowrateOut * _dT
             
@@ -988,6 +991,7 @@ class FlowPath:
 
                 if isinstance(_nextHost, FlowTerminus):
                     #Slug tail enters terminus - slug is collected
+                    slug.collectedVol -= _remainder
                     slug.tailHost = _nextHost
                     slug.tailHostPos = 0
                     self.collectedSlugs.append(slug)
@@ -1017,6 +1021,7 @@ class FlowPath:
 
                         if isinstance(_nextHost, FlowTerminus):
                             #Slug tail enters terminus
+                            slug.collectedVol -= _stillToFill
                             slug.tailHost = _nextHost
                             slug.tailHostPos = 0
                             self.collectedSlugs.append(slug)

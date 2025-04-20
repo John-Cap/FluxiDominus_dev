@@ -1,283 +1,220 @@
-{
-  "slugId": "c39065e1-a689-485a-b499-55723d6b619a",
-  "slugName": 1,
-  "slugVolume": 0,
-  "route": {
-    "ad33a7da-5b9d-4963-b9b3-9ed61d029bd2": {
-      "componentName": "AllylIsoval",
-      "volume": 0,
-      "flowrate": 0.03333333333333333,
-      "slugFrontArrivesAt": -1,
-      "slugFrontExitsAt": 0,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_3_ad33a7da-5b9d-4963-b9b3-9ed61d029bd2_11aff382-a458-4a25-a311-db62c3c45843": {
-      "componentName": "TUBE_3",
-      "volume": 0.123,
-      "flowrate": 0.03333333333333333,
-      "slugFrontArrivesAt": 0,
-      "slugFrontExitsAt": 3.69,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "11aff382-a458-4a25-a311-db62c3c45843": {
-      "componentName": "SR_A",
-      "volume": 0.25,
-      "flowrate": 0.03333333333333333,
-      "slugFrontArrivesAt": 3.69,
-      "slugFrontExitsAt": 11.19,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_2_11aff382-a458-4a25-a311-db62c3c45843_3f6e37eb-40ee-4ed3-862e-d9800cd0c43e": {
-      "componentName": "TUBE_2",
-      "volume": 0.123,
-      "flowrate": 0.03333333333333333,
-      "slugFrontArrivesAt": 11.19,
-      "slugFrontExitsAt": 14.879999999999999,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "3f6e37eb-40ee-4ed3-862e-d9800cd0c43e": {
-      "componentName": "R4 Pump A",
-      "volume": 2,
-      "flowrate": 0.03333333333333333,
-      "slugFrontArrivesAt": 14.879999999999999,
-      "slugFrontExitsAt": 74.88,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_1_3f6e37eb-40ee-4ed3-862e-d9800cd0c43e_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9": {
-      "componentName": "TUBE_1",
-      "volume": 0.123,
-      "flowrate": 0.03333333333333333,
-      "slugFrontArrivesAt": 74.88,
-      "slugFrontExitsAt": 78.57,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "29b52a6f-8bb5-41c0-baa8-3bab6d685ae9": {
-      "componentName": "StaticMixer",
-      "volume": 0.05,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 78.57,
-      "slugFrontExitsAt": 79.32,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_9_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9_d25f31e2-002b-48c7-b060-992d321ed9c4": {
-      "componentName": "TUBE_9",
-      "volume": 0.123,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 79.32,
-      "slugFrontExitsAt": 81.16499999999999,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "d25f31e2-002b-48c7-b060-992d321ed9c4": {
-      "componentName": "Hotcoil_1",
-      "volume": 5,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 81.16499999999999,
-      "slugFrontExitsAt": 156.165,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_10_d25f31e2-002b-48c7-b060-992d321ed9c4_fdcc2834-213b-42f7-bdde-b38e6a5c8172": {
-      "componentName": "TUBE_10",
-      "volume": 0.123,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 156.165,
-      "slugFrontExitsAt": 158.01,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "fdcc2834-213b-42f7-bdde-b38e6a5c8172": {
-      "componentName": "ReactIR 702L1",
-      "volume": 0.25,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 158.01,
-      "slugFrontExitsAt": 161.76,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_11_fdcc2834-213b-42f7-bdde-b38e6a5c8172_e64f27b7-c346-4c86-94cd-c00398796894": {
-      "componentName": "TUBE_11",
-      "volume": 0.123,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 161.76,
-      "slugFrontExitsAt": 163.605,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "e64f27b7-c346-4c86-94cd-c00398796894": {
-      "componentName": "WasteOrCollect",
-      "volume": 0.25,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 163.605,
-      "slugFrontExitsAt": 167.355,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_13_e64f27b7-c346-4c86-94cd-c00398796894_f14f0372-3504-4559-ad7e-6a8661fdb7b4": {
-      "componentName": "TUBE_13",
-      "volume": 0.123,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 167.355,
-      "slugFrontExitsAt": 169.2,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "f14f0372-3504-4559-ad7e-6a8661fdb7b4": {
-      "componentName": "Waste",
-      "volume": 0,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 169.2,
-      "slugFrontExitsAt": 169.2,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    }
-  },
-  "timestamp": 1744907380.2309084
-}
+I'm not following. I labelled all mentions of FlowTerminus with (#) numbers, explain again:
 
-{
-  "slugId": "af0add30-9069-4818-9307-54d7aeb0c6eb",
-  "slugName": 2,
-  "slugVolume": 1.001348286666666,
-  "route": {
-    "ad33a7da-5b9d-4963-b9b3-9ed61d029bd2": {
-      "componentName": "AllylIsoval",
-      "volume": 0,
-      "slugFrontArrivesAt": -1,
-      "slugFrontExitsAt": -1,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_3_ad33a7da-5b9d-4963-b9b3-9ed61d029bd2_11aff382-a458-4a25-a311-db62c3c45843": {
-      "componentName": "TUBE_3",
-      "volume": 0.123,
-      "slugFrontArrivesAt": -1,
-      "slugFrontExitsAt": -1,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "11aff382-a458-4a25-a311-db62c3c45843": {
-      "componentName": "SR_A",
-      "volume": 0.25,
-      "slugFrontArrivesAt": -1,
-      "slugFrontExitsAt": -1,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "tubing_2_11aff382-a458-4a25-a311-db62c3c45843_3f6e37eb-40ee-4ed3-862e-d9800cd0c43e": {
-      "componentName": "TUBE_2",
-      "volume": 0.123,
-      "slugFrontArrivesAt": -1,
-      "slugFrontExitsAt": -1,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": -1
-    },
-    "3f6e37eb-40ee-4ed3-862e-d9800cd0c43e": {
-      "componentName": "R4 Pump A",
-      "volume": 2,
-      "flowrate": 0.03333333333333333,
-      "slugFrontArrivesAt": -1,
-      "slugFrontExitsAt": 19.915500900000108,
-      "slugTailArrivesAt": -1,
-      "slugTailExitsAt": 49.955949500000095
-    },
-    "tubing_1_3f6e37eb-40ee-4ed3-862e-d9800cd0c43e_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9": {
-      "componentName": "TUBE_1",
-      "volume": 0.123,
-      "flowrate": 0.03333333333333333,
-      "slugFrontArrivesAt": 19.915500900000108,
-      "slugFrontExitsAt": 23.60550090000011,
-      "slugTailArrivesAt": 49.955949500000095,
-      "slugTailExitsAt": 53.64594950000009
-    },
-    "29b52a6f-8bb5-41c0-baa8-3bab6d685ae9": {
-      "componentName": "StaticMixer",
-      "volume": 0.05,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 23.60550090000011,
-      "slugFrontExitsAt": 24.35550090000011,
-      "slugTailArrivesAt": 53.64594950000009,
-      "slugTailExitsAt": 54.39594950000009
-    },
-    "tubing_9_29b52a6f-8bb5-41c0-baa8-3bab6d685ae9_d25f31e2-002b-48c7-b060-992d321ed9c4": {
-      "componentName": "TUBE_9",
-      "volume": 0.123,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 24.35550090000011,
-      "slugFrontExitsAt": 26.200500900000108,
-      "slugTailArrivesAt": 54.39594950000009,
-      "slugTailExitsAt": 56.24094950000009
-    },
-    "d25f31e2-002b-48c7-b060-992d321ed9c4": {
-      "componentName": "Hotcoil_1",
-      "volume": 5,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 26.200500900000108,
-      "slugFrontExitsAt": 101.20050090000011,
-      "slugTailArrivesAt": 56.24094950000009,
-      "slugTailExitsAt": 131.24094950000008
-    },
-    "tubing_10_d25f31e2-002b-48c7-b060-992d321ed9c4_fdcc2834-213b-42f7-bdde-b38e6a5c8172": {
-      "componentName": "TUBE_10",
-      "volume": 0.123,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 101.20050090000011,
-      "slugFrontExitsAt": 103.0455009000001,
-      "slugTailArrivesAt": 131.24094950000008,
-      "slugTailExitsAt": 133.08594950000008
-    },
-    "fdcc2834-213b-42f7-bdde-b38e6a5c8172": {
-      "componentName": "ReactIR 702L1",
-      "volume": 0.25,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 103.0455009000001,
-      "slugFrontExitsAt": 106.7955009000001,
-      "slugTailArrivesAt": 133.08594950000008,
-      "slugTailExitsAt": 136.83594950000008
-    },
-    "tubing_11_fdcc2834-213b-42f7-bdde-b38e6a5c8172_e64f27b7-c346-4c86-94cd-c00398796894": {
-      "componentName": "TUBE_11",
-      "volume": 0.123,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 106.7955009000001,
-      "slugFrontExitsAt": 108.6405009000001,
-      "slugTailArrivesAt": 136.83594950000008,
-      "slugTailExitsAt": 138.68094950000008
-    },
-    "e64f27b7-c346-4c86-94cd-c00398796894": {
-      "componentName": "WasteOrCollect",
-      "volume": 0.25,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 108.6405009000001,
-      "slugFrontExitsAt": 112.3905009000001,
-      "slugTailArrivesAt": 138.68094950000008,
-      "slugTailExitsAt": 142.43094950000008
-    },
-    "tubing_12_e64f27b7-c346-4c86-94cd-c00398796894_27151161-8edf-4152-9ea6-ce1df14f6f46": {
-      "componentName": "TUBE_12",
-      "volume": 0.123,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 112.3905009000001,
-      "slugFrontExitsAt": 114.2355009000001,
-      "slugTailArrivesAt": 142.43094950000008,
-      "slugTailExitsAt": 144.27594950000008
-    },
-    "27151161-8edf-4152-9ea6-ce1df14f6f46": {
-      "componentName": "Product",
-      "volume": 0,
-      "flowrate": 0.06666666666666667,
-      "slugFrontArrivesAt": 114.2355009000001,
-      "slugFrontExitsAt": 114.2355009000001,
-      "slugTailArrivesAt": 144.27594950000008,
-      "slugTailExitsAt": 144.27594950000008
-    }
-  },
-  "timestamp": 1744907703.64111
-}
+    def advanceSlugs(self):
+        if self.flowrateShifted:
+            self.updateFlowrates()
+            self.flowrateShifted = False
+
+        _nowTime = time.perf_counter()
+        _dT = _nowTime - self.timePrev
+        self.timePrev = _nowTime
+
+        if _dT <= 0:
+            return
+
+        if len(self.slugs) == 0: #Flowpath is homogenous
+            return
+        
+        #Front movement
+        for slug in self.slugs:
+            _frontHost = slug.frontHost
+            
+            #If frontHost is None, no advancement
+            if _frontHost is None:
+                continue
+
+            (1)
+            #If slug has reached a terminus and is collecting
+            if isinstance(_frontHost, FlowTerminus):
+                if not slug.collected:
+                    #Increase collected volume by input flow * dT
+                    slug.collectedVol += _frontHost.flowrateIn * _dT
+                    if slug.reachedTerminusAt == 0:
+                        slug.reachedTerminusAt = _nowTime
+                #No further advancement needed for a terminus
+                continue
+            
+            #Check if outlet/inlets match and can actually flow forwards (TODO - Performance!)
+            _nextHosts=_frontHost.outlets
+            pathForward=False
+            for x in _nextHosts:
+                if _frontHost in x.inlets:
+                    pathForward=True
+                    break
+            if not pathForward:
+                continue
+            
+            #Calculate displacement volume for this timestep
+            _dV = _frontHost.flowrateOut * _dT
+            _newVol = slug.frontHostPos + _dV
+
+            #Check if slug surpasses the current frontHost volume
+            if _newVol > _frontHost.volume:
+                #We have leftover volume after filling this component
+                _remainder = _newVol - _frontHost.volume
+
+                #Move to next host(s)
+                #Compute initial leftover time at the moment slug left _frontHost
+                _currHostLeftToFill = (_frontHost.volume - slug.frontHostPos)
+                _frontHostFillTime = _currHostLeftToFill / _frontHost.flowrateOut
+                _dTRemainder = _dT - _frontHostFillTime
+
+                #Identify the next host
+                if len(_frontHost.outlets) == 0:
+                    #No next host, slug stops here
+                    slug.frontHostPos = _frontHost.volume
+                    continue
+
+                _nextHost = _frontHost.outlets[0]
+
+                #If flowrates differ between hosts, adjust volume based on the nextHost’s flowrate
+                (2)
+                if isinstance(_nextHost, FlowTerminus):
+                    #If next host is a terminus, slug enters and is collected
+                    slug.frontHost = _nextHost
+                    #Adjust collectedVol by remainder
+                    slug.collectedVol += _remainder
+                    slug.frontHostPos = 0
+                    slug.collecting = True
+                else:
+                    #If next host has a different flowrate
+                    if _nextHost.flowrateOut != _frontHost.flowrateOut:
+                        _volumeAdd = _dTRemainder * _nextHost.flowrateOut
+                    else:
+                        _volumeAdd = _remainder
+
+                    #Now, potentially continue through multiple hosts
+                    slug.frontHost = _nextHost
+                    #Use a loop to handle multiple jumps
+                    _stillToFill = _volumeAdd
+
+                    while _stillToFill > _nextHost.volume:
+                        #Surpass this host entirely
+                        _stillToFill -= _nextHost.volume
+
+                        #Move to the next outlet
+                        if len(_nextHost.outlets) == 0:
+                            #No further hosts, slug ends here
+                            slug.frontHostPos = _nextHost.volume
+                            break
+
+                        _nextHost = _nextHost.outlets[0]
+
+                        (3)
+                        if isinstance(_nextHost, FlowTerminus):
+                            #Slug enters terminus and is collected
+                            slug.frontHost = _nextHost
+                            slug.collectedVol += _stillToFill
+                            slug.frontHostPos = 0
+                            slug.collecting = True
+                            _stillToFill = 0
+                            break
+
+                        #If next host differs in flowrate, we’d need additional logic here
+                        #But for now we assume the computed _stillToFill works directly
+                        slug.frontHost = _nextHost
+
+                    #If we still have leftover that doesn't surpass the new host fully
+                    if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
+                        slug.frontHostPos = _stillToFill
+
+            else:
+                #Slug remains within the same host
+                slug.frontHostPos = _newVol
+
+        #Tail movement
+        #Similar logic applies for the tail. We allow multiple host jumps if needed.
+        for slug in self.slugs[:]:  #copy list since we may remove slugs
+            _tailHost = slug.tailHost
+
+            #If tail is in a terminus, slug is collected
+            (4)
+            if isinstance(_tailHost, FlowTerminus):
+                if not slug.collected:
+                    slug.collected = True
+                    self.collectedSlugs.append(slug)
+                    self.slugs.remove(slug)
+                continue
+
+            _dV = _tailHost.flowrateOut * _dT
+            
+            if _tailHost.dispensing:
+                #Only dispense up to the remainder
+                if _tailHost.remainderToDispense is not None:
+                    if _dV > _tailHost.remainderToDispense:
+                        #Cap _dV so we don't overshoot
+                        _dV = _tailHost.remainderToDispense
+                
+                slug.totalDispensed += _dV
+
+                if _tailHost.remainderToDispense is not None:
+                    _tailHost.remainderToDispense -= _dV
+                    if _tailHost.remainderToDispense <= 0:
+                        _tailHost.dispensing = False
+                        slug.dispensed=True
+                        _tailHost.remainderToDispense = 0
+                continue
+
+            _tailHostPos = slug.tailHostPos
+            _newVol = _tailHostPos + _dV
+
+            #Check if we surpass the tailHost's volume
+            if _newVol > _tailHost.volume:
+                _remainder = _newVol - _tailHost.volume
+
+                #Move on to next host
+                if len(_tailHost.outlets) == 0:
+                    #No further hosts, so slug remains here
+                    slug.tailHostPos = _tailHost.volume
+                    continue
+
+                _nextHost = _tailHost.outlets[0]
+
+                (5)
+                if isinstance(_nextHost, FlowTerminus):
+                    #Slug tail enters terminus - slug is collected
+                    slug.tailHost = _nextHost
+                    slug.tailHostPos = 0
+                    self.collectedSlugs.append(slug)
+                    self.slugs.remove(slug)
+                else:
+                    #Handle multiple jumps for the tail
+                    _currHostLeftToFill = (_tailHost.volume - _tailHostPos)
+                    _tailHostFillTime = _currHostLeftToFill / (_tailHost.flowrateOut)
+                    _dTRemainder = _dT - _tailHostFillTime
+
+                    if _nextHost.flowrateOut != _tailHost.flowrateOut:
+                        _volumeAdd = _dTRemainder * _nextHost.flowrateOut
+                    else:
+                        _volumeAdd = _remainder
+
+                    slug.tailHost = _nextHost
+                    _stillToFill = _volumeAdd
+
+                    while _stillToFill > _nextHost.volume:
+                        _stillToFill -= _nextHost.volume
+                        if len(_nextHost.outlets) == 0:
+                            #No further hosts for the tail
+                            slug.tailHostPos = _nextHost.volume
+                            break
+
+                        _nextHost = _nextHost.outlets[0]
+
+                        (6)
+                        if isinstance(_nextHost, FlowTerminus):
+                            #Slug tail enters terminus
+                            slug.tailHost = _nextHost
+                            slug.tailHostPos = 0
+                            self.collectedSlugs.append(slug)
+                            if slug in self.slugs:
+                                self.slugs.remove(slug)
+                            _stillToFill = 0
+                            break
+
+                        slug.tailHost = _nextHost
+
+                    if 0 < _stillToFill <= _nextHost.volume and not isinstance(_nextHost, FlowTerminus):
+                        slug.tailHostPos = _stillToFill
+            else:
+                #Tail remains within the same host
+                slug.tailHostPos = _newVol

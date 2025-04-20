@@ -4,6 +4,7 @@ import random
 import time
 from Core.Fluids.FlowPath import Valve
 from OPTIMIZATION_TEMP.Plutter_TEMP.plutter import MqttService
+import os
 
 
 if __name__ == "__main__":
@@ -283,33 +284,68 @@ if __name__ == "__main__":
     _now=time.time()
     _nowRefresh=time.time()
     
-    while doExample and numOfDisp < 3:
+    while doExample and numOfDisp < 15:
+    
+        report=[]
     
         thisOrigin=random.choice(origins)
         thisTerminus=random.choice(termini)
         path.setCurrDestination(thisTerminus)
+        report.append(f"Round #{numOfDisp + 1}")
+        report.append(f"Setting current destination to {thisTerminus.name}")
         
-        print(f"CurrOrigin, currTerminus: {[thisOrigin.name,thisTerminus.name]}")
-        # print([x.name for x in path.segments if isinstance(x,Valve)])
-        
-        path.visualizeFlowPath()
-        
+        # path.visualizeFlowPath()
         for x in origins:
-            x.setFlowrate(1/60)
-        thisOrigin.setFlowrate(2/60)
-        path.pullFromOrigin(thisOrigin)
-        slug=thisOrigin.dispense(1)
-        while path.collectedSlugs != numCollectedSlugs:
+            setFlow=random.choice([2,3,4,5,6])
+            x.setFlowrate(setFlow/60)
+            report.append(f"Flowrate for {x.name} set to {setFlow}")
+        
+        amountToDispense=random.choice([1,2,3,4,5])
+        report.append(f"{path.currRelOrigin.name} will dispense {amountToDispense} mL")
+        slug=path.dispense(amountToDispense)
+        report.append(f"Slug dispensing from {slug.tailHost.name}")
+        print(f"Slug dispensing from {slug.tailHost.name}")
+        time.sleep(2)
+        expectedSlugSize=(thisTerminus.flowrateIn/slug.tailHost.flowrateOut)*amountToDispense
+        report.append(f"Expected slug volume at collection: {expectedSlugSize} mL")
+        print(f"Expected slug volume at collection: {expectedSlugSize} mL")
+        
+        stampStamp=time.time()
+        
+        while len(path.collectedSlugs) != numCollectedSlugs:
             if time.time() - _nowRefresh > 1:
                 _vol=slug.slugVolume()
                 _nowRefresh=time.time()
                 rep=f"--------------------------------------------------\nTime: {round(time.time() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL\n Current valve states:\n {
-                    [[x.name,x.inlets[0].name,x.outlets[0].name] for x in path.segments if isinstance(x,Valve)]  
+                    [[x.flowrateOut,x.name,x.inlets[0].name,x.outlets[0].name] for x in path.segments if isinstance(x,Valve)]  
                 }"
                 print(rep)
+                print(f"Slugs: {path.slugs} and {path.collectedSlugs}")
             time.sleep(2)
         
         numCollectedSlugs+=1
         numOfDisp+=1
+        rep=f"--------------------------------------------------\nTime: {round(time.time() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL\n Current valve states:\n {
+            [[x.name,x.inlets[0].name,x.outlets[0].name] for x in path.segments if isinstance(x,Valve)]  
+        }"
+        print(rep)
+        print(f"Slugs: {path.slugs} and {[x.collectedVol for x in path.collectedSlugs]}")
+        report.append(f"Slug #{numCollectedSlugs - 1} collected with volume {slug.collectedVol} at {slug.frontHost.name} after being routed to {thisTerminus.name}")
+        report.append(f"All this took {time.time() - stampStamp} seconds")
+        # Path to desktop
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+
+        # File path
+        file_path = os.path.join(desktop, "output.txt")
+
+        # Write to file
+        with open(file_path, "a") as f:
+            for x in report:
+                f.write(x + "\n")                
+            f.write(".........................." + "\n")
+
+        print(f"Wrote to: {file_path}")
+        
+        time.sleep(2)
         
         
