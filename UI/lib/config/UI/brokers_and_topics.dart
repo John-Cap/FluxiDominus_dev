@@ -37,7 +37,10 @@ abstract class MqttTopics {
     "GraphWidgets": 'ui/GraphWidgets',
     "dbStreaming": "ui/dbStreaming/out", //TODO...'out' is relative to Python
     //"dbCmndIn": "ui/dbCmnd/in",
-    "dbCmndRet": "ui/dbCmnd/ret"
+    "dbCmndRet": "ui/dbCmnd/ret",
+
+    // "uiPingOut":"ui/ping/in",
+    "uiPingIn": "ui/ping/out"
   };
 
   static String getUITopic(String type) {

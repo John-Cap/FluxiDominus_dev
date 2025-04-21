@@ -267,7 +267,7 @@ if __name__ == "__main__":
         time.sleep(1)
     
     path=mqttService.flowSystem.flowpath
-    path.mqttService.publish("ui/FlowSketcher",json.dumps(example))
+    # path.mqttService.publish("ui/FlowSketcher",json.dumps(example))
     
     while not path.terminiMapped:
         time.sleep(1)
@@ -285,8 +285,14 @@ if __name__ == "__main__":
     _nowRefresh=time.time()
     
     while doExample and numOfDisp < 15:
-    
-        report=[]
+        
+        print("Waiting for go-ahead from UI")
+        while mqttService.abort:
+            time.sleep(1)
+        while not mqttService.runTest:
+            time.sleep(1)
+            
+        report=[]   
     
         thisOrigin=random.choice(origins)
         thisTerminus=random.choice(termini)
@@ -299,6 +305,8 @@ if __name__ == "__main__":
             setFlow=random.choice([2,3,4,5,6])
             x.setFlowrate(setFlow/60)
             report.append(f"Flowrate for {x.name} set to {setFlow}")
+            
+        path.pullFromOrigin(random.choice(origins))
         
         amountToDispense=random.choice([1,2,3,4,5])
         report.append(f"{path.currRelOrigin.name} will dispense {amountToDispense} mL")
@@ -310,9 +318,11 @@ if __name__ == "__main__":
         report.append(f"Expected slug volume at collection: {expectedSlugSize} mL")
         print(f"Expected slug volume at collection: {expectedSlugSize} mL")
         
+        path.publishSlugTrackingInfo(slug)
+        
         stampStamp=time.time()
         
-        while len(path.collectedSlugs) != numCollectedSlugs:
+        while len(path.collectedSlugs) != numCollectedSlugs and (mqttService.runTest and not mqttService.abort):
             if time.time() - _nowRefresh > 1:
                 _vol=slug.slugVolume()
                 _nowRefresh=time.time()

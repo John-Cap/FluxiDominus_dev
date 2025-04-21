@@ -36,7 +36,10 @@ class MqttTopics:
         #"dbStreamingOut":"ui/dbStreaming/out",
         "dbCmndIn":"ui/dbCmnd/in", #Ui posts here
         "uiInfoOut":"ui/info/out",
-        "uiInfoIn":"ui/info/in"
+        "uiInfoIn":"ui/info/in",
+        
+        "uiPingOut":"ui/ping/out",
+        # "uiPingIn":"ui/ping/in"
     }
 
     topicsOptimization = {

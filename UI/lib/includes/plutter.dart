@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -35,6 +36,7 @@ class MqttService extends ChangeNotifier {
   late FlowSketcher flowSketcher;
   late GlobalKey<FlowSketcherState> flowSketcherKey;
   final flowtracking = ValueNotifier<Map<String, dynamic>>({});
+  EpochDelta flowtrackingZerotime = EpochDelta();
 
   late ScriptGeneratorWidget scriptGeneratorWidget;
   late GlobalKey<ScriptGeneratorWidgetState> scriptGeneratorWidgetKey;
@@ -226,8 +228,10 @@ class MqttService extends ChangeNotifier {
   //Construct.
   MqttService({required this.server}) {
     try {
-      //print("WJ - Now here");
-      // Other initialization code if any
+      Timer.periodic(const Duration(seconds: 1), (timer) {
+        print("Timer triggered!");
+        flowtracking.notifyListeners();
+      });
     } catch (e) {
       //print("WJ - Error in constructor: $e");
     }
@@ -314,9 +318,12 @@ class MqttService extends ChangeNotifier {
         }
       }
       //
+    } else if (messageMap.containsKey("pingUI")) {
+      publish("ui/ping/in", jsonEncode({"pingUI": true}));
     } else if (topic == MqttTopics.getUITopic("FlowTrackerIn")) {
       final data = jsonDecode(message);
       flowtracking.value = data;
+      flowtrackingZerotime.reset();
     } else if (topic == "ui/opt/out") {
       if (messageMap.containsKey("optInfo")) {
         if (messageMap["optInfo"].containsKey("eval")) {

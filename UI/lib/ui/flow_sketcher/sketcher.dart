@@ -309,11 +309,7 @@ class FlowSketcherState extends State<FlowSketcher>
                       text: 'Valve',
                       handlerSize: 15,
                       kind: ElementKind.rectangle,
-                      handlers: [
-                        Handler.leftCenter,
-                        Handler.rightCenter,
-                        Handler.bottomCenter,
-                      ],
+                      handlers: [Handler.leftCenter, Handler.rightCenter],
                       deviceType: 'Valve',
                     ),
                   );
@@ -513,7 +509,6 @@ class FlowSketcherState extends State<FlowSketcher>
                     handlerSize: 15,
                     kind: ElementKind.rectangle,
                     handlers: [
-                      Handler.leftCenter,
                       Handler.rightCenter,
                     ],
                     deviceName: 'null',
@@ -533,7 +528,6 @@ class FlowSketcherState extends State<FlowSketcher>
                     handlerSize: 15,
                     kind: ElementKind.rectangle,
                     handlers: [
-                      Handler.leftCenter,
                       Handler.rightCenter,
                     ],
                     deviceName: 'null',
@@ -554,7 +548,6 @@ class FlowSketcherState extends State<FlowSketcher>
                     kind: ElementKind.rectangle,
                     handlers: [
                       Handler.leftCenter,
-                      Handler.rightCenter,
                     ],
                     deviceName: 'null',
                     deviceType: 'FlowTerminus',

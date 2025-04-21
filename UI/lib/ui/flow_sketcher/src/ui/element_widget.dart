@@ -16,6 +16,7 @@ class ElementWidget extends StatefulWidget {
   final Dashboard dashboard;
   final MqttService mqttService;
   final FlowElement element;
+
   final Function(BuildContext context, Offset position)? onElementPressed;
   final Function(BuildContext context, Offset position)?
       onElementSecondaryTapped;
@@ -192,25 +193,78 @@ class _ElementWidgetState extends State<ElementWidget> {
                       final route = flowData["route"] ?? {};
                       final thisId = widget.element.id;
 
-                      if (route.containsKey(thisId)) {
-                        final info = route[thisId];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Front: ${info["slugFrontArrivesAt"]}–${info["slugFrontExitsAt"]} s",
-                              style: const TextStyle(
-                                  color: Colors.green, fontSize: 10),
-                            ),
-                            Text(
-                              "Tail: ${info["slugTailArrivesAt"]}–${info["slugTailExitsAt"]} s",
-                              style: const TextStyle(
-                                  color: Colors.blue, fontSize: 10),
-                            ),
-                          ],
-                        );
+                      if (!route.containsKey(thisId)) {
+                        return const SizedBox.shrink();
                       }
-                      return const SizedBox.shrink();
+
+                      final info = route[thisId] as Map<String, dynamic>;
+                      final zeroEpoch = widget.mqttService.flowtrackingZerotime
+                          .secSinceEpoch()
+                          .round();
+
+                      String frontReport = "";
+                      String tailReport = "";
+
+                      int? frontArrive = (info["slugFrontArrivesAt"] is num)
+                          ? (info["slugFrontArrivesAt"] as num).round()
+                          : null;
+                      int? frontLeave = (info["slugFrontExitsAt"] is num)
+                          ? (info["slugFrontExitsAt"] as num).round()
+                          : null;
+
+                      if (frontArrive != null && frontArrive != -1) {
+                        int frontArrivesAt = frontArrive - zeroEpoch;
+                        frontArrivesAt =
+                            frontArrivesAt < 0 ? 0 : frontArrivesAt;
+
+                        frontReport = frontArrivesAt > 120
+                            ? "Front-> Arrives in ${(frontArrivesAt / 60).round()} min"
+                            : "Front-> Arrives in ${frontArrivesAt.round()} s";
+                      } else if (frontLeave != null && frontLeave != -1) {
+                        int frontLeaveAt = frontLeave - zeroEpoch;
+                        frontLeaveAt = frontLeaveAt < 0 ? 0 : frontLeaveAt;
+
+                        frontReport = frontLeaveAt > 120
+                            ? "Front-> Exits in ${(frontLeaveAt / 60).round()} min"
+                            : "Front-> Exits in ${frontLeaveAt.round()} s";
+                      }
+
+                      int? tailArrive = (info["slugTailArrivesAt"] is num)
+                          ? (info["slugTailArrivesAt"] as num).round()
+                          : null;
+                      int? tailLeave = (info["slugTailExitsAt"] is num)
+                          ? (info["slugTailExitsAt"] as num).round()
+                          : null;
+
+                      if (tailArrive != null && tailArrive != -1) {
+                        int tailArrivesAt = tailArrive - zeroEpoch;
+                        tailArrivesAt = tailArrivesAt < 0 ? 0 : tailArrivesAt;
+
+                        tailReport = tailArrivesAt > 60
+                            ? "Tail-> Arrives in ${(tailArrivesAt / 60).round()} min"
+                            : "Tail-> Arrives in ${tailArrivesAt.round()} s";
+                      } else if (tailLeave != null && tailLeave != -1) {
+                        int tailLeaveAt = tailLeave - zeroEpoch;
+                        tailLeaveAt = tailLeaveAt < 0 ? 0 : tailLeaveAt;
+
+                        tailReport = tailLeaveAt > 60
+                            ? "Tail-> Exits in ${(tailLeaveAt / 60).round()} min"
+                            : "Tail-> Exits in ${tailLeaveAt.round()} s";
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (frontReport.isNotEmpty)
+                            Text(frontReport,
+                                style: const TextStyle(
+                                    color: Colors.green, fontSize: 10)),
+                          if (tailReport.isNotEmpty)
+                            Text(tailReport,
+                                style: const TextStyle(
+                                    color: Colors.blue, fontSize: 10)),
+                        ],
+                      );
                     },
                   ),
                 ),

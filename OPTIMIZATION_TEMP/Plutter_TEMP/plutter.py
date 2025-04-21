@@ -1,5 +1,6 @@
 import ast
 from datetime import datetime
+import json
 import threading
 import time
 import uuid
@@ -88,6 +89,9 @@ class MqttService:
         self.flowSystem=FlowSystem()
         self.flowSystem.flowpath.mqttService=self
         
+        self.uiPingInt=30
+        self.lastUiPing=-1
+        
         self.reqUIhandlers={
             "FlowSketcher":{
                 "parseFlowsketch":self.flowSystem.flowpath.parseFlowSketch
@@ -97,6 +101,8 @@ class MqttService:
         #self.dbInstructions={"createStdExp":DatabaseOperations.createStdExp}
         
         self.connected=False
+        
+        self.pingThread=None
 
     def onSubscribe(self, client, userdata, mid, granted_qos):
         if mid in self.topicIDs:
@@ -104,6 +110,7 @@ class MqttService:
     
     def onDisconnect(self, client, userdata, rc):
         print(f"Disconnected! {[client,userdata,rc]}")
+        self.client.connect(self.broker_address, self.port)
         
     def onConnect(self, client, userdata, flags, rc):
         #if self.connected:
@@ -158,11 +165,15 @@ class MqttService:
         eg. {"deviceName":...} becomes {"req":{"deviceAdj":{"deviceName":...}}} with self.requestHandlers={"deviceAdj":_funcPointer}
         '''
         msgContents, topic = self._receive(msg)
+        
         ##
         if "reqUI" in msgContents:
             self._routeMsg(msgContents["reqUI"])
         ##
-        if "deviceName" in msgContents:
+        elif "pingUI" in msgContents:
+            self.lastUiPing=time.time()
+        ##
+        elif "deviceName" in msgContents:
             if msgContents["deviceName"] == "reactIR702L1":
                 self.IR = msgContents["tele"]["state"]["data"]
                 self.irAvailable=True
@@ -293,6 +304,7 @@ class MqttService:
         if self.connectDb:
             self.databaseOperations=DatabaseStreamer(mongoDb=TimeSeriesDatabaseMongo(host='146.64.91.174'),mySqlDb=MySQLDatabase(host='146.64.91.174'),mqttService=self)
             self.databaseOperations.connect()
+        self._startPingUiLoop()
         thread = threading.Thread(target=self._run)
         thread.start()
         return thread
@@ -336,7 +348,13 @@ class MqttService:
             _ret=self.client.publish(topic,payload)
             print(f'MQTT message info: {_ret}')
 
-    def getTemp(self):
-        return self.temp
-    def getIR(self):
-        return self.IR
+    def _startPingUiLoop(self):
+        self.pingThread=threading.Thread(target=self._pingUiLoop)
+        self.pingThread.start()
+
+    def _pingUiLoop(self):
+        while not self.connected:
+            time.sleep(1)
+        while True:
+            self.publish(MqttTopics.getUiTopic("uiPingOut"),json.dumps({"pingUI":True}))
+            time.sleep(self.uiPingInt)
