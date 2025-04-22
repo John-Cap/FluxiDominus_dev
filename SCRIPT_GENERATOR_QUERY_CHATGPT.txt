@@ -1,8 +1,162 @@
-Wait, this debug is not printed at all:
-...
-  late var flowtrackerTicker =
-      Timer.periodic(const Duration(seconds: 1), (timer) {
-    print("Timer triggered!");
-    flowtracking.notifyListeners();
-  });
-...
+{
+  "reqUI": {
+    "FlowSketcher": {
+      "parseFlowsketch": {
+        "tubing_1_897e3f2f-322e-4faa-802c-09f4e013c6eb_d7961a40-2170-4ddd-ac0c-c141c0f1587b": {
+          "name": "Tubing",
+          "flowsInto": [
+            "d7961a40-2170-4ddd-ac0c-c141c0f1587b"
+          ],
+          "deviceName": "tubingStandard",
+          "deviceType": "Tubing",
+          "volume": 1
+        },
+        "897e3f2f-322e-4faa-802c-09f4e013c6eb": {
+          "name": "Valve",
+          "flowsInto": [
+            "tubing_1_897e3f2f-322e-4faa-802c-09f4e013c6eb_d7961a40-2170-4ddd-ac0c-c141c0f1587b"
+          ],
+          "associatedTeleSource":{
+            "flowrate":"pafr", //etc...
+          },
+          "deviceName": "null",
+          "deviceType": "Valve",
+          "volume": 0.25
+        },
+        "tubing_2_38bfbb4c-7ed9-4c99-a7ff-d981c4d55861_897e3f2f-322e-4faa-802c-09f4e013c6eb": {
+          "name": "Tubing",
+          "flowsInto": [
+            "897e3f2f-322e-4faa-802c-09f4e013c6eb"
+          ],
+          "deviceName": "tubingStandard",
+          "deviceType": "Tubing",
+          "volume": 1
+        },
+        "38bfbb4c-7ed9-4c99-a7ff-d981c4d55861": {
+          "name": "R4 (HPLC)",
+          "flowsInto": [
+            "tubing_2_38bfbb4c-7ed9-4c99-a7ff-d981c4d55861_897e3f2f-322e-4faa-802c-09f4e013c6eb"
+          ],
+          "deviceName": "vapourtecR4P1700",
+          "deviceType": "Pump",
+          "volume": 5
+        },
+        "tubing_3_f1d3f50e-3657-4685-9486-debee2573b7b_38bfbb4c-7ed9-4c99-a7ff-d981c4d55861": {
+          "name": "Tubing",
+          "flowsInto": [
+            "38bfbb4c-7ed9-4c99-a7ff-d981c4d55861"
+          ],
+          "deviceName": "tubingStandard",
+          "deviceType": "Tubing",
+          "volume": 1
+        },
+        "f1d3f50e-3657-4685-9486-debee2573b7b": {
+          "name": "Stock",
+          "flowsInto": [
+            "tubing_3_f1d3f50e-3657-4685-9486-debee2573b7b_38bfbb4c-7ed9-4c99-a7ff-d981c4d55861"
+          ],
+          "deviceName": "null",
+          "deviceType": "FlowOrigin",
+          "volume": 0
+        },
+        "tubing_4_4ae2baf8-9777-4443-9c7e-51e6187464b5_897e3f2f-322e-4faa-802c-09f4e013c6eb": {
+          "name": "Tubing",
+          "flowsInto": [
+            "897e3f2f-322e-4faa-802c-09f4e013c6eb"
+          ],
+          "deviceName": "tubingStandard",
+          "deviceType": "Tubing",
+          "volume": 1
+        },
+        "4ae2baf8-9777-4443-9c7e-51e6187464b5": {
+          "name": "R4 (Peristaltic)",
+          "flowsInto": [
+            "tubing_4_4ae2baf8-9777-4443-9c7e-51e6187464b5_897e3f2f-322e-4faa-802c-09f4e013c6eb"
+          ],
+          "deviceName": "vapourtecR4P1700",
+          "deviceType": "vapourtecR4",
+          "volume": 5
+        },
+        "tubing_5_74ca935b-b2ab-4bf7-b248-c70fa62dd834_4ae2baf8-9777-4443-9c7e-51e6187464b5": {
+          "name": "Tubing",
+          "flowsInto": [
+            "4ae2baf8-9777-4443-9c7e-51e6187464b5"
+          ],
+          "deviceName": "tubingStandard",
+          "deviceType": "Tubing",
+          "volume": 1
+        },
+        "74ca935b-b2ab-4bf7-b248-c70fa62dd834": {
+          "name": "Stock",
+          "flowsInto": [
+            "tubing_5_74ca935b-b2ab-4bf7-b248-c70fa62dd834_4ae2baf8-9777-4443-9c7e-51e6187464b5"
+          ],
+          "deviceName": "null",
+          "deviceType": "FlowOrigin",
+          "volume": 0
+        },
+        "tubing_6_d7961a40-2170-4ddd-ac0c-c141c0f1587b_ee63bd76-0014-4a54-adf4-22a868918d89": {
+          "name": "Tubing",
+          "flowsInto": [
+            "ee63bd76-0014-4a54-adf4-22a868918d89"
+          ],
+          "deviceName": "tubingStandard",
+          "deviceType": "Tubing",
+          "volume": 1
+        },
+        "d7961a40-2170-4ddd-ac0c-c141c0f1587b": {
+          "name": "Column (2 mL)",
+          "flowsInto": [
+            "tubing_6_d7961a40-2170-4ddd-ac0c-c141c0f1587b_ee63bd76-0014-4a54-adf4-22a868918d89"
+          ],
+          "deviceName": "null",
+          "deviceType": "Column",
+          "volume": 2
+        },
+        "tubing_7_ee63bd76-0014-4a54-adf4-22a868918d89_fd50c05e-8127-4fd4-b4aa-cfc8f254a82e": {
+          "name": "Tubing",
+          "flowsInto": [
+            "fd50c05e-8127-4fd4-b4aa-cfc8f254a82e"
+          ],
+          "deviceName": "tubingStandard",
+          "deviceType": "Tubing",
+          "volume": 1
+        },
+        "ee63bd76-0014-4a54-adf4-22a868918d89": {
+          "name": "ReactIR 702L1",
+          "flowsInto": [
+            "tubing_7_ee63bd76-0014-4a54-adf4-22a868918d89_fd50c05e-8127-4fd4-b4aa-cfc8f254a82e"
+          ],
+          "deviceName": "reactIR702L1",
+          "deviceType": "IR",
+          "volume": 0.25
+        },
+        "tubing_8_fd50c05e-8127-4fd4-b4aa-cfc8f254a82e_d66687cf-38aa-4b9b-b140-eb5259394282": {
+          "name": "Tubing",
+          "flowsInto": [
+            "d66687cf-38aa-4b9b-b140-eb5259394282"
+          ],
+          "deviceName": "tubingStandard",
+          "deviceType": "Tubing",
+          "volume": 1
+        },
+        "fd50c05e-8127-4fd4-b4aa-cfc8f254a82e": {
+          "name": "BPR (5 Bar)",
+          "flowsInto": [
+            "tubing_8_fd50c05e-8127-4fd4-b4aa-cfc8f254a82e_d66687cf-38aa-4b9b-b140-eb5259394282"
+          ],
+          "deviceName": "null",
+          "deviceType": "BPR",
+          "volume": 0.1
+        },
+        "d66687cf-38aa-4b9b-b140-eb5259394282": {
+          "name": "Collection point",
+          "flowsInto": [],
+          "deviceName": "null",
+          "deviceType": "FlowTerminus",
+          "volume": 0
+        }
+      }
+    }
+  }
+}

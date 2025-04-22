@@ -229,7 +229,6 @@ class MqttService extends ChangeNotifier {
   MqttService({required this.server}) {
     try {
       Timer.periodic(const Duration(seconds: 1), (timer) {
-        print("Timer triggered!");
         flowtracking.notifyListeners();
       });
     } catch (e) {

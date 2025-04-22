@@ -264,9 +264,9 @@ class FlowSketcherState extends State<FlowSketcher>
         "flowsInto": widget.dashboard.connections[element.id],
         "deviceName": element.deviceName,
         "deviceType": element.deviceType,
-        "volume": element.volume
+        "volume": element.volume,
+        "associatedTeleSources": element.associatedTeleSources,
       };
-      print('WJ connections of dash -> ${jsonEncode(mqttReport.report)}');
       widget.mqttService.currFlowScript = {"FlowSketcher": mqttReport.report};
     }
     //print("WJ - $availableDevices");
@@ -298,7 +298,7 @@ class FlowSketcherState extends State<FlowSketcher>
           Wrap(
             children: [
               ActionChip(
-                label: const Text('Add 3-way Valve'),
+                label: const Text('Add R4 3-way Valve (S/R A)'),
                 onPressed: () {
                   widget.dashboard.addElement(
                     Component(
@@ -311,6 +311,27 @@ class FlowSketcherState extends State<FlowSketcher>
                       kind: ElementKind.rectangle,
                       handlers: [Handler.leftCenter, Handler.rightCenter],
                       deviceType: 'Valve',
+                      associatedTeleSources: {},
+                    ),
+                  );
+                  _updateConnections();
+                },
+              ),
+              ActionChip(
+                label: const Text('Add R4 3-way Valve (S/R B)'),
+                onPressed: () {
+                  widget.dashboard.addElement(
+                    Component(
+                      position: position,
+                      deviceName: "null",
+                      volume: 0.25,
+                      size: const Size(100, 50),
+                      text: 'Valve',
+                      handlerSize: 15,
+                      kind: ElementKind.rectangle,
+                      handlers: [Handler.leftCenter, Handler.rightCenter],
+                      deviceType: 'Valve',
+                      associatedTeleSources: {},
                     ),
                   );
                   _updateConnections();
@@ -333,6 +354,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Column',
                     volume: 2,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -354,6 +376,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Column',
                     volume: 5,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -375,6 +398,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Column',
                     volume: 10,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -394,7 +418,7 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.rightCenter,
                     ],
                     volume: 0.25,
-                    deviceType: 'NMR',
+                    deviceType: 'NMR', associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -415,6 +439,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'IR',
                     volume: 0.25,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -435,6 +460,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'BPR',
                     volume: 0.1,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -455,6 +481,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'BPR',
                     volume: 0.1,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -475,6 +502,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'BPR',
                     volume: 0.1,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -495,6 +523,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'BPR',
                     volume: 0.1,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -514,6 +543,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     deviceName: 'null',
                     deviceType: 'FlowOrigin',
                     volume: 0,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -533,6 +563,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     deviceName: 'null',
                     deviceType: 'FlowOrigin',
                     volume: 0,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -541,6 +572,7 @@ class FlowSketcherState extends State<FlowSketcher>
                 label: const Text('Add collection point'),
                 onPressed: () {
                   widget.dashboard.addElement(Component(
+                    associatedTeleSources: {"flowrate": "pafr"},
                     position: position,
                     size: const Size(100, 50),
                     text: 'Collection point',
@@ -562,7 +594,7 @@ class FlowSketcherState extends State<FlowSketcher>
                   widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
-                    text: 'Flowsyn Maxi 1',
+                    text: 'Flowsyn Maxi 1', //TODO - switch maxi references
                     deviceName: 'flowsynmaxi2',
                     handlerSize: 15,
                     kind: ElementKind.rectangle,
@@ -571,7 +603,7 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.rightCenter,
                     ],
                     deviceType: 'FlowsynMaxi',
-                    volume: 5,
+                    volume: 5, associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -592,6 +624,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'FlowsynMaxi',
                     volume: 5,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -612,6 +645,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Pump',
                     volume: 5,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -632,6 +666,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'vapourtecR4',
                     volume: 5,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -652,6 +687,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Pump',
                     volume: 5,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -672,6 +708,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Coil',
                     volume: 10,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -692,6 +729,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Coil',
                     volume: 20,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -712,6 +750,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Coil',
                     volume: 40,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
@@ -733,6 +772,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'TPiece',
                     volume: 0.05,
+                    associatedTeleSources: {},
                   ));
                   _updateConnections();
                 },
