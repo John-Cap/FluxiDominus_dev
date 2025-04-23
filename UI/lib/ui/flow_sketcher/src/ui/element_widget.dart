@@ -212,7 +212,7 @@ class _ElementWidgetState extends State<ElementWidget> {
                           ? (info["slugFrontExitsAt"] as num).round()
                           : null;
 
-                      if (frontArrive != null && frontArrive != -1) {
+                      if (frontArrive != null && frontArrive > 0) {
                         int frontArrivesAt = frontArrive - zeroEpoch;
                         frontArrivesAt =
                             frontArrivesAt < 0 ? 0 : frontArrivesAt;
@@ -220,7 +220,7 @@ class _ElementWidgetState extends State<ElementWidget> {
                         frontReport = frontArrivesAt > 120
                             ? "Front-> Arrives in ${(frontArrivesAt / 60).round()} min"
                             : "Front-> Arrives in ${frontArrivesAt.round()} s";
-                      } else if (frontLeave != null && frontLeave != -1) {
+                      } else if (frontLeave != null && frontLeave > 0) {
                         int frontLeaveAt = frontLeave - zeroEpoch;
                         frontLeaveAt = frontLeaveAt < 0 ? 0 : frontLeaveAt;
 
@@ -236,14 +236,14 @@ class _ElementWidgetState extends State<ElementWidget> {
                           ? (info["slugTailExitsAt"] as num).round()
                           : null;
 
-                      if (tailArrive != null && tailArrive != -1) {
+                      if (tailArrive != null && tailArrive > 0) {
                         int tailArrivesAt = tailArrive - zeroEpoch;
                         tailArrivesAt = tailArrivesAt < 0 ? 0 : tailArrivesAt;
 
                         tailReport = tailArrivesAt > 60
                             ? "Tail-> Arrives in ${(tailArrivesAt / 60).round()} min"
                             : "Tail-> Arrives in ${tailArrivesAt.round()} s";
-                      } else if (tailLeave != null && tailLeave != -1) {
+                      } else if (tailLeave != null && tailLeave > 0) {
                         int tailLeaveAt = tailLeave - zeroEpoch;
                         tailLeaveAt = tailLeaveAt < 0 ? 0 : tailLeaveAt;
 

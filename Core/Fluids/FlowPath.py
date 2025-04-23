@@ -245,7 +245,9 @@ class FlowPath:
         self.flowrate=flowrate
         self.timePrev=time
         self.collectedSlugs=collectedSlugs
+        
         self.flowrateShifted=True
+        self.recalcUiSlugs=False
         
         self.addresses=FlowAddresses("DEFAULT") #TODO - impliment instead of below
         self.addressesAll={}
@@ -665,7 +667,6 @@ class FlowPath:
             if not deviceName in self.updateCmnd:
                 self.updateCmnd[deviceName]={}
             if "flowrate" in associatedCmndSource:
-                print(f"2. Received flowrate")
                 self.updateCmnd[deviceName]['flowrate']=associatedCmndSource["flowrate"]
             if 'valveState' in associatedCmndSource:
                 pass
@@ -689,14 +690,6 @@ class FlowPath:
             for x in segments:
                 if not self.currRelOrigin and isinstance(x,FlowOrigin):
                     self.currRelOrigin=x
-
-    #def selectPath(self,pathName="DEFAULT"):
-    #    self.segments=self.segmentSets[pathName]
-    #    for _x in self.segments:
-    #        _x.associatedFlowPath=self
-    #        if not self.currRelOrigin and isinstance(_x,FlowOrigin):
-    #            self.currRelOrigin=_x
-    #    return self.segments
 
     def mapPathTermini(self):
         #Identify all FlowTerminus objects
@@ -881,6 +874,10 @@ class FlowPath:
     def advanceSlugs(self):
         if self.flowrateShifted:
             self.updateFlowrates()
+            if self.publishUI:
+                #For now, only leading slug
+                if len(self.slugs) != 0:
+                    self.publishSlugTrackingInfo(self.slugs[0])
             self.flowrateShifted = False
 
         _nowTime = time.perf_counter()
@@ -900,7 +897,6 @@ class FlowPath:
             #If frontHost is None, no advancement
             if _frontHost is None:
                 continue
-
             
             #If slug has reached a terminus and is collecting
             if isinstance(_frontHost, FlowTerminus):
@@ -993,7 +989,11 @@ class FlowPath:
                     #If we still have leftover that doesn't surpass the new host fully
                     if 0 < _stillToFill <= _nextHost.volume:
                         slug.frontHostPos = _stillToFill
-
+                        
+                if self.publishUI:
+                    #For now, only leading slug
+                    if len(self.slugs) != 0:
+                        self.publishSlugTrackingInfo(self.slugs[0])
             else:
                 #Slug remains within the same host
                 slug.frontHostPos = _newVol
@@ -1028,6 +1028,10 @@ class FlowPath:
                         _tailHost.dispensing = False
                         slug.dispensed=True
                         _tailHost.remainderToDispense = 0
+                        if self.publishUI:
+                            #For now, only leading slug
+                            if len(self.slugs) != 0:
+                                self.publishSlugTrackingInfo(self.slugs[0])
                 continue
 
             _tailHostPos = slug.tailHostPos

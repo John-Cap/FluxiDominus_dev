@@ -281,6 +281,8 @@ if __name__ == "__main__":
     numOfDisp=0
     numCollectedSlugs=1
     
+    path.publishUI=True
+    
     _now=time.time()
     _nowRefresh=time.time()
     
@@ -302,7 +304,7 @@ if __name__ == "__main__":
         
         # path.visualizeFlowPath()
         for x in origins:
-            setFlow=random.choice([0])
+            setFlow=random.choice([1,2,3,4,5])
             x.setFlowrate(setFlow/60)
             report.append(f"Flowrate for {x.name} set to {setFlow}")
             
@@ -318,7 +320,7 @@ if __name__ == "__main__":
         report.append(f"Expected slug volume at collection: {expectedSlugSize} mL")
         print(f"Expected slug volume at collection: {expectedSlugSize} mL")
         
-        path.publishSlugTrackingInfo(slug)
+        # path.publishSlugTrackingInfo(slug)
         
         stampStamp=time.time()
         
