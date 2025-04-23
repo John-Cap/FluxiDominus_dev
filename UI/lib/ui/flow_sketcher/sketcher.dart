@@ -265,7 +265,7 @@ class FlowSketcherState extends State<FlowSketcher>
         "deviceName": element.deviceName,
         "deviceType": element.deviceType,
         "volume": element.volume,
-        "associatedTeleSources": element.associatedTeleSources,
+        "associatedCmndSource": element.associatedCmndSource,
       };
       widget.mqttService.currFlowScript = {"FlowSketcher": mqttReport.report};
     }
@@ -306,12 +306,12 @@ class FlowSketcherState extends State<FlowSketcher>
                       deviceName: "null",
                       volume: 0.25,
                       size: const Size(100, 50),
-                      text: 'Valve',
+                      text: 'R4 S/R Valve A',
                       handlerSize: 15,
                       kind: ElementKind.rectangle,
                       handlers: [Handler.leftCenter, Handler.rightCenter],
                       deviceType: 'Valve',
-                      associatedTeleSources: {},
+                      associatedCmndSource: {'valveState': 'svasr'},
                     ),
                   );
                   _updateConnections();
@@ -326,12 +326,12 @@ class FlowSketcherState extends State<FlowSketcher>
                       deviceName: "null",
                       volume: 0.25,
                       size: const Size(100, 50),
-                      text: 'Valve',
+                      text: 'R4 S/R Valve B',
                       handlerSize: 15,
                       kind: ElementKind.rectangle,
                       handlers: [Handler.leftCenter, Handler.rightCenter],
                       deviceType: 'Valve',
-                      associatedTeleSources: {},
+                      associatedCmndSource: {'valveState': 'svbsr'},
                     ),
                   );
                   _updateConnections();
@@ -354,7 +354,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Column',
                     volume: 2,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -376,7 +376,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Column',
                     volume: 5,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -398,7 +398,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Column',
                     volume: 10,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -418,7 +418,7 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.rightCenter,
                     ],
                     volume: 0.25,
-                    deviceType: 'NMR', associatedTeleSources: {},
+                    deviceType: 'NMR', associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -439,7 +439,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'IR',
                     volume: 0.25,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -460,7 +460,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'BPR',
                     volume: 0.1,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -481,7 +481,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'BPR',
                     volume: 0.1,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -502,7 +502,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'BPR',
                     volume: 0.1,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -523,7 +523,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'BPR',
                     volume: 0.1,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -543,7 +543,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     deviceName: 'null',
                     deviceType: 'FlowOrigin',
                     volume: 0,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -563,7 +563,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     deviceName: 'null',
                     deviceType: 'FlowOrigin',
                     volume: 0,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -572,7 +572,7 @@ class FlowSketcherState extends State<FlowSketcher>
                 label: const Text('Add collection point'),
                 onPressed: () {
                   widget.dashboard.addElement(Component(
-                    associatedTeleSources: {"flowrate": "pafr"},
+                    associatedCmndSource: {},
                     position: position,
                     size: const Size(100, 50),
                     text: 'Collection point',
@@ -589,12 +589,13 @@ class FlowSketcherState extends State<FlowSketcher>
                 },
               ),
               ActionChip(
-                label: const Text('Add Flowsyn Maxi 1'),
+                label: const Text('Add Flowsyn Maxi 1 Pump A'),
                 onPressed: () {
                   widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
-                    text: 'Flowsyn Maxi 1', //TODO - switch maxi references
+                    text:
+                        'Flowsyn Maxi 1 Pump A', //TODO - switch maxi references
                     deviceName: 'flowsynmaxi2',
                     handlerSize: 15,
                     kind: ElementKind.rectangle,
@@ -603,18 +604,39 @@ class FlowSketcherState extends State<FlowSketcher>
                       Handler.rightCenter,
                     ],
                     deviceType: 'FlowsynMaxi',
-                    volume: 5, associatedTeleSources: {},
+                    volume: 5, associatedCmndSource: {"flowrate": "pafr"},
                   ));
                   _updateConnections();
                 },
               ),
               ActionChip(
-                label: const Text('Add Flowsyn Maxi 2'),
+                label: const Text('Add Flowsyn Maxi 1 Pump B'),
                 onPressed: () {
                   widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
-                    text: 'Flowsyn Maxi 2',
+                    text:
+                        'Flowsyn Maxi 2 Pump B', //TODO - switch maxi references
+                    deviceName: 'flowsynmaxi1',
+                    handlerSize: 15,
+                    kind: ElementKind.rectangle,
+                    handlers: [
+                      Handler.leftCenter,
+                      Handler.rightCenter,
+                    ],
+                    deviceType: 'FlowsynMaxi',
+                    volume: 5, associatedCmndSource: {"flowrate": "pbfr"},
+                  ));
+                  _updateConnections();
+                },
+              ),
+              ActionChip(
+                label: const Text('Add Flowsyn Maxi 2 Pump A'),
+                onPressed: () {
+                  widget.dashboard.addElement(Component(
+                    position: position,
+                    size: const Size(100, 50),
+                    text: 'Flowsyn Maxi 2 Pump A',
                     deviceName: 'flowsynmaxi1',
                     handlerSize: 15,
                     kind: ElementKind.rectangle,
@@ -624,13 +646,13 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'FlowsynMaxi',
                     volume: 5,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
               ),
               ActionChip(
-                label: const Text('Add Vapourtec R4 (HPLC) Pump'),
+                label: const Text('Add Vapourtec R4 (HPLC) Pump A'),
                 onPressed: () {
                   widget.dashboard.addElement(Component(
                     position: position,
@@ -645,18 +667,39 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Pump',
                     volume: 5,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {"flowrate": "pafr"},
                   ));
                   _updateConnections();
                 },
               ),
               ActionChip(
-                label: const Text('Add Vapourtec R4 (Peristaltic)'),
+                label: const Text('Add Vapourtec R4 (HPLC) Pump B'),
                 onPressed: () {
                   widget.dashboard.addElement(Component(
                     position: position,
                     size: const Size(100, 50),
-                    text: 'R4 (Peristaltic)',
+                    text: 'R4 (HPLC)',
+                    deviceName: 'vapourtecR4P1700',
+                    handlerSize: 15,
+                    kind: ElementKind.rectangle,
+                    handlers: [
+                      Handler.leftCenter,
+                      Handler.rightCenter,
+                    ],
+                    deviceType: 'Pump',
+                    volume: 5,
+                    associatedCmndSource: {"flowrate": "pbfr"},
+                  ));
+                  _updateConnections();
+                },
+              ),
+              ActionChip(
+                label: const Text('Add Vapourtec R4 (Peristaltic) A'),
+                onPressed: () {
+                  widget.dashboard.addElement(Component(
+                    position: position,
+                    size: const Size(100, 50),
+                    text: 'R4 (Peristaltic) A',
                     deviceName: 'vapourtecR4P1700',
                     handlerSize: 15,
                     kind: ElementKind.rectangle,
@@ -666,7 +709,28 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'vapourtecR4',
                     volume: 5,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {"flowrate": "pafr"},
+                  ));
+                  _updateConnections();
+                },
+              ),
+              ActionChip(
+                label: const Text('Add Vapourtec R4 (Peristaltic) B'),
+                onPressed: () {
+                  widget.dashboard.addElement(Component(
+                    position: position,
+                    size: const Size(100, 50),
+                    text: 'R4 (Peristaltic) B',
+                    deviceName: 'vapourtecR4P1700',
+                    handlerSize: 15,
+                    kind: ElementKind.rectangle,
+                    handlers: [
+                      Handler.leftCenter,
+                      Handler.rightCenter,
+                    ],
+                    deviceType: 'vapourtecR4',
+                    volume: 5,
+                    associatedCmndSource: {"flowrate": "pbfr"},
                   ));
                   _updateConnections();
                 },
@@ -687,7 +751,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Pump',
                     volume: 5,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -708,7 +772,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Coil',
                     volume: 10,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -729,7 +793,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Coil',
                     volume: 20,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -750,7 +814,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'Coil',
                     volume: 40,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -772,7 +836,7 @@ class FlowSketcherState extends State<FlowSketcher>
                     ],
                     deviceType: 'TPiece',
                     volume: 0.05,
-                    associatedTeleSources: {},
+                    associatedCmndSource: {},
                   ));
                   _updateConnections();
                 },
@@ -838,6 +902,7 @@ class FlowSketcherState extends State<FlowSketcher>
         "deviceName": element.deviceName,
         "deviceType": element.deviceType,
         "volume": element.volume,
+        "associatedCmndSource": element.associatedCmndSource
       };
     }
 

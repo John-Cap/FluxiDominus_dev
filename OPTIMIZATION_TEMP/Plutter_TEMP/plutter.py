@@ -87,6 +87,8 @@ class MqttService:
         self.optimizationReqSettings={}
         self.reqOptimization=False
         self.flowSystem=FlowSystem()
+        self.cmndUpdates={} #eg. key "flowsynmaxi1" will appear here with an update 
+        self.cmndAvailable=False
         self.flowSystem.flowpath.mqttService=self
         
         self.uiPingInt=30
@@ -177,7 +179,13 @@ class MqttService:
             if msgContents["deviceName"] == "reactIR702L1":
                 self.IR = msgContents["tele"]["state"]["data"]
                 self.irAvailable=True
-            #Add to db streaming queue? Minimum wait passed?
+                
+            if msgContents["deviceName"] in self.cmndUpdates and "settings" in msgContents:
+                self.cmndUpdates[msgContents["deviceName"]]=msgContents
+                self.cmndAvailable=True
+                print(f"3. Registering cmnd for {msgContents["deviceName"]}")
+                
+            #Add to db streaming queue? Minimum wait passed?                    
             if self.runTest:
                 if (self.currTestlistId != None  and self.currTestrunId != None and self.logData):
                     if "tele" in msgContents:

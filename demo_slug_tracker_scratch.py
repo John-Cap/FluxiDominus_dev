@@ -302,7 +302,7 @@ if __name__ == "__main__":
         
         # path.visualizeFlowPath()
         for x in origins:
-            setFlow=random.choice([2,3,4,5,6])
+            setFlow=random.choice([0])
             x.setFlowrate(setFlow/60)
             report.append(f"Flowrate for {x.name} set to {setFlow}")
             
@@ -314,7 +314,7 @@ if __name__ == "__main__":
         report.append(f"Slug dispensing from {slug.tailHost.name}")
         print(f"Slug dispensing from {slug.tailHost.name}")
         time.sleep(2)
-        expectedSlugSize=(thisTerminus.flowrateIn/slug.tailHost.flowrateOut)*amountToDispense
+        expectedSlugSize=1#(thisTerminus.flowrateIn/slug.tailHost.flowrateOut)*amountToDispense
         report.append(f"Expected slug volume at collection: {expectedSlugSize} mL")
         print(f"Expected slug volume at collection: {expectedSlugSize} mL")
         

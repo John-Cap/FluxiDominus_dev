@@ -3,6 +3,7 @@ import random
 import time
 import threading
 import uuid
+from Config.Data.hardcoded_command_templates import HardcodedCmndAddresses, HardcodedTeleAddresses
 from Core.UI.brokers_and_topics import MqttTopics
 from Core.Utils.Utils import Utils
 from collections import defaultdict, deque
@@ -32,7 +33,7 @@ class VolumeObject:
     #Class var
     idCounter=0
 
-    def __init__(self,volume=None,name=None,inlets=None,outlets=None,deviceName=None,deviceType=None,flowrateOut=None,flowrateIn=None,slugs=None,lastAdvance=None,outletSets=None,inletSets=None,currOutlets=None,currInlets=None,remainder=None,settings=None,state=None,availableCommands=None,dispensing=False,uiId="",associatedTeleSources=None) -> None:
+    def __init__(self,volume=None,name=None,inlets=None,outlets=None,deviceName=None,deviceType=None,flowrateOut=None,flowrateIn=None,slugs=None,lastAdvance=None,outletSets=None,inletSets=None,currOutlets=None,currInlets=None,remainder=None,settings=None,state=None,availableCommands=None,dispensing=False,uiId="",associatedCmndSource=None) -> None:
         self.volume=volume
         #######################################################################################
         #Inlet/outlet control
@@ -73,7 +74,7 @@ class VolumeObject:
         
         self.associatedPath=None
         
-        self.associatedTeleSources = associatedTeleSources if associatedTeleSources else {}
+        self.associatedCmndSource = associatedCmndSource if associatedCmndSource else {}
     
     def dispense(self,vol=-1):
         if not (self.dispensing) and FLOW_PATH:
@@ -104,9 +105,9 @@ class VolumeObject:
         '''
         Alter flowrate and notify FLOW_PATH of change
         '''
+        print(f"Setting flowrate for {self.name} to {fr}")
         self.flowrateIn=fr
         self.cumulativeFlowrates()
-        FLOW_PATH.flowrateShifted=True
      
     def terminateDispensing(self):
         if self.dispensing:
@@ -214,8 +215,11 @@ class VolumeObject:
         if not unresolved:
             self.flowrateIn = _flowrate
             self.flowrateOut = _flowrate  #Assume a single outlet for now
+            
             if _flowrate != 0:
                 self.residenceTime = (self.volume/_flowrate) #Residence time in min
+            else:
+                self.residenceTime = 0
             if not FLOW_PATH.flowrateShifted:
                 FLOW_PATH.flowrateShifted=True
         else:
@@ -227,8 +231,8 @@ class VolumeObject:
         slug.frontHostPos=initPos
 
 class VolObjNull(VolumeObject):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 
 class FlowPath:
     def __init__(self,flowPathName=uuid.uuid4(),segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
@@ -264,6 +268,9 @@ class FlowPath:
         
         self.flowLoopThread=None
         
+        self.updateCmnd={} #a set
+        self.updateCmndDevices=[]
+        
         global FLOW_PATH
         FLOW_PATH=self
         
@@ -286,7 +293,7 @@ class FlowPath:
         for uid, entry in sketchJson.items():
             source = self._componentLookup[uid]
             for targetUid in entry.get("flowsInto", []):
-                print(f"WJ - Target UUID: {targetUid}")
+                # print(f"WJ - Target UUID: {targetUid}")
                 target = self._componentLookup.get(targetUid)
                 if target:
                     source.flowInto(target)
@@ -397,7 +404,35 @@ class FlowPath:
         if self.publishUI:
             self.publishSlugTrackingInfo(slug,comp.name,slug.targetTerminus.name)
         return slug
-        
+    
+    def findPumpOrigin(self, pump):
+        '''
+        Iterate upstream and find first FlowOrigin. Assumes pump only pulls from one origin.
+        '''
+        if not isinstance(pump, Pump):
+            return None
+
+        visited = set()
+        return self._recursiveOriginSearch(pump, visited)
+
+    def _recursiveOriginSearch(self, component, visited):
+        if component in visited:
+            return None
+        visited.add(component)
+
+        if isinstance(component, FlowOrigin):
+            return component
+
+        if not hasattr(component, 'inlets') or not component.inlets:
+            return None
+
+        for inlet in component.inlets:
+            origin = self._recursiveOriginSearch(inlet, visited)
+            if origin:
+                return origin
+
+        return None
+
     def pullFromOrigin(self, origin):
         """
         Given a FlowOrigin component, trace a valid path to the current terminus and
@@ -591,7 +626,9 @@ class FlowPath:
         volume = entry.get("volume", 0)
         deviceType = entry.get("deviceType", "null")
         deviceName = entry.get("deviceName", None)
-        associatedTeleSources = entry.get("deviceName", {})
+        associatedCmndSource = entry.get("associatedCmndSource", {})
+        
+        print(f"0. AssociatedCmnds: {associatedCmndSource}")
 
         classMap = {
             "Pump": Pump,
@@ -616,12 +653,26 @@ class FlowPath:
             deviceType=deviceType,
             deviceName=deviceName,
             uiId=uid,
-            associatedTeleSources=associatedTeleSources
+            associatedCmndSource=associatedCmndSource
         )
         
         obj.associatedPath=self
 
         self._componentLookup[uid] = obj
+        
+        if bool(associatedCmndSource):
+            print(f"1. Received associated commands")
+            if not deviceName in self.updateCmnd:
+                self.updateCmnd[deviceName]={}
+            if "flowrate" in associatedCmndSource:
+                print(f"2. Received flowrate")
+                self.updateCmnd[deviceName]['flowrate']=associatedCmndSource["flowrate"]
+            if 'valveState' in associatedCmndSource:
+                pass
+            self.updateCmndDevices.append(obj)
+            
+            self.mqttService.cmndUpdates[deviceName]={}
+
         return obj
 
     def pathVolume(self,segmentSet=None):
@@ -790,7 +841,7 @@ class FlowPath:
         indegree = defaultdict(int)
 
         for segment in self.segments:
-            print(f"This segment and inlets: {[segment.name,segment.inlets]}")
+            # print(f"This segment and inlets: {[segment.name,segment.inlets]}")
             for inlet in segment.inlets:
                 graph[inlet].append(segment)
                 indegree[segment] += 1
@@ -1060,6 +1111,20 @@ class FlowPath:
         self.active=True
         print(f"Flowpath {self.flowPathName} has started looping!")
         while self.active:
+            if self.mqttService.cmndAvailable: #TODO - better solution
+                print(f"5. A command is available")
+                #TODO - net flowrate vir nou
+                for dev in self.updateCmndDevices:
+                    for x in self.updateCmnd[dev.associatedDevice].keys():
+                        if x == "flowrate":
+                            if isinstance(dev,Pump):
+                                fr=HardcodedCmndAddresses.getVal(self.mqttService.cmndUpdates[dev.associatedDevice],dev.associatedDevice,self.updateCmnd[dev.associatedDevice]['flowrate'])
+                                self.findPumpOrigin(dev).setFlowrate(fr/60)
+                                print(f'Flowrate set to {fr}')
+                        elif x == "valveState":
+                            pass
+                            
+                self.mqttService.cmndAvailable=False
             self.advanceSlugs()
             time.sleep(0.1)
 
@@ -1073,41 +1138,41 @@ class FlowPath:
 
 
 class FlowComponent(VolumeObject):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class BPR(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class Tubing(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class TPiece(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class IR(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
     def scan(self):
         pass
 class Chip(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class Coil(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class Valve(FlowComponent):
     valveCntr=0
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class Pump(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class FlowOrigin(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 class FlowTerminus(FlowComponent):
-    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedTeleSources=None):
-        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedTeleSources)
+    def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
+        super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 
 class CompoundDevice:
     def __init__(self):

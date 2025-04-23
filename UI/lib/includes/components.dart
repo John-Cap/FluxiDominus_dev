@@ -7,12 +7,12 @@ import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.da
 class Component extends FlowElement {
   @override
   final String deviceName;
-  final Map<String, String> associatedTeleSources;
+  final Map<String, String> associatedCmndSource;
   final String deviceType;
   final double volume;
 
   Component({
-    required this.associatedTeleSources,
+    required this.associatedCmndSource,
     required this.deviceName,
     required this.deviceType,
     required this.volume,

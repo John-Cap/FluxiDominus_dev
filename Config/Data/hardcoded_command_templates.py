@@ -603,6 +603,70 @@ class HardcodedCommandTemplates:
         }
     }
     
+class HardcodedCmndAddresses:
+
+    hardcodedCmndAddresses = {
+        'vapourtecR4P1700': {
+            'pafr': {'subDevice': 'PumpAFlowRate', 'displayName': 'Pump A Flowrate', 'valueKey': 'value'},
+            'pbfr': {'subDevice': 'PumpBFlowRate', 'displayName': 'Pump B Flowrate', 'valueKey': 'value'},
+            'pcfr': {'subDevice': 'PumpCFlowRate', 'displayName': 'Pump C Flowrate', 'valueKey': 'value'},
+            'pdfr': {'subDevice': 'PumpDFlowRate', 'displayName': 'Pump D Flowrate', 'valueKey': 'value'},
+            'temp_1': {'subDevice': 'Reactor1Temp', 'displayName': 'Reactor 1 Temp', 'valueKey': 'value'},
+            'temp_2': {'subDevice': 'Reactor2Temp', 'displayName': 'Reactor 2 Temp', 'valueKey': 'value'},
+            'temp_3': {'subDevice': 'Reactor3Temp', 'displayName': 'Reactor 3 Temp', 'valueKey': 'value'},
+            'temp_4': {'subDevice': 'Reactor4Temp', 'displayName': 'Reactor 4 Temp', 'valueKey': 'value'},
+            'svasr': {'subDevice': 'valveASR', 'displayName': 'Solv/Reag A', 'valueKey': 'value'},
+            'svbsr': {'subDevice': 'valveBSR', 'displayName': 'Solv/Reag B', 'valueKey': 'value'},
+            'svcsr': {'subDevice': 'valveCSR', 'displayName': 'Solv/Reag C', 'valueKey': 'value'},
+            'svdsr': {'subDevice': 'valveDSR', 'displayName': 'Solv/Reag D', 'valueKey': 'value'},
+            'svail': {'subDevice': 'valveAIL', 'displayName': 'Inj/Load A', 'valueKey': 'value'},
+            'svbil': {'subDevice': 'valveBIL', 'displayName': 'Inj/Load B', 'valueKey': 'value'},
+            'svcil': {'subDevice': 'valveCIL', 'displayName': 'Inj/Load C', 'valueKey': 'value'},
+            'svdil': {'subDevice': 'valveDIL', 'displayName': 'Inj/Load D', 'valueKey': 'value'},
+            'svcw': {'subDevice': 'valveCW', 'displayName': 'Collecting', 'valueKey': 'value'},
+        },
+
+        'flowsynmaxi2': {
+            'pafr': {'subDevice': 'PumpAFlowRate', 'displayName': 'Pump A Flowrate', 'valueKey': 'value'},
+            'pbfr': {'subDevice': 'PumpBFlowRate', 'displayName': 'Pump B Flowrate', 'valueKey': 'value'},
+            'pcfr': {'subDevice': 'BinaryPumpCFlowRate', 'displayName': 'Pump C Flowrate', 'valueKey': 'value'},
+            'pdfr': {'subDevice': 'BinaryPumpDFlowRate', 'displayName': 'Pump D Flowrate', 'valueKey': 'value'},
+            'temp_1': {'subDevice': 'Reactor1Temp', 'displayName': 'Reactor 1 Temp', 'valueKey': 'value'},
+            'temp_2': {'subDevice': 'Reactor2Temp', 'displayName': 'Reactor 2 Temp', 'valueKey': 'value'},
+            'temp_3': {'subDevice': 'Reactor3Temp', 'displayName': 'Reactor 3 Temp', 'valueKey': 'value'},
+            'temp_4': {'subDevice': 'Reactor4Temp', 'displayName': 'Reactor 4 Temp', 'valueKey': 'value'},
+            'sva': {'subDevice': 'FlowSynValveA', 'displayName': 'Valve A Open', 'valueKey': 'value'},
+            'svb': {'subDevice': 'FlowSynValveB', 'displayName': 'Valve B Open', 'valueKey': 'value'},
+            'svc': {'subDevice': 'FlowBinaryValveC', 'displayName': 'Valve C Open', 'valueKey': 'value'},
+            'svd': {'subDevice': 'FlowBinaryValveD', 'displayName': 'Valve D Open', 'valueKey': 'value'},
+            'svcw': {'subDevice': 'FlowCWValve', 'displayName': 'Collecting', 'valueKey': 'value'},
+            'sva_inj': {'subDevice': 'FlowSynInjValveA', 'displayName': 'Inj Valve A', 'valueKey': 'value'},
+            'svb_inj': {'subDevice': 'FlowSynInjValveB', 'displayName': 'Inj Valve B', 'valueKey': 'value'},
+            'svc_inj': {'subDevice': 'FlowBinaryInjValveC', 'displayName': 'Inj Valve C', 'valueKey': 'value'},
+            'svd_inj': {'subDevice': 'FlowBinaryInjValveD', 'displayName': 'Inj Valve D', 'valueKey': 'value'},
+        },
+
+        'sf10Vapourtec1': {
+            'pafr': {'subDevice': 'flowrate', 'displayName': 'Flowrate', 'valueKey': 'flowrate'},
+        },
+    }
+
+    @staticmethod
+    def getVal(data, device, setting):
+        try:
+            config = HardcodedCmndAddresses.hardcodedCmndAddresses[device][setting]
+            value_key = config['valueKey']
+            if data.get('settings', {}).get('subDevice', '') == config.get('subDevice') or \
+               value_key in data.get('settings', {}):
+                return data['settings'].get(value_key)
+            return None
+        except (KeyError, TypeError):
+            return None
+
+    @staticmethod
+    def getDisplayName(device, setting):
+        return HardcodedCmndAddresses.hardcodedCmndAddresses[device][setting].get('displayName', 'UNKNOWN')
+
 class HardcodedTeleAddresses:
 
     hardcodedTeleAddresses = {
