@@ -20,7 +20,7 @@ class FakeReactor:
         # Internal states
         self.hotcoil_temp = 25
         self.target_temp = 5
-        self.temp_rate = 0.05
+        self.temp_rate = 0.15
         self.flow_rate = 1.0
         self.flow_range = (0.2, 5.0)
         self.pressure_noise = 0.05

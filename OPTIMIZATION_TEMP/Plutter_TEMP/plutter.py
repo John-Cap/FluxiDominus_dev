@@ -251,12 +251,16 @@ class MqttService:
             _params=msgContents["params"]
 
             if (_func=="getAllExpWidgetInfo"):
-                self.client.publish(
-                    "ui/dbCmnd/ret",
-                    self.databaseOperations.getAllExpWidgetInfo(
-                        orgId=self.authenticator.user.orgId
+                try:
+                    self.client.publish(
+                        "ui/dbCmnd/ret",
+                        self.databaseOperations.getAllExpWidgetInfo(
+                            orgId=self.authenticator.user.orgId
+                        )
                     )
-                )
+                except:
+                    print(f"Could not contact database!")
+                    
             elif (_func=="createReplicate"):
                 self.databaseOperations.createReplicate(
                     labNotebookBaseRef=_params["labNotebookBaseRef"],
@@ -264,12 +268,16 @@ class MqttService:
                     flowScript=_params["flowScript"],
                     notes=_params["notes"]
                 )
-                self.client.publish(
-                    "ui/dbCmnd/ret",
-                    self.databaseOperations.getAllExpWidgetInfo(
-                        orgId=self.authenticator.user.orgId
+                try:
+                    self.client.publish(
+                        "ui/dbCmnd/ret",
+                        self.databaseOperations.getAllExpWidgetInfo(
+                            orgId=self.authenticator.user.orgId
+                        )
                     )
-                )
+                except:
+                    print(f"Could not contact database!")
+                    
             elif (_func=="handleStreamRequest"):
                 if not self.databaseOperations.mongoDb.currZeroTime:
                     self.databaseOperations.mongoDb.currZeroTime=datetime.now()
