@@ -39,7 +39,15 @@ class FlowSketcherState extends State<FlowSketcher>
     super.build(context); // Ensure this line is added to keep the state alive
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FlowSketcher'),
+        title: Row(
+          children: [
+            const Text('FlowSketcher'),
+            ElevatedButton(
+              onPressed: _mergeTubingIntoMqttReport,
+              child: Text('Set'),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             onPressed: () {
