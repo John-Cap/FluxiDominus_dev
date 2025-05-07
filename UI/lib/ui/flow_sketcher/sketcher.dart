@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_flow_chart/config/UI/brokers_and_topics.dart';
 import 'package:flutter_flow_chart/includes/components.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
@@ -43,7 +44,7 @@ class FlowSketcherState extends State<FlowSketcher>
           children: [
             const Text('FlowSketcher'),
             ElevatedButton(
-              onPressed: _mergeTubingIntoMqttReport,
+              onPressed: _save,
               child: Text('Set'),
             ),
           ],
@@ -181,6 +182,40 @@ class FlowSketcherState extends State<FlowSketcher>
   /// Display a drop down menu when tapping on an element
   void _displayElementMenu(
       BuildContext context, Offset position, FlowElement element) {
+    if (element is! Component) return;
+
+    final Component comp = element;
+
+    final items = deviceTypeMenuConfig[comp.deviceType] ??
+        deviceTypeMenuConfig['default']!;
+
+    StarMenuOverlay.displayStarMenu(
+      context,
+      StarMenu(
+        // same as before
+        items: items.map((item) => item.builder(context, comp)).toList(),
+        onItemTapped: (index, controller) {
+          if (!items[index].keepMenuOpen) controller.closeMenu?.call();
+        },
+        parentContext: context,
+      ),
+    );
+  }
+
+  void _save() {
+    print('WJ - Attempting to publish');
+    _updateConnections();
+    _buildMqttReport();
+    _mergeTubingIntoMqttReport(); //setState(() {});
+    widget.mqttService.currDashboardJson = //Necessary for db operations?
+        widget.dashboard.saveDashboard();
+    widget.mqttService.publish(
+        MqttTopics.getUITopic("FlowSketcher"), mqttReport.toJsonString());
+  }
+
+  /*
+  void _displayElementMenu(
+      BuildContext context, Offset position, FlowElement element) {
     StarMenuOverlay.displayStarMenu(
       context,
       StarMenu(
@@ -243,6 +278,7 @@ class FlowSketcherState extends State<FlowSketcher>
       ),
     );
   }
+  */
 
   /// Print all connections of all elements in the dashboard
   void _updateConnections() {
@@ -306,578 +342,8 @@ class FlowSketcherState extends State<FlowSketcher>
         controller: widget.outerMenuController,
         items: [
           Wrap(
-              children: _buildCategoryChips(context,
-                  position) /*[
-              /*
-              ActionChip(
-                label: const Text('Add R4 3-way Valve (S/R A)'),
-                onPressed: () {
-                  widget.dashboard.addElement(
-                    Component(
-                      position: position,
-                      deviceName: "null",
-                      volume: 0.25,
-                      size: const Size(100, 50),
-                      text: 'R4 S/R Valve A',
-                      handlerSize: 15,
-                      kind: ElementKind.rectangle,
-                      handlers: [Handler.leftCenter, Handler.rightCenter],
-                      deviceType: 'Valve',
-                      associatedCmndSource: {'valveState': 'svasr'},
-                    ),
-                  );
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add R4 3-way Valve (S/R B)'),
-                onPressed: () {
-                  widget.dashboard.addElement(
-                    Component(
-                      position: position,
-                      deviceName: "null",
-                      volume: 0.25,
-                      size: const Size(100, 50),
-                      text: 'R4 S/R Valve B',
-                      handlerSize: 15,
-                      kind: ElementKind.rectangle,
-                      handlers: [Handler.leftCenter, Handler.rightCenter],
-                      deviceType: 'Valve',
-                      associatedCmndSource: {'valveState': 'svbsr'},
-                    ),
-                  );
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add column (2 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    textSize: 15,
-                    text: 'Column (2 mL)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Column',
-                    volume: 2,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add column (5 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    textSize: 15,
-                    text: 'Column (5 mL)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Column',
-                    volume: 5,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add column (10 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    textSize: 15,
-                    text: 'Column (10 mL)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Column',
-                    volume: 10,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Magritek 60'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Magritek 60',
-                    deviceName: 'reactIR702L1', //TODO - correct name
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    volume: 0.25,
-                    deviceType: 'NMR', associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add ReactIR 702L1'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'ReactIR 702L1',
-                    deviceName: 'reactIR702L1',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'IR',
-                    volume: 0.25,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add BPR (2 Bar)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'BPR (2 Bar)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'BPR',
-                    volume: 0.1,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add BPR (5 Bar)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'BPR (5 Bar)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'BPR',
-                    volume: 0.1,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add BPR (8 Bar)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'BPR (8 Bar)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'BPR',
-                    volume: 0.1,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add BPR (10 Bar)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'BPR (10 Bar)',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'BPR',
-                    volume: 0.1,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Stock Solution'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Stock',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.rightCenter,
-                    ],
-                    deviceName: 'null',
-                    deviceType: 'FlowOrigin',
-                    volume: 0,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Pushing Solvent'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Push',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.rightCenter,
-                    ],
-                    deviceName: 'null',
-                    deviceType: 'FlowOrigin',
-                    volume: 0,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add collection point'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    associatedCmndSource: {},
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Collection point',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                    ],
-                    deviceName: 'null',
-                    deviceType: 'FlowTerminus',
-                    volume: 0,
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Flowsyn Maxi 1 Pump A'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text:
-                        'Flowsyn Maxi 1 Pump A', //TODO - switch maxi references
-                    deviceName: 'flowsynmaxi2',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'FlowsynMaxi',
-                    volume: 5, associatedCmndSource: {"flowrate": "pafr"},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Flowsyn Maxi 1 Pump B'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text:
-                        'Flowsyn Maxi 2 Pump B', //TODO - switch maxi references
-                    deviceName: 'flowsynmaxi1',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'FlowsynMaxi',
-                    volume: 5, associatedCmndSource: {"flowrate": "pbfr"},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Flowsyn Maxi 2 Pump A'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Flowsyn Maxi 2 Pump A',
-                    deviceName: 'flowsynmaxi1',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'FlowsynMaxi',
-                    volume: 5,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Vapourtec R4 (HPLC) Pump A'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'R4 (HPLC)',
-                    deviceName: 'vapourtecR4P1700',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Pump',
-                    volume: 5,
-                    associatedCmndSource: {"flowrate": "pafr"},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Vapourtec R4 (HPLC) Pump B'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'R4 (HPLC)',
-                    deviceName: 'vapourtecR4P1700',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Pump',
-                    volume: 5,
-                    associatedCmndSource: {"flowrate": "pbfr"},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Vapourtec R4 (Peristaltic) A'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'R4 (Peristaltic) A',
-                    deviceName: 'vapourtecR4P1700',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'vapourtecR4',
-                    volume: 5,
-                    associatedCmndSource: {"flowrate": "pafr"},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Vapourtec R4 (Peristaltic) B'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'R4 (Peristaltic) B',
-                    deviceName: 'vapourtecR4P1700',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'vapourtecR4',
-                    volume: 5,
-                    associatedCmndSource: {"flowrate": "pbfr"},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add Vapourtec SF10'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'SF10',
-                    deviceName: 'sf10vapourtec1',
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Pump',
-                    volume: 5,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add hotcoil (10 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Hotcoil (10 mL)',
-                    deviceName: "hotcoil1",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Coil',
-                    volume: 10,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add hotcoil (20 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Hotcoil (20 mL)',
-                    deviceName: "hotcoil1",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Coil',
-                    volume: 20,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add hotcoil (40 mL)'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'Hotcoil (40 mL)',
-                    deviceName: "hotcoil1",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                    ],
-                    deviceType: 'Coil',
-                    volume: 40,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Add T-Piece'),
-                onPressed: () {
-                  widget.dashboard.addElement(Component(
-                    position: position,
-                    size: const Size(100, 50),
-                    text: 'T-Piece',
-                    deviceName: "null",
-                    handlerSize: 15,
-                    kind: ElementKind.rectangle,
-                    handlers: [
-                      Handler.leftCenter,
-                      Handler.rightCenter,
-                      Handler.bottomCenter,
-                    ],
-                    deviceType: 'TPiece',
-                    volume: 0.05,
-                    associatedCmndSource: {},
-                  ));
-                  _updateConnections();
-                },
-              ),
-              ActionChip(
-                label: const Text('Save'),
-                onPressed: () {
-                  print('WJ - Attempting to publish');
-                  _updateConnections();
-                  _buildMqttReport();
-                  _mergeTubingIntoMqttReport(); //setState(() {});
-                  widget.mqttService
-                          .currDashboardJson = //Necessary for db operations?
-                      widget.dashboard.saveDashboard();
-                  widget.mqttService.publish(
-                      MqttTopics.getUITopic("FlowSketcher"),
-                      mqttReport.toJsonString());
-                },
-              ),
-              ActionChip(
-                label: const Text('Load'),
-                onPressed: () {
-                  widget.dashboard = widget.dashboard
-                      .loadDashboard(widget.mqttService.currDashboardJson);
-                  _updateConnections();
-                },
-              )*/
-            ]*/
-              ),
+            children: _buildCategoryChips(context, position),
+          ),
         ],
       ),
     );
@@ -1059,6 +525,150 @@ class ComponentConfig {
 
   ComponentConfig({required this.label, required this.build});
 }
+
+class ElementMenuItem {
+  final Widget Function(BuildContext context, FlowElement element) builder;
+  final bool keepMenuOpen;
+
+  const ElementMenuItem({
+    required this.builder,
+    this.keepMenuOpen = false,
+  });
+}
+
+final List<ElementMenuItem> elementMenuItems = [
+  ElementMenuItem(
+    builder: (context, element) => Text(
+      element.text,
+      style: const TextStyle(fontWeight: FontWeight.w900),
+    ),
+    keepMenuOpen: true,
+  ),
+  ElementMenuItem(
+    builder: (context, element) => InkWell(
+      onTap: () {
+        final state = context.findAncestorStateOfType<FlowSketcherState>();
+        state?.widget.dashboard.removeElement(element);
+        state?._updateConnections();
+      },
+      child: const Text('Delete'),
+    ),
+  ),
+  ElementMenuItem(
+    builder: (context, element) => TextMenu(element: element),
+    keepMenuOpen: true,
+  ),
+  ElementMenuItem(
+    builder: (context, element) => InkWell(
+      onTap: () {
+        final state = context.findAncestorStateOfType<FlowSketcherState>();
+        state?.widget.dashboard.removeElementConnections(element);
+        state?._updateConnections();
+      },
+      child: const Text('Remove all connections'),
+    ),
+  ),
+  ElementMenuItem(
+    builder: (context, element) => InkWell(
+      onTap: () {
+        final state = context.findAncestorStateOfType<FlowSketcherState>();
+        state?.widget.dashboard.setElementResizable(element, true);
+      },
+      child: const Text('Resize'),
+    ),
+  ),
+  ElementMenuItem(
+    builder: (context, element) => ElementSettingsMenu(element: element),
+    keepMenuOpen: true,
+  ),
+];
+
+final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
+  'Pump': [
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElement(element);
+          state?._updateConnections();
+        },
+        child: const Text('Delete Pump'),
+      ),
+    ),
+  ],
+  'Valve': [
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElement(element);
+          state?._updateConnections();
+        },
+        child: const Text('Delete Valve'),
+      ),
+    ),
+  ],
+  'default': [
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElement(element);
+          state?._updateConnections();
+        },
+        child: const Text('Delete'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => TextMenu(element: element),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElementConnections(element);
+          state?._updateConnections();
+        },
+        child: const Text('Remove all connections'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.setElementResizable(element, true);
+        },
+        child: const Text('Resize'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => ElementSettingsMenu(element: element),
+      keepMenuOpen: true,
+    ),
+  ],
+};
 
 final Map<String, List<ComponentConfig>> componentConfig = {
   "R4": [
