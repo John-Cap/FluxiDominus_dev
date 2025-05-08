@@ -588,11 +588,28 @@ final List<ElementMenuItem> elementMenuItems = [
 final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
   'Pump': [
     ElementMenuItem(
-      builder: (context, element) => Text(
-        element.text,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+      builder: (context, element) => InkWell(
+        onTap: () async {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          double? newVal = await SketcherInputDialog.getDouble(
+              context: context, title: 'New Flowrate');
+          if (element is Component) {
+            String cmd = element.associatedCmndSource['flowrate'] ?? "";
+            if (cmd == "") {
+            } else {
+              String? newCmnd = HardcodedCommands()
+                      .injectVal(element.deviceName, cmd, newVal) ??
+                  "";
+              if (newCmnd == "") {
+              } else {
+                state?.widget.mqttService.publish(
+                    MqttTopics.getCmndTopic(element.deviceName), newCmnd);
+              }
+            }
+          }
+        },
+        child: const Text('Set flowrate'),
       ),
-      keepMenuOpen: true,
     ),
     ElementMenuItem(
       builder: (context, element) => InkWell(
@@ -605,30 +622,11 @@ final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
       ),
     ),
     ElementMenuItem(
-      builder: (context, element) => InkWell(
-        onTap: () async {
-          final state = context.findAncestorStateOfType<FlowSketcherState>();
-          double? newVal = await SketcherInputDialog.getDouble(
-              context: context, title: 'New Flowrate');
-          if (element is Component) {
-            String cmd = element.associatedCmndSource['flowrate'] ?? "";
-            if (cmd == "") {
-            } else {
-              // String? newCmnd = jsonEncode(HardcodedCommands()
-              //     .injectVal(element.deviceName, cmd, newVal));
-              String? newCmnd = HardcodedCommands()
-                      .injectVal(element.deviceName, cmd, newVal) ??
-                  "";
-              if (newCmnd == "") {}
-              {
-                state?.widget.mqttService.publish(
-                    MqttTopics.getCmndTopic(element.deviceName), newCmnd);
-              }
-            }
-          }
-        },
-        child: const Text('Set flowrate'),
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
+      keepMenuOpen: true,
     ),
     ElementMenuItem(
       builder: (context, element) => Text(
@@ -658,11 +656,29 @@ final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
   ],
   'Valve': [
     ElementMenuItem(
-      builder: (context, element) => Text(
-        element.text,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+      builder: (context, element) => InkWell(
+        onTap: () async {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          bool? newVal = await SketcherInputDialog.getBool(
+              context: context, title: 'Switch Valve');
+          if (element is Component) {
+            String cmd = element.associatedCmndSource['valveState'] ?? "";
+            if (cmd == "") {
+            } else {
+              String? newCmnd = HardcodedCommands()
+                      .injectVal(element.deviceName, cmd, newVal) ??
+                  "";
+              print('Valve cmnd: $newCmnd');
+              if (newCmnd == "") {
+              } else {
+                state?.widget.mqttService.publish(
+                    MqttTopics.getCmndTopic(element.deviceName), newCmnd);
+              }
+            }
+          }
+        },
+        child: const Text('Switch Valve'),
       ),
-      keepMenuOpen: true,
     ),
     ElementMenuItem(
       builder: (context, element) => InkWell(
@@ -673,6 +689,38 @@ final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
         },
         child: const Text('Delete Valve'),
       ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.w900),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => TextMenu(element: element),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElementConnections(element);
+          state?._updateConnections();
+        },
+        child: const Text('Remove all connections'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => ElementSettingsMenu(element: element),
+      keepMenuOpen: true,
     ),
   ],
   'default': [
@@ -759,7 +807,7 @@ final Map<String, List<ComponentConfig>> componentConfig = {
       label: "R4 3-way Valve (S/R A)",
       build: (pos) => Component(
         position: pos,
-        deviceName: "null",
+        deviceName: "vapourtecR4P1700",
         volume: 0.25,
         size: const Size(100, 50),
         text: 'R4 S/R Valve A',
@@ -774,7 +822,7 @@ final Map<String, List<ComponentConfig>> componentConfig = {
       label: "R4 3-way Valve (S/R B)",
       build: (pos) => Component(
         position: pos,
-        deviceName: "null",
+        deviceName: "vapourtecR4P1700",
         volume: 0.25,
         size: const Size(100, 50),
         text: 'R4 S/R Valve B',
@@ -791,13 +839,13 @@ final Map<String, List<ComponentConfig>> componentConfig = {
         position: pos,
         text: 'R4 Inject A',
         size: const Size(100, 50),
-        deviceName: 'null',
+        deviceName: 'vapourtecR4P1700',
         handlerSize: 15,
         kind: ElementKind.rectangle,
         handlers: [Handler.leftCenter, Handler.rightCenter],
-        deviceType: 'Injector',
+        deviceType: 'Valve',
         volume: 0.25,
-        associatedCmndSource: {},
+        associatedCmndSource: {'valveState': 'svail'},
       ),
     ),
     ComponentConfig(
@@ -806,13 +854,28 @@ final Map<String, List<ComponentConfig>> componentConfig = {
         position: pos,
         text: 'R4 Inject B',
         size: const Size(100, 50),
-        deviceName: 'null',
+        deviceName: 'vapourtecR4P1700',
         handlerSize: 15,
         kind: ElementKind.rectangle,
         handlers: [Handler.leftCenter, Handler.rightCenter],
-        deviceType: 'Injector',
+        deviceType: 'Valve',
         volume: 0.25,
-        associatedCmndSource: {},
+        associatedCmndSource: {'valveState': 'svbil'},
+      ),
+    ),
+    ComponentConfig(
+      label: "R4 Waste/Collect",
+      build: (pos) => Component(
+        position: pos,
+        text: 'R4 Inject B',
+        size: const Size(100, 50),
+        deviceName: 'vapourtecR4P1700',
+        handlerSize: 15,
+        kind: ElementKind.rectangle,
+        handlers: [Handler.leftCenter, Handler.rightCenter],
+        deviceType: 'Valve',
+        volume: 0.25,
+        associatedCmndSource: {'valveState': 'svcw'},
       ),
     ),
   ],
@@ -851,7 +914,7 @@ final Map<String, List<ComponentConfig>> componentConfig = {
       label: "3-way Valve (S/R A)",
       build: (pos) => Component(
         position: pos,
-        deviceName: "null",
+        deviceName: "flowsynmaxi2",
         volume: 0.25,
         size: const Size(100, 50),
         text: 'R4 S/R Valve A',
@@ -859,14 +922,14 @@ final Map<String, List<ComponentConfig>> componentConfig = {
         kind: ElementKind.rectangle,
         handlers: [Handler.leftCenter, Handler.rightCenter],
         deviceType: 'Valve',
-        associatedCmndSource: {'valveState': 'svasr'},
+        associatedCmndSource: {'valveState': 'sva'},
       ),
     ),
     ComponentConfig(
       label: "3-way Valve (S/R B)",
       build: (pos) => Component(
         position: pos,
-        deviceName: "null",
+        deviceName: "flowsynmaxi2",
         volume: 0.25,
         size: const Size(100, 50),
         text: 'R4 S/R Valve B',
@@ -874,7 +937,7 @@ final Map<String, List<ComponentConfig>> componentConfig = {
         kind: ElementKind.rectangle,
         handlers: [Handler.leftCenter, Handler.rightCenter],
         deviceType: 'Valve',
-        associatedCmndSource: {'valveState': 'svbsr'},
+        associatedCmndSource: {'valveState': 'svb'},
       ),
     ),
     ComponentConfig(
@@ -883,13 +946,13 @@ final Map<String, List<ComponentConfig>> componentConfig = {
         position: pos,
         text: 'Flowsyn Inject A',
         size: const Size(100, 50),
-        deviceName: 'null',
+        deviceName: 'flowsynmaxi2',
         handlerSize: 15,
         kind: ElementKind.rectangle,
         handlers: [Handler.leftCenter, Handler.rightCenter],
-        deviceType: 'Injector',
+        deviceType: 'Valve',
         volume: 0.25,
-        associatedCmndSource: {},
+        associatedCmndSource: {'valveState': 'svia'},
       ),
     ),
     ComponentConfig(
@@ -898,13 +961,28 @@ final Map<String, List<ComponentConfig>> componentConfig = {
         position: pos,
         text: 'Flowsyn Inject B',
         size: const Size(100, 50),
-        deviceName: 'null',
+        deviceName: 'flowsynmaxi2',
         handlerSize: 15,
         kind: ElementKind.rectangle,
         handlers: [Handler.leftCenter, Handler.rightCenter],
-        deviceType: 'Injector',
+        deviceType: 'Valve',
         volume: 0.25,
-        associatedCmndSource: {},
+        associatedCmndSource: {'valveState': 'svib'},
+      ),
+    ),
+    ComponentConfig(
+      label: "Flowsyn Waste/Collect",
+      build: (pos) => Component(
+        position: pos,
+        text: 'Flowsyn Waste/Collect',
+        size: const Size(100, 50),
+        deviceName: 'flowsynmaxi2',
+        handlerSize: 15,
+        kind: ElementKind.rectangle,
+        handlers: [Handler.leftCenter, Handler.rightCenter],
+        deviceType: 'Valve',
+        volume: 0.25,
+        associatedCmndSource: {'valveState': 'svcw'},
       ),
     ),
   ],

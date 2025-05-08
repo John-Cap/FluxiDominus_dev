@@ -555,6 +555,6 @@ class HardcodedCommands {
 
 void main() {
   print(HardcodedCommands().injectVal('vapourtecR4P1700', 'pafr', 2));
-  print(HardcodedCommands().injectVal('vapourtecR4P1700', 'svail', true));
+  print(HardcodedCommands().injectVal('vapourtecR4P1700', 'svasr', true));
   print(HardcodedCommands().injectVal('vapourtecR4P1700', 'svcw', false));
 }
