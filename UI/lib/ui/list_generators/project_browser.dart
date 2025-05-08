@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
-import 'package:flutter_flow_chart/ui/script_builder.dart/script_generator.dart';
+import 'package:flutter_flow_chart/ui/script_builder/script_generator.dart';
 
 class ExpWidget extends StatefulWidget {
   final MqttService mqttService;

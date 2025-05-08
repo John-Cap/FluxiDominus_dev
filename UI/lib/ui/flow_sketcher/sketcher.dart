@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_flow_chart/config/UI/brokers_and_topics.dart';
+import 'package:flutter_flow_chart/config/UI/component_sketcher_setters.dart';
 import 'package:flutter_flow_chart/includes/components.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/dashboard.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/connection_para
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/elements/flow_element.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/flow_chart.dart';
 import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/draw_arrow.dart';
+import 'package:flutter_flow_chart/ui/script_builder/hardcoded_command_templates.dart';
 import 'package:star_menu/star_menu.dart';
 import 'src/ui/element_settings_menu.dart';
 import 'src/ui/text_menu.dart';
@@ -602,6 +604,32 @@ final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
         child: const Text('Delete Pump'),
       ),
     ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () async {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          double? newVal = await SketcherInputDialog.getDouble(
+              context: context, title: 'New Flowrate');
+          if (element is Component) {
+            String cmd = element.associatedCmndSource['flowrate'] ?? "";
+            if (cmd == "") {
+            } else {
+              // String? newCmnd = jsonEncode(HardcodedCommands()
+              //     .injectVal(element.deviceName, cmd, newVal));
+              String? newCmnd = HardcodedCommands()
+                      .injectVal(element.deviceName, cmd, newVal) ??
+                  "";
+              if (newCmnd == "") {}
+              {
+                state?.widget.mqttService.publish(
+                    MqttTopics.getCmndTopic(element.deviceName), newCmnd);
+              }
+            }
+          }
+        },
+        child: const Text('Set flowrate'),
+      ),
+    ),
   ],
   'Valve': [
     ElementMenuItem(
@@ -1000,7 +1028,7 @@ final Map<String, List<ComponentConfig>> componentConfig = {
         handlers: [Handler.leftCenter, Handler.rightCenter],
         deviceType: 'Pump',
         volume: 5,
-        associatedCmndSource: {},
+        associatedCmndSource: {"flowrate": 'fr'},
       ),
     ),
   ],

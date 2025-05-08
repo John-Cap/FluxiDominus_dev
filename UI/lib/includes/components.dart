@@ -10,12 +10,14 @@ class Component extends FlowElement {
   final Map<String, String> associatedCmndSource;
   final String deviceType;
   final double volume;
+  String topic;
 
   Component({
     required this.associatedCmndSource,
     required this.deviceName,
     required this.deviceType,
     required this.volume,
+    this.topic = "",
     Offset super.position,
     super.size,
     super.text,

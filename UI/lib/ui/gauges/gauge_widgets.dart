@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
 import 'package:flutter_flow_chart/ui/gauges/control_panel_widgets.dart';
-import 'package:flutter_flow_chart/ui/script_builder.dart/hardcoded_command_templates.dart';
+import 'package:flutter_flow_chart/ui/script_builder/hardcoded_command_templates.dart';
 import 'dart:async';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 
