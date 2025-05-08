@@ -630,6 +630,31 @@ final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
         child: const Text('Set flowrate'),
       ),
     ),
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.w900),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => TextMenu(element: element),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElementConnections(element);
+          state?._updateConnections();
+        },
+        child: const Text('Remove all connections'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => ElementSettingsMenu(element: element),
+      keepMenuOpen: true,
+    ),
   ],
   'Valve': [
     ElementMenuItem(
