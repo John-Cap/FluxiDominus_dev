@@ -602,6 +602,11 @@ class FlowPath:
     def _findComponentByName(self, name):
         for comp in self.segments:
             if comp.name == name:
+                print(f"Found comp {comp.name}")
+                return comp
+        for comp in self.segments:
+            if comp.uiId == name:
+                print(f"Found comp {comp.uiId}")
                 return comp
         return None
     
@@ -785,9 +790,13 @@ class FlowPath:
             self.terminiMapped=True
 
     def setCurrDestination(self, terminus):
+        name=""
         if isinstance(terminus, str):
-            name = terminus
+            compT = self._findComponentByName(terminus)
+            if not (compT is None):
+                name = compT.name
         else:
+            compT = terminus
             name = terminus.name
 
         if name not in self.addressesAll:
@@ -805,6 +814,10 @@ class FlowPath:
         #if we have a reference to the actual terminus object:
         if not isinstance(terminus, str):
             self.currTerminus = terminus
+        else:
+            self.currTerminus = compT
+            
+        self.flowrateShifted=True
 
     #Helper function to find a path from start to end
     def _findPath(self,start, end, visited=None):
@@ -877,7 +890,7 @@ class FlowPath:
             if self.publishUI:
                 #For now, only leading slug
                 if len(self.slugs) != 0:
-                    self.publishSlugTrackingInfo(self.slugs[0])
+                    self.publishSlugTrackingInfo(self.slugs[0],dest=self.currTerminus)
             self.flowrateShifted = False
 
         _nowTime = time.perf_counter()

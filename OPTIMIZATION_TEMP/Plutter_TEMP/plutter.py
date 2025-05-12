@@ -96,7 +96,9 @@ class MqttService:
         
         self.reqUIhandlers={
             "FlowSketcher":{
-                "parseFlowsketch":self.flowSystem.flowpath.parseFlowSketch
+                "parseFlowsketch":self.flowSystem.flowpath.parseFlowSketch,
+                "pullFromOrigin":self.flowSystem.flowpath.pullFromOrigin,
+                "setCurrDestination":self.flowSystem.flowpath.setCurrDestination
             }
         }
         

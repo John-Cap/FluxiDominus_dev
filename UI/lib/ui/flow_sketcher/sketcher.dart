@@ -751,7 +751,7 @@ final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
             }
           }
         },
-        child: const Text('Pull from this Stock'),
+        child: const Text('Set as current destination'),
       ),
     ),
     ElementMenuItem(
@@ -761,7 +761,7 @@ final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
           state?.widget.dashboard.removeElement(element);
           state?._updateConnections();
         },
-        child: const Text('Delete Stock'),
+        child: const Text('Delete terminal'),
       ),
     ),
     ElementMenuItem(
