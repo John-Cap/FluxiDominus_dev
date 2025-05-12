@@ -328,18 +328,14 @@ if __name__ == "__main__":
             if time.time() - _nowRefresh > 1:
                 _vol=slug.slugVolume()
                 _nowRefresh=time.time()
-                rep=f"--------------------------------------------------\nTime: {round(time.time() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL\n Current valve states:\n {
-                    [[x.flowrateOut,x.name,x.inlets[0].name,x.outlets[0].name] for x in path.segments if isinstance(x,Valve)]  
-                }"
+                rep=f"--------------------------------------------------\nTime: {round(time.time() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL\n Current valve states:\n"
                 print(rep)
                 print(f"Slugs: {path.slugs} and {path.collectedSlugs}")
             time.sleep(2)
         
         numCollectedSlugs+=1
         numOfDisp+=1
-        rep=f"--------------------------------------------------\nTime: {round(time.time() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL\n Current valve states:\n {
-            [[x.name,x.inlets[0].name,x.outlets[0].name] for x in path.segments if isinstance(x,Valve)]  
-        }"
+        rep=f"--------------------------------------------------\nTime: {round(time.time() - _now, 0)} sec,\nAll fr: {[orig.flowrateOut*60 for orig in origins]}\nFront in: {slug.frontHost.name},\n {round(slug.frontHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.frontHostPos, 2)}/{slug.frontHost.volume} mL\nTail in: {slug.tailHost.name},\n {round(slug.tailHost.flowrateOut*60, 2)} mL.min-1,\n {round(slug.tailHostPos, 2)}/{slug.tailHost.volume} mL\nslug vol: {round(_vol, 2)} mL, vol collected: {(round(slug.collectedVol, 2))} mL\n Current valve states:\n"
         print(rep)
         print(f"Slugs: {path.slugs} and {[x.collectedVol for x in path.collectedSlugs]}")
         report.append(f"Slug #{numCollectedSlugs - 1} collected with volume {slug.collectedVol} at {slug.frontHost.name} after being routed to {thisTerminus.name}")
