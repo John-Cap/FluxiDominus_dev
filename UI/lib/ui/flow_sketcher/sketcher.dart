@@ -528,6 +528,27 @@ class ComponentConfig {
   ComponentConfig({required this.label, required this.build});
 }
 
+class ComponentWidgetContextCommands {
+  final MqttService mqttService;
+
+  ComponentWidgetContextCommands({required this.mqttService});
+  void _send(Map<String, dynamic> cmnd) {
+    mqttService.publish(
+        MqttTopics.getUITopic("FlowSketcher"),
+        jsonEncode({
+          "reqUI": {"FlowSketcher": cmnd}
+        }));
+  }
+
+  void pullFromOrigin(Component comp) {
+    _send({"pullFromOrigin": comp.id});
+  }
+
+  void setCurrDestination(Component comp) {
+    _send({"setCurrDestination": comp.id});
+  }
+}
+
 class ElementMenuItem {
   final Widget Function(BuildContext context, FlowElement element) builder;
   final bool keepMenuOpen;
@@ -619,6 +640,128 @@ final Map<String, List<ElementMenuItem>> deviceTypeMenuConfig = {
           state?._updateConnections();
         },
         child: const Text('Delete Pump'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.w900),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => TextMenu(element: element),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElementConnections(element);
+          state?._updateConnections();
+        },
+        child: const Text('Remove all connections'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => ElementSettingsMenu(element: element),
+      keepMenuOpen: true,
+    ),
+  ],
+  'FlowOrigin': [
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          if (element is Component) {
+            dynamic serv = context
+                .findAncestorStateOfType<FlowSketcherState>()
+                ?.widget
+                .mqttService;
+            if (serv != null) {
+              ComponentWidgetContextCommands(mqttService: serv)
+                  .pullFromOrigin(element);
+            }
+          }
+        },
+        child: const Text('Pull from this Stock'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElement(element);
+          state?._updateConnections();
+        },
+        child: const Text('Delete Stock'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => Text(
+        element.text,
+        style: const TextStyle(fontWeight: FontWeight.w900),
+      ),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => TextMenu(element: element),
+      keepMenuOpen: true,
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElementConnections(element);
+          state?._updateConnections();
+        },
+        child: const Text('Remove all connections'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => ElementSettingsMenu(element: element),
+      keepMenuOpen: true,
+    ),
+  ],
+  'FlowTerminus': [
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          if (element is Component) {
+            dynamic serv = context
+                .findAncestorStateOfType<FlowSketcherState>()
+                ?.widget
+                .mqttService;
+            if (serv != null) {
+              ComponentWidgetContextCommands(mqttService: serv)
+                  .setCurrDestination(element);
+            }
+          }
+        },
+        child: const Text('Pull from this Stock'),
+      ),
+    ),
+    ElementMenuItem(
+      builder: (context, element) => InkWell(
+        onTap: () {
+          final state = context.findAncestorStateOfType<FlowSketcherState>();
+          state?.widget.dashboard.removeElement(element);
+          state?._updateConnections();
+        },
+        child: const Text('Delete Stock'),
       ),
     ),
     ElementMenuItem(
