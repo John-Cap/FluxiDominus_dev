@@ -235,7 +235,7 @@ class VolObjNull(VolumeObject):
         super().__init__(volume, name, inlets, outlets,deviceName, deviceType, flowrateOut, flowrateIn, slugs, lastAdvance, outletSets, inletSets, currOutlets, currInlets, remainder, settings, state, availableCommands, dispensing, uiId, associatedCmndSource)
 
 class FlowPath:
-    def __init__(self,flowPathName=uuid.uuid4(),segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
+    def __init__(self,mqttService,flowPathName=uuid.uuid4(),segments=[],segmentSets={},slugs=[],flowrate=0,time=time.perf_counter(),collectedSlugs=[]) -> None:
         self.flowPathName=flowPathName
         self.segments=segments
         self.segmentSets=segmentSets
@@ -262,7 +262,7 @@ class FlowPath:
         
         self.slugCntr=1
         
-        self.mqttService=None
+        self.mqttService=mqttService
         
         self.initialized=False
         
@@ -276,7 +276,36 @@ class FlowPath:
         global FLOW_PATH
         FLOW_PATH=self
         
+    def reset(self):
+        self.segments=[]
+        self.segmentSets=[]
+        self.componentIndex=0
+        self.slugs=[]
+        self.flowPathName=uuid.uuid4()
+        self.active=False
+        self.flowLoopThread=None
+        self.timePrev=time.time()
+        
+        self.addresses=FlowAddresses("DEFAULT") #TODO - impliment instead of below
+        self.addressesAll={}
+        
+        self.currTerminus=None
+        self.currRelOrigin=None #Relative starting point in flow path that 'dispenses' slugs
+        self.terminiMapped=False
+        
+        self.initialized=False
+        
+        self.flowrateShifted=True
+        self.recalcUiSlugs=False
+        
+        self.updateCmnd={} #a set
+        self.updateCmndDevices=[]
+        
+        global FLOW_PATH
+        FLOW_PATH=self
+        
     def parseFlowSketch(self, sketchJson):
+        print(f"Received flowsketch. Parsing...")
         self.terminiMapped=False
         """
         Parse the FlowSketch JSON format from the frontend and build the full flow path,
@@ -697,12 +726,16 @@ class FlowPath:
                     self.currRelOrigin=x
 
     def mapPathTermini(self):
+        print("Mapping termini...")
         #Identify all FlowTerminus objects
         termini = [seg for seg in self.segments if isinstance(seg, FlowTerminus)]
+        print("Term 1")
 
         if not termini:
             #Nothing to map
+            print("No termini to map!")
             return
+        print("Term 2")
 
         #Identify the origin component from which we should map paths.
         #If currRelOrigin is defined, use that. Otherwise, try to find a FlowOrigin or a node with no inlets.
@@ -726,6 +759,7 @@ class FlowPath:
                 else:
                     #If no clear start found, just pick the first segment as start (fallback)
                     start = self.segments[0]
+        print("Term 3")
 
         #Build a graph from segments: component -> list of downstream components
         #Note: we consider the currently active outlets. If multiple outlet sets exist,
@@ -749,10 +783,12 @@ class FlowPath:
 
         #Now for each terminus, find a path and record the necessary outlet sets
         self.addressesAll = {}
+        print("Term 4")
         for terminus in termini:
             path = self._findPath(start, terminus)
             if path is None:
                 #No path found to this terminus
+                print("Term 5")
                 continue
 
             #path is a list of components from start to terminus
@@ -763,6 +799,7 @@ class FlowPath:
             #Iterate through path components and figure out which outletSet leads to the next node in the path
             #We look at pairs (currentComp, nextComp)
             for i in range(len(path)-1):
+                print("Term 6")
                 currComp = path[i]
                 nextComp = path[i+1]
 
@@ -773,8 +810,10 @@ class FlowPath:
                     for oSetName, oSetComps in currComp.outletSets.items():
                         if nextComp in oSetComps:
                             chosenSetName = oSetName
+                            print("Term 7")
                             break
                     if chosenSetName is not None:
+                        print("Term 8")
                         #Also record inlet set name from nextComp
                         #This assumes the inletSet that contains currComp is unique
                         inletSetName = None
@@ -786,6 +825,7 @@ class FlowPath:
                         addresses.append([currComp, chosenSetName, nextComp, inletSetName])
                     else:
                         print(f"ChosenSetName for {[oSetName,oSetComps]} is None")
+            print("Termini mapped.")
             self.addressesAll[terminus.name] = addresses
             self.terminiMapped=True
 
@@ -1144,6 +1184,7 @@ class FlowPath:
                 self.mqttService.cmndAvailable=False
             self.advanceSlugs()
             time.sleep(0.1)
+        print("Flow loop terminated!")
 
     def startFlowPathLoop(self):
         # Create a thread for running the code
@@ -1152,7 +1193,11 @@ class FlowPath:
         self.flowLoopThread.start()
         
         return self.flowLoopThread
-
+    
+    def stopFlowPathLoop(self):
+        self.active = False
+        if self.flowLoopThread.is_alive():
+            self.flowLoopThread.join()
 
 class FlowComponent(VolumeObject):
     def __init__(self, volume=None, name=None,  inlets=None, outlets=None,deviceName=None, deviceType=None, flowrateOut=None, flowrateIn=None, slugs=None, lastAdvance=None, outletSets=None, inletSets=None, currOutlets=None, currInlets=None, remainder=None, settings=None, state=None, availableCommands=None, dispensing=False, uiId="", associatedCmndSource=None):
@@ -1265,8 +1310,9 @@ class Slug(SlugNull):
         super().__init__(volume, location, parentSlug, childSlug, elastic, hosts, tailHost, frontHost, tailHostPos, frontHostPos, stationary, collectedVol, collecting, reachedTerminusAt, collected, totalDispensed=0, lastDispenseCycleTime=0)
 
 class FlowSystem:
-    def __init__(self):
-        self.flowpath=FlowPath()
+    def __init__(self,mqttService):
+        self.mqttService=mqttService
+        self.flowpath=FlowPath(self.mqttService)
         self.allSlugs=Slugs()
 
 if __name__ == "__main__":
