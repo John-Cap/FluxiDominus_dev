@@ -12,6 +12,8 @@ import 'package:flutter_flow_chart/ui/flow_sketcher/src/ui/draw_arrow.dart';
 import 'package:flutter_flow_chart/ui/script_builder/hardcoded_command_templates.dart';
 import 'package:star_menu/star_menu.dart';
 import 'src/ui/element_settings_menu.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'src/ui/text_menu.dart';
 
 // ignore: must_be_immutable
@@ -28,6 +30,7 @@ class FlowSketcher extends StatefulWidget {
   StarMenuController innerMenuController = StarMenuController();
   Map<String, Map<String, dynamic>> updatedReport = {};
   Dashboard dashboard;
+  static const String autoSaveKey = 'flow_sketcher_auto_save';
 
   @override
   State<FlowSketcher> createState() => FlowSketcherState();
@@ -36,6 +39,31 @@ class FlowSketcher extends StatefulWidget {
 class FlowSketcherState extends State<FlowSketcher>
     with AutomaticKeepAliveClientMixin {
   ConnectionMqttReport mqttReport = ConnectionMqttReport();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocal();
+  }
+
+  void _loadLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = prefs.getString(FlowSketcher.autoSaveKey);
+      if (jsonString == null || jsonString.trim().isEmpty) {
+        debugPrint('No saved dashboard data found.');
+        return;
+      }
+
+      widget.mqttService.currDashboardJson = jsonString;
+      debugPrint('Dashboard loaded from local storage.');
+      setState(() {
+        widget.dashboard = Dashboard.fromJson(jsonString);
+      });
+    } catch (e) {
+      debugPrint('Error during local load: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -204,6 +232,23 @@ class FlowSketcherState extends State<FlowSketcher>
     );
   }
 
+  void _saveLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = widget.mqttService.currDashboardJson;
+
+      if (jsonString.trim().isEmpty) {
+        debugPrint('Cannot save: current dashboard JSON is empty.');
+        return;
+      }
+
+      await prefs.setString(FlowSketcher.autoSaveKey, jsonString);
+      debugPrint('Dashboard saved locally in SharedPreferences.');
+    } catch (e) {
+      debugPrint('Error during local save: $e');
+    }
+  }
+
   void _save() {
     print('WJ - Attempting to publish');
     _updateConnections();
@@ -211,6 +256,8 @@ class FlowSketcherState extends State<FlowSketcher>
     _mergeTubingIntoMqttReport(); //setState(() {});
     widget.mqttService.currDashboardJson = //Necessary for db operations?
         widget.dashboard.saveDashboard();
+    _saveLocal();
+    print("The saved dashboard: ${widget.mqttService.currDashboardJson}");
     widget.mqttService.publish(
         MqttTopics.getUITopic("FlowSketcher"), mqttReport.toJsonString());
   }
@@ -294,7 +341,9 @@ class FlowSketcherState extends State<FlowSketcher>
       }
       _buildMqttReport();
     }
-    setState(() {});
+    setState(() {
+      _saveLocal();
+    });
     //debugPrint(('WJ -> ${widget.dashboard.connections.toString()}'));
   }
 

@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_flow_chart/includes/plutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScriptGeneratorWidget extends StatefulWidget {
   final MqttService mqttService;
+  static const String _blocksStorageKey = 'script_generator_blocks';
 
   const ScriptGeneratorWidget({required super.key, required this.mqttService});
   @override
@@ -93,6 +95,39 @@ class ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget>
     "sleepTime": "Sec",
     "timeout": "Sec"
   };
+  @override
+  void initState() {
+    super.initState();
+    _loadBlocksLocally();
+  }
+
+  void _saveBlocksLocally() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = jsonEncode(_blocks);
+    await prefs.setString(ScriptGeneratorWidget._blocksStorageKey, jsonString);
+    debugPrint("Script blocks saved locally.");
+  }
+
+  void _loadBlocksLocally() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(ScriptGeneratorWidget._blocksStorageKey);
+
+    if (jsonString != null && jsonString.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
+        setState(() {
+          _blocks = decoded.map((key, value) {
+            return MapEntry(key, List<Map<String, dynamic>>.from(value));
+          });
+        });
+        debugPrint("Script blocks loaded from local storage.");
+      } catch (e) {
+        debugPrint("Failed to parse saved script blocks: $e");
+      }
+    } else {
+      debugPrint("No saved script blocks found.");
+    }
+  }
 
   static String getFullDisplayName(
       String deviceKey, String commandKey, dynamic val) {
@@ -193,7 +228,7 @@ class ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget>
       _blocks[_blockName]!.add(command);
       widget.mqttService.currTestScriptBlocks = _blocks;
     });
-
+    _saveBlocksLocally();
     _valueController.clear();
   }
 
@@ -202,6 +237,7 @@ class ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget>
       _blocks.remove(blockName);
       widget.mqttService.currTestScriptBlocks = _blocks;
     });
+    _saveBlocksLocally();
   }
 
   void _moveBlockUp(String blockName) {
@@ -218,6 +254,7 @@ class ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget>
         // Rebuild the _blocks map with the new order
         _blocks = {for (var name in blockNames) name: _blocks[name]!};
       }
+      _saveBlocksLocally();
     });
   }
 
@@ -235,6 +272,7 @@ class ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget>
         // Rebuild the _blocks map with the new order
         _blocks = {for (var name in blockNames) name: _blocks[name]!};
       }
+      _saveBlocksLocally();
     });
   }
 
@@ -244,6 +282,7 @@ class ScriptGeneratorWidgetState extends State<ScriptGeneratorWidget>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Procedure set!')),
     );
+    _saveBlocksLocally();
   }
 
   void _enableLogging() {
